@@ -61,8 +61,10 @@ export function Icon({
   filled = false,
 }: IconProps) {
   const theme = useTheme();
-  const stroke =
-    color in theme.colors ? theme.colors[color as keyof Palette] : (color as string);
+  // The palette holds one tuple value (the CTA gradient), so a lookup is only
+  // accepted when it actually yields a colour string.
+  const resolved = theme.colors[color as keyof Palette];
+  const stroke = typeof resolved === 'string' ? resolved : (color as string);
   // `filled` shades the glyph's body behind the strokes, which is enough to
   // mark an active tab without a second hand-drawn icon per state.
   const fill = filled ? stroke : 'none';
@@ -81,6 +83,25 @@ export function Icon({
       {renderGlyph(name, { ...common, fillOpacity }, fill, stroke)}
     </Svg>
   );
+}
+
+/**
+ * A four-point star with concave sides, as a filled path.
+ *
+ * Each arm runs to `radius` from the centre, and the waist between arms is
+ * pulled in to 42% of that, which is what gives the shape its pinch. Built
+ * from one function so the large and small stars cannot drift apart.
+ */
+function sparkPath(cx: number, cy: number, radius: number): string {
+  const waist = radius * 0.42;
+  return [
+    `M ${cx} ${cy - radius}`,
+    `C ${cx + waist * 0.3} ${cy - waist} ${cx + waist} ${cy - waist * 0.3} ${cx + radius} ${cy}`,
+    `C ${cx + waist} ${cy + waist * 0.3} ${cx + waist * 0.3} ${cy + waist} ${cx} ${cy + radius}`,
+    `C ${cx - waist * 0.3} ${cy + waist} ${cx - waist} ${cy + waist * 0.3} ${cx - radius} ${cy}`,
+    `C ${cx - waist} ${cy - waist * 0.3} ${cx - waist * 0.3} ${cy - waist} ${cx} ${cy - radius}`,
+    'Z',
+  ].join(' ');
 }
 
 type CommonProps = {
@@ -249,14 +270,13 @@ function renderGlyph(
       );
 
     case 'sparkle':
+      // A four-point star with concave sides, plus a smaller one above and
+      // to the right - the shape on the supplied reference button. Filled
+      // rather than stroked: at 20px a stroked star reads as a smudge.
       return (
         <>
-          <Path
-            d="M12 3.5l1.7 4.9 4.8 1.8-4.8 1.8L12 17l-1.7-5-4.8-1.8 4.8-1.8L12 3.5Z"
-            {...common}
-            fill={fill}
-          />
-          <Path d="M18.6 16.2l.8 2.1 2.1.8-2.1.8-.8 2.1-.8-2.1-2.1-.8 2.1-.8.8-2.1Z" {...common} />
+          <Path d={sparkPath(10.2, 13.4, 9.2)} fill={stroke} stroke="none" />
+          <Path d={sparkPath(18.6, 5.6, 4.2)} fill={stroke} stroke="none" />
         </>
       );
 

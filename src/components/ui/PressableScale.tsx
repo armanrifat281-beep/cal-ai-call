@@ -32,6 +32,8 @@ export function PressableScale({
   haptic = false,
   scaleTo,
   onPress,
+  onPressIn,
+  onPressOut,
   disabled,
   ...rest
 }: PressableScaleProps) {
@@ -43,13 +45,23 @@ export function PressableScale({
     transform: [{ scale: scale.value }],
   }));
 
-  const handlePressIn = useCallback(() => {
-    scale.value = withTiming(target, { duration: theme.duration.press });
-  }, [scale, target, theme.duration.press]);
+  // The caller's handlers still run: a button tracks its own pressed state to
+  // swap the gradient, and must not lose that by using this wrapper.
+  const handlePressIn = useCallback<NonNullable<PressableProps['onPressIn']>>(
+    (event) => {
+      scale.value = withTiming(target, { duration: theme.duration.press });
+      onPressIn?.(event);
+    },
+    [scale, target, theme.duration.press, onPressIn],
+  );
 
-  const handlePressOut = useCallback(() => {
-    scale.value = withTiming(1, { duration: theme.duration.fast });
-  }, [scale, theme.duration.fast]);
+  const handlePressOut = useCallback<NonNullable<PressableProps['onPressOut']>>(
+    (event) => {
+      scale.value = withTiming(1, { duration: theme.duration.fast });
+      onPressOut?.(event);
+    },
+    [scale, theme.duration.fast, onPressOut],
+  );
 
   const handlePress = useCallback<NonNullable<PressableProps['onPress']>>(
     (event) => {

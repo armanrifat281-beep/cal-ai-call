@@ -23,8 +23,10 @@ export function Text({
   ...rest
 }: AppTextProps) {
   const theme = useTheme();
-  const resolvedColor =
-    color in theme.colors ? theme.colors[color as keyof Palette] : (color as string);
+  // The palette holds one tuple value (the CTA gradient), so a lookup is only
+  // accepted when it actually yields a colour string.
+  const candidate = theme.colors[color as keyof Palette];
+  const resolvedColor = typeof candidate === 'string' ? candidate : (color as string);
 
   return (
     <RNText

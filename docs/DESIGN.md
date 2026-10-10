@@ -75,9 +75,28 @@ Haptics are on by default for filled buttons, off for list rows.
 
 ### Actions have a hierarchy
 
-One `primary` per screen. `tonal` for a secondary commitment, `secondary` for a
-neutral alternative, `ghost` for tertiary. There are no outlined variants: an
-outline is a weaker signal at the same effort.
+Every button is a pill — the radius is half the height, so the ends are true
+semicircles at every size and the shapes agree across the app.
+
+Only `primary` and `accent` carry the **call-to-action gradient**: a
+rose-to-crimson fill running top-left to bottom-right, with bold white text.
+That treatment is scarce on purpose. If every button were the call to action
+there would be no call to action.
+
+| variant | treatment | use |
+| --- | --- | --- |
+| `primary` | gradient pill | the one commitment on a screen |
+| `accent` | gradient pill | a hero action that is not the main commitment (the camera) |
+| `tonal` | brand-tinted fill | a secondary commitment |
+| `secondary` | neutral fill | cancel, dismiss, choose another |
+| `ghost` | text only | tertiary |
+| `danger` | flat, darker red | destructive — deliberately *not* a gradient, so it cannot be mistaken for the thing you are being invited to press |
+
+One CTA per screen. `scripts/` has no linter for this, but
+`src/components/ui/__tests__/ButtonAppearance.test.tsx` pins the treatment, and
+the placement audit in the commit history shows how to re-check it: static
+analysis flags screens with two CTAs, and each flag then needs reading, because
+most are mutually exclusive branches rather than real duplicates.
 
 Three stacked full-width buttons means the screen has no primary action.
 Destructive and lifecycle actions belong in the navigation bar or an action

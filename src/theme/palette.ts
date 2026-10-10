@@ -58,6 +58,13 @@ export interface Palette {
   accentSoft: string;
   accentOnSoft: string;
 
+  /** Primary call-to-action gradient, from top-left to bottom-right. */
+  ctaGradient: readonly [string, string];
+  ctaGradientPressed: readonly [string, string];
+  /** Flat equivalent, where a gradient is not possible. */
+  ctaFlat: string;
+  textOnCta: string;
+
   success: string;
   successSoft: string;
   successOnSoft: string;
@@ -124,6 +131,26 @@ const ember = {
   700: '#6F2E12',
 } as const;
 
+/**
+ * The call-to-action red.
+ *
+ * A two-stop gradient rather than a flat fill, matching the reference the
+ * client supplied: a rose-leaning red at the top left easing into a deeper
+ * crimson at the bottom right. Used only for the primary action, which is
+ * what keeps it from becoming decoration.
+ */
+const crimson = {
+  gradientFrom: '#EF4B5E',
+  gradientTo: '#DC2B3C',
+  pressedFrom: '#DA3F51',
+  pressedTo: '#C42233',
+  /** Flat equivalent, for places a gradient cannot go. */
+  flat: '#E43B4D',
+  soft: '#FDEAEC',
+  softDark: '#2E1418',
+  onSoft: '#B3222F',
+} as const;
+
 const light: Palette = {
   background: clay[25],
   surface: clay[0],
@@ -150,6 +177,11 @@ const light: Palette = {
   accentPressed: ember[600],
   accentSoft: ember[50],
   accentOnSoft: ember[600],
+
+  ctaGradient: [crimson.gradientFrom, crimson.gradientTo],
+  ctaGradientPressed: [crimson.pressedFrom, crimson.pressedTo],
+  ctaFlat: crimson.flat,
+  textOnCta: '#FFFFFF',
 
   success: forest[500],
   successSoft: forest[50],
@@ -207,6 +239,13 @@ const dark: Palette = {
   accentSoft: '#2E1B10',
   accentOnSoft: ember[100],
 
+  // The CTA keeps its colour in dark mode: it is the one element that should
+  // read identically in both, and the red already has the contrast for it.
+  ctaGradient: [crimson.gradientFrom, crimson.gradientTo],
+  ctaGradientPressed: [crimson.pressedFrom, crimson.pressedTo],
+  ctaFlat: crimson.flat,
+  textOnCta: '#FFFFFF',
+
   success: forest[300],
   successSoft: '#16281F',
   successOnSoft: forest[200],
@@ -231,5 +270,15 @@ const dark: Palette = {
 
 export const palettes: Record<ColorScheme, Palette> = { light, dark };
 
+/**
+ * Palette keys whose value is a single colour.
+ *
+ * `ctaGradient` and `ctaGradientPressed` hold a pair of stops, so a component
+ * that sets one colour should accept this rather than every key.
+ */
+export type ColorKey = {
+  [K in keyof Palette]: Palette[K] extends string ? K : never;
+}[keyof Palette];
+
 /** The ramps, for the rare case a component needs a specific step. */
-export const ramps = { clay, forest, ember } as const;
+export const ramps = { clay, forest, ember, crimson } as const;

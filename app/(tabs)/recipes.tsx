@@ -4,6 +4,7 @@ import { View } from 'react-native';
 import { Icon } from '@/components/Icon';
 import { RecipeImage } from '@/components/recipes/RecipeImage';
 import {
+  Button,
   Disclosure,
   EmptyState,
   ErrorState,
@@ -48,30 +49,18 @@ export default function RecipesScreen() {
         lists.reload();
       }}
     >
-      {/* The one thing this screen is for. */}
-      <PressableScale
+      {/*
+        The one thing this screen is for, as the call-to-action button
+        itself rather than a tappable panel wearing a different colour.
+      */}
+      <Button
+        label="Create a recipe"
         onPress={() => router.push('/recipe/create')}
-        haptic
-        accessibilityRole="button"
-        accessibilityLabel="Create a recipe"
+        size="lg"
+        fullWidth
+        leading={<Icon name="sparkle" size={20} color={theme.colors.textOnCta} />}
         accessibilityHint="Name a dish, describe one, or use a photo"
-      >
-        <Surface
-          variant="raised"
-          padding="lg"
-          style={{ gap: theme.spacing.md, backgroundColor: theme.colors.primary }}
-        >
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm }}>
-            <Icon name="sparkle" size={20} color={theme.colors.textOnPrimary} />
-            <Text variant="title2" color="textOnPrimary">
-              Create a recipe
-            </Text>
-          </View>
-          <Text variant="callout" color={theme.colors.primarySoft}>
-            Name a dish, describe one in your own words, or show a photo.
-          </Text>
-        </Surface>
-      </PressableScale>
+      />
 
       <Surface variant="grouped">
         <Row

@@ -1,4 +1,10 @@
-export { palettes, ramps, type ColorScheme, type Palette } from './palette';
+export {
+  palettes,
+  ramps,
+  type ColorKey,
+  type ColorScheme,
+  type Palette,
+} from './palette';
 export {
   blockGap,
   duration,

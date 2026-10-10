@@ -1,13 +1,13 @@
 import { View, type StyleProp, type ViewStyle } from 'react-native';
 
 import { useTheme } from '@/theme';
-import type { Palette } from '@/theme';
+import type { ColorKey } from '@/theme';
 
 export interface ProgressBarProps {
   /** 0..1. Values outside the range are clamped. */
   value: number;
-  color?: keyof Palette;
-  trackColor?: keyof Palette;
+  color?: ColorKey;
+  trackColor?: ColorKey;
   height?: number;
   accessibilityLabel: string;
   style?: StyleProp<ViewStyle>;
