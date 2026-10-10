@@ -2,6 +2,7 @@ import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { View } from 'react-native';
 
+import { EnergyBarChart, type EnergyBarDay } from '@/components/charts';
 import { Icon } from '@/components/Icon';
 import {
   Disclosure,
@@ -15,7 +16,14 @@ import {
 } from '@/components/ui';
 import { LOCAL_USER_ID, useRangeJournal } from '@/features/journal';
 import { generateInsights } from '@/features/memory/insights';
-import { addDaysToKey, formatDayLabel, todayKey } from '@/lib/date';
+import { computeEntryTotals } from '@/features/nutrition';
+import {
+  addDaysToKey,
+  dateKeysInRange,
+  formatDayLabel,
+  groupByDateKey,
+  todayKey,
+} from '@/lib/date';
 import { usePreferencesStore } from '@/store/preferencesStore';
 import { useTheme } from '@/theme';
 
@@ -52,6 +60,25 @@ export default function InsightsScreen() {
     [entries, startKey, endKey],
   );
 
+  const targets = usePreferencesStore((state) => state.preferences.dailyTargets);
+
+  // Every day in the period, including the ones with nothing logged: a gap
+  // is part of the shape of a month and must not be silently dropped.
+  const chartDays = useMemo<EnergyBarDay[]>(() => {
+    const byDay = groupByDateKey(entries, (entry) => entry.consumedAt);
+    return dateKeysInRange(startKey, endKey).map((dateKey) => {
+      const dayEntries = byDay.get(dateKey) ?? [];
+      return {
+        dateKey,
+        caloriesKcal: dayEntries.reduce(
+          (sum, entry) => sum + computeEntryTotals(entry).nutrients.caloriesKcal,
+          0,
+        ),
+        hasData: dayEntries.length > 0,
+      };
+    });
+  }, [entries, startKey, endKey]);
+
   if (!foodMemoryEnabled) {
     return (
       <Screen title="Insights" edges={{ top: true }}>
@@ -84,6 +111,10 @@ export default function InsightsScreen() {
       <Text variant="footnote" color="textSubtle">
         {formatDayLabel(startKey)} to {formatDayLabel(endKey)}
       </Text>
+
+      {!error && entries.length > 0 ? (
+        <EnergyBarChart days={chartDays} targetKcal={targets.caloriesKcal} />
+      ) : null}
 
       {error ? (
         <ErrorState

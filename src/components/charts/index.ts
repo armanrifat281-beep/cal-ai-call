@@ -1,5 +1,7 @@
 export { DayPlate, type DayPlateProps, type DayPlateSegment } from './DayPlate';
 export { dayPlateSegments } from './segments';
+export { EnergyBarChart, type EnergyBarChartProps } from './EnergyBarChart';
+export { layoutEnergyBars, type EnergyBarDay, type EnergyBarsLayout } from './EnergyBars';
 export {
   annularSectorPath,
   layoutPlate,
