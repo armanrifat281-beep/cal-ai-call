@@ -1,7 +1,16 @@
 export {
   deleteAllMealPhotos,
+  deleteAllPhotos,
+  deleteDishPhoto,
   deleteMealPhoto,
+  deletePhoto,
+  dishPhotoUri,
   mealPhotoPath,
   mealPhotoUri,
+  photoPath,
+  photoUri,
+  saveDishPhoto,
   saveMealPhoto,
+  savePhoto,
+  type PhotoCollection,
 } from './store';

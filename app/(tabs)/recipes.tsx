@@ -198,6 +198,7 @@ export function RecipeRow({
       <View style={{ flexDirection: 'row', gap: theme.spacing.md, alignItems: 'center' }}>
         <RecipeImage
           image={recipe.image}
+          recipeId={recipe.id}
           title={recipe.title}
           height={66}
           style={{ width: 66, borderRadius: theme.radius.media }}

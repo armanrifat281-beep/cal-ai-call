@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon } from '@/components/Icon';
 import { Button, ErrorState, Screen, Skeleton, Surface, Text } from '@/components/ui';
 import {
+  CookedScreen,
   StepTimer,
   getRecipeRepository,
   scaleRecipe,
@@ -36,6 +37,7 @@ export default function CookingModeScreen() {
   const [completed, setCompleted] = useState<Set<number>>(new Set());
   const [showIngredients, setShowIngredients] = useState(false);
   const [finishing, setFinishing] = useState(false);
+  const [cooked, setCooked] = useState(false);
 
   const scaled = useMemo(
     () => (recipe ? scaleRecipe(recipe, recipe.servings) : null),
@@ -77,14 +79,11 @@ export default function CookingModeScreen() {
     if (!recipe) return;
     setFinishing(true);
     // Recorded so "Cook it again" reflects what the user actually cooked.
-    const result = await getRecipeRepository().recordCooked(recipe.id);
+    // A failure here is not worth blocking on: they finished cooking either
+    // way, and the screen that follows is the reward for it.
+    await getRecipeRepository().recordCooked(recipe.id);
     setFinishing(false);
-    if (!result.ok) {
-      // Not worth blocking on: they finished cooking either way.
-      router.back();
-      return;
-    }
-    router.back();
+    setCooked(true);
   };
 
   if (loading) {
@@ -111,6 +110,16 @@ export default function CookingModeScreen() {
           retryLabel={notFound ? 'Go back' : 'Try again'}
         />
       </Screen>
+    );
+  }
+
+  if (cooked) {
+    return (
+      <CookedScreen
+        recipeId={recipe.id}
+        recipeTitle={recipe.title}
+        onDone={() => router.back()}
+      />
     );
   }
 

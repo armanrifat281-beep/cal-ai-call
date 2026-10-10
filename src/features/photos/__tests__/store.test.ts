@@ -70,9 +70,13 @@ jest.mock('expo-file-system', () => {
    evaluated before the module under test is imported. */
 import {
   deleteAllMealPhotos,
+  deleteAllPhotos,
+  deleteDishPhoto,
   deleteMealPhoto,
+  dishPhotoUri,
   mealPhotoPath,
   mealPhotoUri,
+  saveDishPhoto,
   saveMealPhoto,
 } from '../store';
 
@@ -84,7 +88,7 @@ beforeEach(() => {
   // The presence cache is module state and outlives a single test, so it is
   // cleared through the same call the app uses when photo keeping is
   // switched off.
-  deleteAllMealPhotos();
+  deleteAllPhotos();
   mockFs.files.add(SOURCE);
 });
 
@@ -244,5 +248,62 @@ describe('the presence cache', () => {
     mockFs.copyFailure = 'Disk full';
     await saveMealPhoto(ENTRY, SOURCE);
     expect(mealPhotoUri(ENTRY)).toBeNull();
+  });
+});
+
+
+describe('the two collections', () => {
+  it('keeps a meal photo and a dish photo apart under the same id', async () => {
+    // A journal entry and a recipe can share an id without colliding.
+    mockFs.files.add('file:///cache/dish.jpg');
+    await saveMealPhoto(ENTRY, SOURCE);
+    await saveDishPhoto(ENTRY, 'file:///cache/dish.jpg');
+
+    expect(mealPhotoUri(ENTRY)).toContain('meal-photos');
+    expect(dishPhotoUri(ENTRY)).toContain('dish-photos');
+    expect(mealPhotoUri(ENTRY)).not.toBe(dishPhotoUri(ENTRY));
+  });
+
+  it('leaves dish photos alone when meal photo keeping is switched off', async () => {
+    // Turning off "Keep my meal photos" is a promise about the journal. A
+    // photo the user deliberately attached to their own recipe is not part
+    // of it.
+    mockFs.files.add('file:///cache/dish.jpg');
+    await saveMealPhoto(ENTRY, SOURCE);
+    await saveDishPhoto(ENTRY, 'file:///cache/dish.jpg');
+
+    deleteAllMealPhotos();
+
+    expect(mealPhotoUri(ENTRY)).toBeNull();
+    expect(dishPhotoUri(ENTRY)).not.toBeNull();
+  });
+
+  it('clears both when everything is erased', async () => {
+    mockFs.files.add('file:///cache/dish.jpg');
+    await saveMealPhoto(ENTRY, SOURCE);
+    await saveDishPhoto(ENTRY, 'file:///cache/dish.jpg');
+
+    deleteAllPhotos();
+
+    expect(mealPhotoUri(ENTRY)).toBeNull();
+    expect(dishPhotoUri(ENTRY)).toBeNull();
+  });
+
+  it('deletes one dish photo without touching the meal photo', async () => {
+    mockFs.files.add('file:///cache/dish.jpg');
+    await saveMealPhoto(ENTRY, SOURCE);
+    await saveDishPhoto(ENTRY, 'file:///cache/dish.jpg');
+
+    deleteDishPhoto(ENTRY);
+
+    expect(dishPhotoUri(ENTRY)).toBeNull();
+    expect(mealPhotoUri(ENTRY)).not.toBeNull();
+  });
+
+  it('refuses an unsafe id in either collection', async () => {
+    const meal = await saveMealPhoto('../escape', SOURCE);
+    const dish = await saveDishPhoto('../escape', SOURCE);
+    expect(meal.ok).toBe(false);
+    expect(dish.ok).toBe(false);
   });
 });

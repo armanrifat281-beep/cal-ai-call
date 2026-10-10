@@ -15,7 +15,7 @@ import {
 } from '@/components/ui';
 import { useAuth } from '@/features/auth';
 import { clearLocalJournal } from '@/features/journal';
-import { deleteAllMealPhotos } from '@/features/photos';
+import { deleteAllMealPhotos, deleteAllPhotos } from '@/features/photos';
 import { clearLocalRecipes, toCuisineId } from '@/features/recipes';
 import { cuisineLabel } from '@/features/recipes/options';
 import { describeMissingConfig, env } from '@/lib/env';
@@ -69,7 +69,7 @@ export default function ProfileScreen() {
               setClearing(true);
               await clearLocalJournal();
               await clearLocalRecipes();
-              deleteAllMealPhotos();
+              deleteAllPhotos();
               resetPreferences();
               setClearing(false);
               // Preferences are gone, so the boot gate sends them to onboarding.
@@ -101,7 +101,7 @@ export default function ProfileScreen() {
                 Alert.alert('Not deleted', result.error.message);
                 return;
               }
-              deleteAllMealPhotos();
+              deleteAllPhotos();
               router.replace('/');
             })();
           },

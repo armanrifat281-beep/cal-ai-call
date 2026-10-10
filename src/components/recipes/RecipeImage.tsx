@@ -4,17 +4,24 @@ import { View, type StyleProp, type ViewStyle } from 'react-native';
 
 import { BrandMark } from '@/components/BrandMark';
 import { Text } from '@/components/ui';
+import { dishPhotoUri } from '@/features/photos';
 import { ramps, useTheme } from '@/theme';
 import type { RecipeImage as RecipeImageData, RecipeImageKind } from '@/types/recipe';
 
 /**
  * A recipe's image, always labelled for what it is.
  *
- * No image provider is configured, so in practice this renders the stand-in
- * below. That is deliberate: the app does not invent a photograph of a
+ * No image provider is configured, so there is no generated or stock image
+ * to show. That is deliberate: the app does not invent a photograph of a
  * finished dish, and an illustrative image is never presented as one. The
  * `kind` is stored with the image and drives the label, so the distinction
  * cannot be lost.
+ *
+ * There is one real photograph it can show, and it beats anything a
+ * provider would return: the one the user took of the dish after cooking
+ * it. Pass `recipeId` and it is preferred over whatever is stored, because
+ * their own plate is more use to them than an illustration of someone
+ * else's. Failing that, the stand-in below.
  */
 
 /** The label shown over an image, or null when none is needed. */
@@ -30,6 +37,11 @@ export interface RecipeImageProps {
   image: RecipeImageData | null;
   /** Used to pick the stand-in's tint. */
   title: string;
+  /**
+   * When given, a photo the user took of this dish is shown in preference
+   * to `image`.
+   */
+  recipeId?: string;
   height?: number;
   style?: StyleProp<ViewStyle>;
 }
@@ -37,11 +49,17 @@ export interface RecipeImageProps {
 function RecipeImageComponent({
   image,
   title,
+  recipeId,
   height = 190,
   style,
 }: RecipeImageProps) {
   const theme = useTheme();
-  const label = image ? KIND_LABELS[image.kind] : null;
+
+  const ownPhoto = recipeId ? dishPhotoUri(recipeId) : null;
+  const shown: RecipeImageData | null = ownPhoto
+    ? { uri: ownPhoto, kind: 'user_photo', attribution: null }
+    : image;
+  const label = shown ? KIND_LABELS[shown.kind] : null;
 
   return (
     <View
@@ -56,9 +74,9 @@ function RecipeImageComponent({
         style,
       ]}
     >
-      {image?.uri ? (
+      {shown?.uri ? (
         <Image
-          source={{ uri: image.uri }}
+          source={{ uri: shown.uri }}
           style={{ width: '100%', height: '100%' }}
           contentFit="cover"
           accessibilityLabel={label ? `${title}. ${label}` : `Photo of ${title}`}
@@ -92,7 +110,7 @@ function RecipeImageComponent({
         </View>
       ) : null}
 
-      {image?.attribution ? (
+      {shown?.attribution ? (
         <View
           style={{
             position: 'absolute',
@@ -105,7 +123,7 @@ function RecipeImageComponent({
           }}
         >
           <Text variant="caption" color="#FFFFFF">
-            {image.attribution}
+            {shown.attribution}
           </Text>
         </View>
       ) : null}

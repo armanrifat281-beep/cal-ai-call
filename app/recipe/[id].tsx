@@ -276,6 +276,7 @@ export default function RecipeDetailScreen() {
       {/* Full-bleed hero: the gutter is cancelled so the image meets the edges. */}
       <RecipeImage
         image={recipe.image}
+        recipeId={recipe.id}
         title={recipe.title}
         height={210}
         style={{
