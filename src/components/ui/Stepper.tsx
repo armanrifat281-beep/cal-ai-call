@@ -52,10 +52,10 @@ export function Stepper({
       ]}
     >
       <IconButton
+        variant="input"
         accessibilityLabel={`Decrease ${label.toLowerCase()}`}
         onPress={() => onChange(Math.max(min, value - step))}
         disabled={!canDecrease}
-        variant="plain"
       >
         <Icon name="close" size={16} color={canDecrease ? 'text' : 'textMuted'} />
       </IconButton>
@@ -68,10 +68,10 @@ export function Stepper({
       </View>
 
       <IconButton
+        variant="input"
         accessibilityLabel={`Increase ${label.toLowerCase()}`}
         onPress={() => onChange(Math.min(max, value + step))}
         disabled={!canIncrease}
-        variant="plain"
       >
         <Icon name="plus" size={18} color={canIncrease ? 'text' : 'textMuted'} />
       </IconButton>
