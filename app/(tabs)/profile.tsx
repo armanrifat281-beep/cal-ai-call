@@ -13,6 +13,7 @@ import {
   SegmentedControl,
   Text,
 } from '@/components/ui';
+import { useAuth } from '@/features/auth';
 import { clearLocalJournal } from '@/features/journal';
 import { describeMissingConfig, env } from '@/lib/env';
 import { usePreferencesStore } from '@/store/preferencesStore';
@@ -35,12 +36,14 @@ export default function ProfileScreen() {
   const router = useRouter();
   const { preference, setPreference } = useThemeContext();
 
+  const { status, user, signOut, deleteAccount } = useAuth();
   const preferences = usePreferencesStore((state) => state.preferences);
   const setPreferences = usePreferencesStore((state) => state.setPreferences);
   const setMeasurementSystem = usePreferencesStore((state) => state.setMeasurementSystem);
   const resetPreferences = usePreferencesStore((state) => state.reset);
 
   const [clearing, setClearing] = useState(false);
+  const [accountBusy, setAccountBusy] = useState(false);
 
   const missingConfig = describeMissingConfig();
 
@@ -68,14 +71,49 @@ export default function ProfileScreen() {
     );
   };
 
+  const confirmDeleteAccount = () => {
+    Alert.alert(
+      'Delete your account?',
+      'Your account and every meal, recipe and shopping list in it will be permanently removed. This cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete account',
+          style: 'destructive',
+          onPress: () => {
+            void (async () => {
+              setAccountBusy(true);
+              const result = await deleteAccount();
+              setAccountBusy(false);
+
+              if (!result.ok) {
+                // Say what happened rather than leaving the user guessing
+                // whether their account still exists.
+                Alert.alert('Not deleted', result.error.message);
+                return;
+              }
+              router.replace('/');
+            })();
+          },
+        },
+      ],
+    );
+  };
+
   return (
     <Screen edges={{ top: true }} contentStyle={{ gap: theme.spacing.lg }}>
       <View style={{ gap: theme.spacing.sm }}>
         <Text variant="title">Profile</Text>
         <View style={{ flexDirection: 'row' }}>
           <Badge
-            label={env.isSupabaseConfigured ? 'Account backend configured' : 'Local only - no account'}
-            tone={env.isSupabaseConfigured ? 'success' : 'neutral'}
+            label={
+              status === 'signed_in'
+                ? 'Signed in - meals are backed up'
+                : status === 'unavailable'
+                  ? 'Local only - no account'
+                  : 'Not signed in - saved on this device'
+            }
+            tone={status === 'signed_in' ? 'success' : 'neutral'}
           />
         </View>
       </View>
@@ -176,6 +214,59 @@ export default function ProfileScreen() {
               title="Edit ingredients to avoid"
               trailing={<Icon name="chevronRight" size={18} color="textMuted" />}
               onPress={() => router.push('/(onboarding)/food')}
+            />
+          </>
+        )}
+      </Section>
+
+      <Section title="Account">
+        {status === 'signed_in' ? (
+          <>
+            <ListRow
+              title={user?.email ?? 'Signed in'}
+              subtitle="Your journal is backed up to your account."
+              leading={<Icon name="profile" size={20} color="primary" />}
+            />
+            <Divider />
+            <ListRow
+              title={accountBusy ? 'Signing out...' : 'Sign out'}
+              subtitle="Your meals stay in your account. This device keeps nothing."
+              onPress={() => {
+                void (async () => {
+                  setAccountBusy(true);
+                  await signOut();
+                  setAccountBusy(false);
+                })();
+              }}
+            />
+            <Divider />
+            <ListRow
+              title="Delete my account"
+              subtitle="Removes your account and every meal, recipe and list in it. Cannot be undone."
+              destructive
+              leading={<Icon name="trash" size={20} color="danger" />}
+              onPress={confirmDeleteAccount}
+            />
+          </>
+        ) : status === 'unavailable' ? (
+          <ListRow
+            title="No account backend in this build"
+            subtitle="Meals are saved on this device only. Configure Supabase to enable accounts and backup."
+          />
+        ) : (
+          <>
+            <ListRow
+              title="Sign in"
+              subtitle="Back up your journal and sync it across devices."
+              trailing={<Icon name="chevronRight" size={18} color="textMuted" />}
+              onPress={() => router.push('/(auth)/sign-in')}
+            />
+            <Divider />
+            <ListRow
+              title="Create an account"
+              subtitle="Meals already on this device stay on this device."
+              trailing={<Icon name="chevronRight" size={18} color="textMuted" />}
+              onPress={() => router.push('/(auth)/sign-up')}
             />
           </>
         )}

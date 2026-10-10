@@ -5,6 +5,7 @@ import { useEffect } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import { AuthProvider } from '@/features/auth';
 import { usePreferencesStore } from '@/store/preferencesStore';
 import { ThemeProvider, useTheme, useThemeContext } from '@/theme';
 
@@ -19,7 +20,9 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <ThemeProvider>
-          <AppShell />
+          <AuthProvider>
+            <AppShell />
+          </AuthProvider>
         </ThemeProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
@@ -56,6 +59,7 @@ function AppShell() {
       >
         <Stack.Screen name="index" />
         <Stack.Screen name="(onboarding)" />
+        <Stack.Screen name="(auth)" />
         <Stack.Screen name="(tabs)" />
       </Stack>
     </>

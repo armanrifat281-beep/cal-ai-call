@@ -103,6 +103,11 @@ $$;
 -- layers have to be present for the policy tests to be meaningful.
 grant usage on schema public to anon, authenticated, service_role;
 grant usage on schema storage to anon, authenticated, service_role;
+-- Real Supabase grants this too. Without it, a SECURITY INVOKER function with
+-- `search_path = ''` cannot call auth.uid(), even though RLS policies can.
+grant usage on schema auth to anon, authenticated, service_role;
+grant execute on function auth.uid() to anon, authenticated, service_role;
+grant execute on function auth.role() to anon, authenticated, service_role;
 
 grant select, insert, update, delete on all tables in schema public
   to anon, authenticated, service_role;

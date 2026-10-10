@@ -155,7 +155,13 @@ reaches the device, and the app never calls Anthropic directly.
 
 ```bash
 npx supabase functions deploy analyze-meal
+npx supabase functions deploy delete-account
 ```
+
+`delete-account` needs no secret of its own: Supabase injects the service role
+key into Edge Functions automatically. It exists because a client cannot delete
+its own auth user, and it takes the user id from the verified access token, not
+from the request body, so a signed-in caller cannot delete anyone else.
 
 ### 4.4 Check it actually works
 

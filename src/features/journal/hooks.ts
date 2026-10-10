@@ -5,31 +5,69 @@ import type { AppError, Result } from '@/lib/result';
 import { summarizeEntries, type DaySummary } from '@/features/nutrition';
 import type { FoodEntry, SavedMeal } from '@/types/domain';
 
+import { useAuth } from '@/features/auth';
+import { getSupabaseClient } from '@/lib/supabase';
+
 import { createLocalJournalRepository } from './localRepository';
 import type { JournalRepository } from './repository';
+import { createSupabaseJournalRepository } from './supabaseRepository';
 
 /**
  * Journal data access for screens.
  *
- * The repository is chosen here and nowhere else. Today it is always the
- * device-local store; once Supabase auth is wired up this is the single place
- * that switches to the server-backed implementation for a signed-in user.
+ * The repository is chosen here and nowhere else:
+ *
+ *   signed in  -> Supabase, where the data is backed up and protected by RLS
+ *   otherwise  -> the device-local store
+ *
+ * Screens never learn which one they got. That is what lets the app be fully
+ * usable before an account exists, and what made the whole journal testable
+ * before a backend existed.
  */
 
-let sharedRepository: JournalRepository | null = null;
+let localRepository: JournalRepository | null = null;
+let supabaseRepository: JournalRepository | null = null;
+/** Set by tests to force a specific implementation. */
+let overrideRepository: JournalRepository | null = null;
 
-export function getJournalRepository(): JournalRepository {
-  sharedRepository ??= createLocalJournalRepository();
-  return sharedRepository;
+function getLocalRepository(): JournalRepository {
+  localRepository ??= createLocalJournalRepository();
+  return localRepository;
 }
 
-/** Replaces the active repository. Used by tests and by the auth transition. */
+/**
+ * The repository to use outside React, e.g. in a background task.
+ *
+ * Returns the Supabase one when a client exists AND a session is stored.
+ * Prefer `useJournalRepository` inside components, which reacts to sign-in.
+ */
+export function getJournalRepository(): JournalRepository {
+  if (overrideRepository) return overrideRepository;
+  return getLocalRepository();
+}
+
+/** Replaces the active repository. Used by tests. */
 export function setJournalRepository(repository: JournalRepository | null): void {
-  sharedRepository = repository;
+  overrideRepository = repository;
 }
 
 export function useJournalRepository(): JournalRepository {
-  return getJournalRepository();
+  const { isSignedIn } = useAuth();
+
+  if (overrideRepository) return overrideRepository;
+
+  if (isSignedIn) {
+    const client = getSupabaseClient();
+    if (client) {
+      // Memoized at module level: the client is a singleton, so the repository
+      // built from it can be too, and a new object every render would retrigger
+      // every data effect that depends on it.
+      supabaseRepository ??= createSupabaseJournalRepository(client);
+      return supabaseRepository;
+    }
+  }
+
+  return getLocalRepository();
 }
 
 interface AsyncState<T> {

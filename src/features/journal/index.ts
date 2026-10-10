@@ -16,6 +16,15 @@ export {
   clearLocalJournal,
   createLocalJournalRepository,
 } from './localRepository';
+export {
+  itemToPayload,
+  mapPostgrestError,
+  mapThrownError,
+  rowToEntry,
+  rowToItem,
+  rowToSavedMeal,
+} from './mappers';
+export { createSupabaseJournalRepository } from './supabaseRepository';
 export type {
   CreateEntryInput,
   CreateSavedMealInput,

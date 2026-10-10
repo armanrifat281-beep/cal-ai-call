@@ -39,9 +39,13 @@ These are design rules, not aspirations, and they are enforced in code:
 | Food Memory insights from saved records | Working, unit tested |
 | Photo capture, validation, compression | Working |
 | Database schema, RLS policies | Written and tested locally, **not deployed** |
-| Photo analysis (vision model) | Endpoint client written, **server not built** |
+| Email authentication | Written and unit tested, **never run against a live project** |
+| Supabase journal repository | Written and unit tested, **never run against a live project** |
+| Photo analysis (Claude) | Edge Function written, **never deployed or called** |
+| Account deletion | Edge Function written, **never deployed** |
+| Recipes and shopping lists | Schema and RLS done; **no UI yet** |
 | Food database lookup (USDA) | **Not built** |
-| Authentication (email, Apple, Google) | **Not built** |
+| Sign in with Apple / Google | **Not built** |
 | Subscriptions | Schema only, deliberately unused |
 
 Until Supabase is configured the app runs in a clearly labelled device-only
@@ -65,9 +69,11 @@ setup, including what needs doing by hand in the dashboard.
 ## Checks
 
 ```bash
-npm test             # Jest: unit and component tests
-npm run typecheck    # TypeScript, strict
-./scripts/test-db.sh # applies migrations to a throwaway Postgres and tests RLS
+npm test                   # Jest: 386 unit and component tests
+npm run typecheck          # TypeScript, strict, the app
+npm run typecheck:functions # TypeScript, strict, the Edge Functions' pure modules
+npm run check              # all of the above
+./scripts/test-db.sh       # 108 assertions against a throwaway Postgres
 ```
 
 `scripts/test-db.sh` needs a local `postgres` install but no Docker and no
