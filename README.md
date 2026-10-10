@@ -90,7 +90,7 @@ another user's data to prove the policies hold.
 app/                      Expo Router routes (the screens)
   (onboarding)/           Welcome, basics, food preferences, goals, privacy
   (auth)/                 Sign in, sign up, password reset
-  (tabs)/                 Home, Scan, Recipes, Journal, Profile (+ Insights)
+  (tabs)/                 Home, Scan, Recipes, Journal, Settings (+ Insights)
   entry/                  Create and edit a meal
   recipe/                 Create, view, and cook a recipe
   shopping/               Shopping lists
