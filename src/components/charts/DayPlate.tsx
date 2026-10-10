@@ -93,6 +93,10 @@ export function DayPlate({
   // A selected arc grows outward, so it needs room inside the canvas.
   const lift = 5;
   const padding = lift + 4;
+
+  // Half the shortfall between the band's thickness and a usable touch
+  // target, applied to each side of the band.
+  const hitPadding = Math.max(0, (theme.minTouchTarget - thickness) / 2);
   const canvas = size + padding * 2;
   const cx = canvas / 2;
 
@@ -223,17 +227,36 @@ export function DayPlate({
                   // Selecting one meal pushes the rest well back rather than
                   // half-fading them, which only turns warm colours pastel.
                   opacity={selectedId !== null && !isSelected ? 0.22 : 1}
-                  onPress={segment ? () => handlePress(segment) : undefined}
-                  // One accessible node per meal, not one per band: a screen
-                  // reader should offer "Breakfast", not three slivers of it.
-                  accessible={Boolean(onSelect) && index === 0}
-                  accessibilityLabel={
-                    segment && index === 0
-                      ? `${segment.label}, ${Math.round(segment.nutrients.caloriesKcal)} kilocalories`
-                      : undefined
-                  }
                 />
               ))}
+
+              {/*
+                The touch target, invisible and wider than the band it
+                covers. The ring is drawn about twenty points thick, well
+                under the forty-four a finger needs, and thickening it to
+                suit would make the dial clumsy. So the tappable shape is
+                padded inwards and outwards instead, and carries the press
+                and the accessibility label for the whole meal - one node
+                per meal rather than one per colour band.
+              */}
+              {segment ? (
+                <Path
+                  d={annularSectorPath({
+                    cx,
+                    cy: cx,
+                    innerRadius: Math.max(0, sliceInner - hitPadding),
+                    outerRadius: sliceOuter + hitPadding,
+                    startAngle: slice.startAngle,
+                    endAngle: slice.endAngle,
+                  })}
+                  fill="transparent"
+                  onPress={() => handlePress(segment)}
+                  accessible={Boolean(onSelect)}
+                  accessibilityLabel={`${segment.label}, ${Math.round(
+                    segment.nutrients.caloriesKcal,
+                  )} kilocalories`}
+                />
+              ) : null}
             </G>
           );
         })}

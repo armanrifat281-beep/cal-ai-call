@@ -50,6 +50,27 @@ function nodesOfType(type: string): Record<string, unknown>[] {
   return found;
 }
 
+/**
+ * The coloured bands only.
+ *
+ * Each meal also renders an invisible, wider path that carries the press, so
+ * a raw path count would mix the drawing up with the touch target.
+ */
+function bands(): Record<string, unknown>[] {
+  return nodesOfType('RNSVGPath').filter((path) => {
+    const fill = path['fill'] as { payload?: number } | undefined;
+    // A transparent fill comes back as an ARGB integer with a zero alpha.
+    return fill?.payload !== 0;
+  });
+}
+
+function hitTargets(): Record<string, unknown>[] {
+  return nodesOfType('RNSVGPath').filter((path) => {
+    const fill = path['fill'] as { payload?: number } | undefined;
+    return fill?.payload === 0;
+  });
+}
+
 const BREAKFAST = segment('breakfast', 'Breakfast', 420);
 const LUNCH = segment('lunch', 'Lunch', 680);
 
@@ -77,7 +98,7 @@ describe('DayPlate', () => {
     expect(screen.getByText('0')).toBeTruthy();
     // The track is still drawn, so the dial reads as empty rather than broken.
     expect(nodesOfType('RNSVGCircle').length).toBe(1);
-    expect(nodesOfType('RNSVGPath').length).toBe(0);
+    expect(bands().length).toBe(0);
   });
 
   it('draws one band per macro present, per meal', async () => {
@@ -85,13 +106,13 @@ describe('DayPlate', () => {
       <DayPlate segments={[BREAKFAST, LUNCH]} targetKcal={2000} />,
     );
     // Two meals, each with protein, carbs and fat.
-    expect(nodesOfType('RNSVGPath')).toHaveLength(6);
+    expect(bands()).toHaveLength(6);
   });
 
   it('omits a macro a meal did not contain', async () => {
     const noFat = segment('a', 'Snack', 200, { proteinG: 10, carbsG: 40, fatG: 0 });
     await renderWithTheme(<DayPlate segments={[noFat]} targetKcal={2000} />);
-    expect(nodesOfType('RNSVGPath')).toHaveLength(2);
+    expect(bands()).toHaveLength(2);
   });
 
   it('draws a single neutral arc when a meal has no macro data to split', async () => {
@@ -101,7 +122,7 @@ describe('DayPlate', () => {
       fatG: 0,
     });
     await renderWithTheme(<DayPlate segments={[unknown]} targetKcal={2000} />);
-    const paths = nodesOfType('RNSVGPath');
+    const paths = bands();
     expect(paths).toHaveLength(1);
     // Not tinted as any macro, because none was measured.
     expect(paths[0]?.['d']).toBeTruthy();
@@ -142,7 +163,7 @@ describe('DayPlate', () => {
     await renderWithTheme(<DayPlate segments={[big]} targetKcal={2000} />);
 
     // The dial rescales to the day, so the ring comes round to full...
-    expect(nodesOfType('RNSVGPath')).toHaveLength(3);
+    expect(bands()).toHaveLength(3);
     // ...and a mark shows where the target was crossed: a notch through the
     // band plus an ink tick outside it, which is what tells the mark apart
     // from the plain gaps between meals.
@@ -167,7 +188,7 @@ describe('DayPlate', () => {
 
   it('draws no tick while the day is still under target', async () => {
     await renderWithTheme(<DayPlate segments={[BREAKFAST]} targetKcal={2000} />);
-    expect(nodesOfType('RNSVGPath')).toHaveLength(3);
+    expect(bands()).toHaveLength(3);
     expect(nodesOfType('RNSVGLine')).toHaveLength(0);
   });
 
@@ -185,6 +206,15 @@ describe('DayPlate', () => {
   it('draws no tick when there is no target to cross', async () => {
     await renderWithTheme(<DayPlate segments={[BREAKFAST, LUNCH]} targetKcal={null} />);
     expect(nodesOfType('RNSVGLine')).toHaveLength(0);
+  });
+
+  it('gives each meal a touch target wider than the band it draws', async () => {
+    await renderWithTheme(
+      <DayPlate segments={[BREAKFAST, LUNCH]} targetKcal={2000} onSelect={jest.fn()} />,
+    );
+    // One per meal, separate from the three colour bands each one draws.
+    expect(hitTargets()).toHaveLength(2);
+    expect(bands()).toHaveLength(6);
   });
 
   it('describes the whole day to a screen reader', async () => {
