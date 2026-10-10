@@ -29,3 +29,4 @@ export {
   type Theme,
   type ThemePreference,
 } from './ThemeProvider';
+export { useMotion, type Motion } from './useMotion';

@@ -7,7 +7,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
-import { useTheme } from '@/theme';
+import { useMotion, useTheme } from '@/theme';
 
 export interface PressableScaleProps extends Omit<PressableProps, 'style'> {
   children: React.ReactNode;
@@ -38,8 +38,11 @@ export function PressableScale({
   ...rest
 }: PressableScaleProps) {
   const theme = useTheme();
+  const motion = useMotion();
   const scale = useSharedValue(1);
-  const target = scaleTo ?? theme.pressScale;
+  // With motion reduced there is no scale at all: shrinking instantly would
+  // be a flicker, which is the thing the setting exists to avoid.
+  const target = motion.enabled ? (scaleTo ?? theme.pressScale) : 1;
 
   // `.get()` and `.set()` rather than `.value`: assigning to `.value` is a
   // mutation the React Compiler rejects, and these are the accessors

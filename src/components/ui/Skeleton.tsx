@@ -7,7 +7,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import type { DimensionValue, StyleProp, ViewStyle } from 'react-native';
 
-import { useTheme } from '@/theme';
+import { useMotion, useTheme } from '@/theme';
 
 export interface SkeletonProps {
   width?: DimensionValue;
@@ -19,11 +19,19 @@ export interface SkeletonProps {
 /** A gently pulsing placeholder. Used while real data is loading. */
 export function Skeleton({ width = '100%', height = 16, radius, style }: SkeletonProps) {
   const theme = useTheme();
+  const motion = useMotion();
   const opacity = useSharedValue(0.55);
 
   useEffect(() => {
+    // A placeholder that pulses forever is exactly the kind of looping
+    // motion the setting exists to stop. It still reads as a placeholder
+    // held at a steady tone.
+    if (!motion.enabled) {
+      opacity.set(0.75);
+      return;
+    }
     opacity.set(withRepeat(withTiming(1, { duration: 820 }), -1, true));
-  }, [opacity]);
+  }, [opacity, motion.enabled]);
 
   const animatedStyle = useAnimatedStyle(() => ({ opacity: opacity.get() }));
 

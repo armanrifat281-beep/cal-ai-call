@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { View } from 'react-native';
+import Animated, { FadeIn } from 'react-native-reanimated';
 
 import { DayPlate, dayPlateSegments } from '@/components/charts';
 import { Disclosure, Skeleton, Surface, Text } from '@/components/ui';
@@ -90,14 +91,20 @@ export function DayOverview({
       </View>
 
       {variant === 'full' ? (
-        <DayPlate
-          segments={segments}
-          targetKcal={targets.caloriesKcal}
-          onSelect={() => {
-            // Selection is handled inside the dial; this only marks it as
-            // interactive, which changes how it is exposed to a screen reader.
-          }}
-        />
+        // The dial fades up as the day's figures land. Reanimated's layout
+        // animations follow the system's reduce-motion setting on their
+        // own, so this needs no guard of its own.
+        <Animated.View entering={FadeIn.duration(280)}>
+          <DayPlate
+            segments={segments}
+            targetKcal={targets.caloriesKcal}
+            onSelect={() => {
+              // Selection is handled inside the dial; this only marks it as
+              // interactive, which changes how it is exposed to a screen
+              // reader.
+            }}
+          />
+        </Animated.View>
       ) : (
         <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: theme.spacing.sm }}>
           <Text variant="metricXL">
