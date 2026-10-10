@@ -1,9 +1,15 @@
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { View } from 'react-native';
 
 import { Icon } from '@/components/Icon';
-import { DayOverview, DayOverviewSkeleton, MealRow } from '@/components/nutrition';
+import {
+  DayOverview,
+  DayOverviewSkeleton,
+  MealRow,
+  WeekStrip,
+  type WeekStripDay,
+} from '@/components/nutrition';
 import {
   Button,
   EmptyState,
@@ -14,8 +20,15 @@ import {
   Section,
   Text,
 } from '@/components/ui';
-import { useDayJournal } from '@/features/journal';
-import { addDaysToKey, formatDayLabel, todayKey } from '@/lib/date';
+import { computeEntryTotals } from '@/features/nutrition';
+import { useDayJournal, useRangeJournal } from '@/features/journal';
+import {
+  addDaysToKey,
+  formatDayLabel,
+  groupByDateKey,
+  lastSevenDayKeys,
+  todayKey,
+} from '@/lib/date';
 import { usePreferencesStore } from '@/store/preferencesStore';
 import { useTheme } from '@/theme';
 import { MEAL_TYPES, type MealType } from '@/types/domain';
@@ -45,10 +58,44 @@ export default function JournalScreen() {
   const today = todayKey();
   const [dateKey, setDateKey] = useState(today);
 
+  // The strip's window moves a week at a time; tapping a day inside it only
+  // moves the selection, so the week you are comparing against stays put.
+  const [stripEnd, setStripEnd] = useState(today);
+  const weekKeys = useMemo(() => lastSevenDayKeys(stripEnd), [stripEnd]);
+
   const targets = usePreferencesStore((state) => state.preferences.dailyTargets);
   const { entries, summary, loading, error, reload } = useDayJournal(dateKey);
 
+  const week = useRangeJournal(weekKeys[0] ?? stripEnd, stripEnd);
+  const weekDays = useMemo<WeekStripDay[]>(() => {
+    const byDay = groupByDateKey(week.entries, (entry) => entry.consumedAt);
+    return weekKeys.map((key) => {
+      const dayEntries = byDay.get(key) ?? [];
+      return {
+        dateKey: key,
+        caloriesKcal: dayEntries.reduce(
+          (sum, entry) => sum + computeEntryTotals(entry).nutrients.caloriesKcal,
+          0,
+        ),
+        entryCount: dayEntries.length,
+      };
+    });
+  }, [week.entries, weekKeys]);
+
   const isToday = dateKey === today;
+
+  const shiftWeek = (days: number) => {
+    const nextEnd = addDaysToKey(stripEnd, days);
+    // Never past today: a journal of the future would be empty by definition.
+    const clamped = nextEnd > today ? today : nextEnd;
+    setStripEnd(clamped);
+    setDateKey(clamped);
+  };
+
+  const goToToday = () => {
+    setStripEnd(today);
+    setDateKey(today);
+  };
 
   return (
     <Screen
@@ -58,44 +105,57 @@ export default function JournalScreen() {
       onRefresh={reload}
       titleAction={
         !isToday ? (
-          <Button label="Today" variant="tonal" size="sm" onPress={() => setDateKey(today)} />
+          <Button label="Today" variant="tonal" size="sm" onPress={goToToday} />
         ) : undefined
       }
     >
-      {/* Day stepper. A row of controls, not a panel. */}
-      <View
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-        }}
-      >
-        <IconButton
-          accessibilityLabel="Previous day"
-          onPress={() => setDateKey((key) => addDaysToKey(key, -1))}
-          variant="soft"
+      {/* The week: where you are, and what the week looked like. */}
+      <View style={{ gap: theme.spacing.sm }}>
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
         >
-          <Icon name="chevronLeft" size={19} color="text" />
-        </IconButton>
+          <IconButton
+            accessibilityLabel="Previous week"
+            onPress={() => shiftWeek(-7)}
+            variant="soft"
+          >
+            <Icon name="chevronLeft" size={19} color="text" />
+          </IconButton>
 
-        <View style={{ alignItems: 'center', gap: 2 }}>
-          <Text variant="headline">{formatDayLabel(dateKey)}</Text>
-          <Text variant="caption" color="textMuted">
-            {entries.length === 0
-              ? 'Nothing logged'
-              : `${entries.length} meal${entries.length === 1 ? '' : 's'}`}
-          </Text>
+          <View style={{ alignItems: 'center', gap: 2 }}>
+            <Text variant="headline">{formatDayLabel(dateKey)}</Text>
+            <Text variant="caption" color="textMuted">
+              {entries.length === 0
+                ? 'Nothing logged'
+                : `${entries.length} meal${entries.length === 1 ? '' : 's'}`}
+            </Text>
+          </View>
+
+          <IconButton
+            accessibilityLabel="Next week"
+            onPress={() => shiftWeek(7)}
+            // A journal of the future would be empty by definition.
+            disabled={stripEnd === today}
+            variant="soft"
+          >
+            <Icon
+              name="chevronRight"
+              size={19}
+              color={stripEnd === today ? 'textSubtle' : 'text'}
+            />
+          </IconButton>
         </View>
 
-        <IconButton
-          accessibilityLabel="Next day"
-          onPress={() => setDateKey((key) => addDaysToKey(key, 1))}
-          // A journal of the future would be empty by definition.
-          disabled={isToday}
-          variant="soft"
-        >
-          <Icon name="chevronRight" size={19} color={isToday ? 'textSubtle' : 'text'} />
-        </IconButton>
+        <WeekStrip
+          days={weekDays}
+          selectedKey={dateKey}
+          onSelect={setDateKey}
+          targetKcal={targets.caloriesKcal}
+        />
       </View>
 
       {error ? (
@@ -105,12 +165,13 @@ export default function JournalScreen() {
           onRetry={error.retryable ? reload : undefined}
         />
       ) : loading && entries.length === 0 ? (
-        <DayOverviewSkeleton />
+        <DayOverviewSkeleton variant="compact" />
       ) : (
         <DayOverview
           summary={summary}
           targets={targets}
           dayLabel={formatDayLabel(dateKey)}
+          variant="compact"
         />
       )}
 

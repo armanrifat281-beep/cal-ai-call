@@ -17,6 +17,14 @@ export interface DayOverviewProps {
   targets: DailyTargets;
   /** Shown as the eyebrow, e.g. "Today". */
   dayLabel: string;
+  /**
+   * `compact` drops the dial and leads with the figure instead.
+   *
+   * For screens that already carry a ring - the journal's week strip is
+   * seven of them - where a second, larger one says the same thing twice
+   * and makes the page look like a collection of charts.
+   */
+  variant?: 'full' | 'compact';
 }
 
 const MACROS = [
@@ -38,7 +46,12 @@ const MACROS = [
  * that, and they also carry the chart for anyone who cannot separate its
  * colours.
  */
-export function DayOverview({ summary, targets, dayLabel }: DayOverviewProps) {
+export function DayOverview({
+  summary,
+  targets,
+  dayLabel,
+  variant = 'full',
+}: DayOverviewProps) {
   const theme = useTheme();
   const { totals, containsEstimates } = summary;
 
@@ -49,7 +62,11 @@ export function DayOverview({ summary, targets, dayLabel }: DayOverviewProps) {
   const proteinTarget = progress.protein.target;
 
   return (
-    <Surface variant="raised" padding="lg" style={{ gap: theme.spacing.lg }}>
+    <Surface
+      variant="raised"
+      padding="lg"
+      style={{ gap: variant === 'full' ? theme.spacing.lg : theme.spacing.base }}
+    >
       <View
         style={{
           flexDirection: 'row',
@@ -72,14 +89,27 @@ export function DayOverview({ summary, targets, dayLabel }: DayOverviewProps) {
         ) : null}
       </View>
 
-      <DayPlate
-        segments={segments}
-        targetKcal={targets.caloriesKcal}
-        onSelect={() => {
-          // Selection is handled inside the dial; this only marks it as
-          // interactive, which changes how it is exposed to a screen reader.
-        }}
-      />
+      {variant === 'full' ? (
+        <DayPlate
+          segments={segments}
+          targetKcal={targets.caloriesKcal}
+          onSelect={() => {
+            // Selection is handled inside the dial; this only marks it as
+            // interactive, which changes how it is exposed to a screen reader.
+          }}
+        />
+      ) : (
+        <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: theme.spacing.sm }}>
+          <Text variant="metricXL">
+            {Math.round(totals.nutrients.caloriesKcal)}
+          </Text>
+          <Text variant="footnote" color="textMuted">
+            {progress.calories.target !== null
+              ? `of ${progress.calories.target} kcal`
+              : 'kcal'}
+          </Text>
+        </View>
+      )}
 
       <View style={{ flexDirection: 'row', gap: theme.spacing.base }}>
         {MACROS.map((macro) => {
@@ -144,14 +174,31 @@ export function DayOverview({ summary, targets, dayLabel }: DayOverviewProps) {
  * layout does not jump when the real figures land. A row of grey bars
  * standing in for a circle is how a loading state draws attention to itself.
  */
-export function DayOverviewSkeleton() {
+export function DayOverviewSkeleton({
+  variant = 'full',
+}: {
+  variant?: 'full' | 'compact';
+}) {
   const theme = useTheme();
   const size = 224;
 
   return (
-    <Surface variant="raised" padding="lg" style={{ gap: theme.spacing.lg }}>
+    <Surface
+      variant="raised"
+      padding="lg"
+      style={{ gap: variant === 'full' ? theme.spacing.lg : theme.spacing.base }}
+    >
       <Skeleton width="28%" height={11} />
-      <Skeleton width={size} height={size} radius={size / 2} style={{ alignSelf: 'center' }} />
+      {variant === 'full' ? (
+        <Skeleton
+          width={size}
+          height={size}
+          radius={size / 2}
+          style={{ alignSelf: 'center' }}
+        />
+      ) : (
+        <Skeleton width="45%" height={44} />
+      )}
       <View style={{ flexDirection: 'row', gap: theme.spacing.base }}>
         {[0, 1, 2].map((column) => (
           <View key={column} style={{ flex: 1, gap: 7 }}>
