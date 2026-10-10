@@ -112,8 +112,9 @@ export default function SignUpScreen() {
       <View style={{ gap: theme.spacing.sm }}>
         <Text variant="title1">Create an account</Text>
         <Text variant="callout" color="textMuted">
-          This backs up your journal and syncs it across devices. Meals you have
-          already saved on this device stay on this device.
+          This backs up your meals, recipes and shopping lists, and syncs them
+          across devices. Anything already saved on this device stays on this
+          device.
         </Text>
       </View>
 

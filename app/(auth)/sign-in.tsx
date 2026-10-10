@@ -84,7 +84,8 @@ export default function SignInScreen() {
       <View style={{ gap: theme.spacing.sm }}>
         <Text variant="title1">Welcome back</Text>
         <Text variant="callout" color="textMuted">
-          Signing in backs up your journal and syncs it across your devices.
+          Signing in backs up your meals, recipes and shopping lists, and syncs
+          them across your devices.
         </Text>
       </View>
 

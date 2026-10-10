@@ -167,7 +167,7 @@ export default function ProfileScreen() {
             <>
               <Row
                 title="Sign in"
-                subtitle="Back up your journal and sync it across devices"
+                subtitle="Back up your meals and recipes, and sync them across devices"
                 leading={<Icon name="profile" size={19} color="primary" />}
                 trailing={<Icon name="chevronRight" size={16} color="textSubtle" />}
                 onPress={() => router.push('/(auth)/sign-in')}
