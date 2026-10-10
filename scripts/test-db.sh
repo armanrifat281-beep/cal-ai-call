@@ -52,12 +52,16 @@ for migration in "$PROJECT_ROOT"/supabase/migrations/*.sql; do
 done
 
 echo "==> Running RLS and constraint tests"
-# The prefix is stripped up to the `file.sql:LINE:` marker rather than to the
-# first space, because a project path may itself contain spaces.
-psql -d "$DB_NAME" -v ON_ERROR_STOP=1 -f "$PROJECT_ROOT/supabase/tests/10_rls_tests.sql" \
+# All test files run in ONE psql session: the suites share the `tests` schema,
+# its helper functions and session-scoped temporary fixture tables.
+cat "$PROJECT_ROOT"/supabase/tests/[1-9]*.sql > "$WORKDIR/all-tests.sql"
+
+# The log prefix is stripped up to the `file.sql:LINE:` marker rather than to
+# the first space, because a project path may itself contain spaces.
+psql -d "$DB_NAME" -v ON_ERROR_STOP=1 -f "$WORKDIR/all-tests.sql" \
   2>&1 \
   | sed -E 's/^psql:.*\.sql:[0-9]+: //; s/^NOTICE:  //' \
-  | grep -E '^(ok -|FAILED|ERROR|ALL RLS)' \
+  | grep -E '^(ok -|FAILED|ERROR|PASSED)' \
   || { echo "No test output: the suite did not run."; exit 1; }
 
 echo "==> Done"

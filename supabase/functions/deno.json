@@ -1,0 +1,14 @@
+{
+  "//": "Deno configuration for the Edge Functions. `supabase functions deploy` and `deno check` read this.",
+  "imports": {
+    "@anthropic-ai/sdk": "npm:@anthropic-ai/sdk@0.133.0",
+    "@supabase/supabase-js": "npm:@supabase/supabase-js@2.117.3"
+  },
+  "compilerOptions": {
+    "strict": true,
+    "noUncheckedIndexedAccess": true
+  },
+  "lint": {
+    "rules": { "tags": ["recommended"] }
+  }
+}

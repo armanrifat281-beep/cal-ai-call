@@ -100,7 +100,7 @@ export async function analyzeMealPhoto(
       method: 'POST',
       headers: {
         Authorization: `Bearer ${options.accessToken}`,
-        apikey: env.supabaseAnonKey ?? '',
+        apikey: env.supabaseKey ?? '',
       },
       body: form,
       signal: controller.signal,

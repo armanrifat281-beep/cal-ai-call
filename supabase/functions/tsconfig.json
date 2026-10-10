@@ -1,0 +1,31 @@
+{
+  "//": [
+    "The Edge Function runs on Deno, not React Native, so it cannot use the",
+    "app's tsconfig: it imports npm: specifiers, uses the Deno global, and",
+    "writes explicit .ts extensions on relative imports.",
+    "",
+    "This config typechecks the function's PURE modules (schema.ts, helpers.ts",
+    "and their tests), which is what `npm run typecheck:functions` runs.",
+    "index.ts is excluded because checking it needs Deno's own types; the",
+    "Supabase CLI typechecks it at deploy time, and `deno check` does locally."
+  ],
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "noEmit": true,
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "types": ["jest"],
+    "skipLibCheck": true
+  },
+  "include": [
+    "analyze-meal/schema.ts",
+    "analyze-meal/helpers.ts",
+    "analyze-meal/__tests__/**/*.ts"
+  ]
+}
