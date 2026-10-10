@@ -298,6 +298,11 @@ export function MealEditor({
               // A meal cannot have been eaten in the future.
               maximumDate={picker === 'date' ? new Date() : undefined}
               display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+              // The picker follows the operating system unless told
+              // otherwise, so choosing Dark in the app while the phone is in
+              // Light mode produced a light picker inside a dark sheet.
+              themeVariant={theme.scheme}
+              accentColor={theme.colors.primary}
             />
           ) : null}
 

@@ -131,7 +131,12 @@ export function Screen({
                 <RefreshControl
                   refreshing={refreshing ?? false}
                   onRefresh={onRefresh}
+                  // `tintColor` is the iOS spinner; Android reads `colors`
+                  // and the disc behind it, and ignored the theme entirely
+                  // without them.
                   tintColor={theme.colors.primary}
+                  colors={[theme.colors.primary]}
+                  progressBackgroundColor={theme.colors.surface}
                 />
               ) : undefined
             }
