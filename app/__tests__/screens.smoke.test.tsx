@@ -211,7 +211,7 @@ describe('tab screens with an empty journal', () => {
 
   it('profile reports that no account backend is configured', async () => {
     await renderWithProviders(<ProfileScreen />);
-    expect(screen.getByText('Profile')).toBeTruthy();
+    expect(screen.getByText('Settings')).toBeTruthy();
     expect(
       screen.getByText('Accounts are not configured in this build'),
     ).toBeTruthy();

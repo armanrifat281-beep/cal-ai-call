@@ -17,7 +17,7 @@ const TAB_ICONS: Record<string, IconName> = {
   scan: 'scan',
   recipes: 'recipes',
   journal: 'journal',
-  profile: 'profile',
+  profile: 'settings',
 };
 
 export default function TabsLayout() {
@@ -60,7 +60,11 @@ export default function TabsLayout() {
       <Tabs.Screen name="scan" options={{ title: 'Scan' }} />
       <Tabs.Screen name="recipes" options={{ title: 'Recipes' }} />
       <Tabs.Screen name="journal" options={{ title: 'Journal' }} />
-      <Tabs.Screen name="profile" options={{ title: 'Profile' }} />
+      {/*
+        The route keeps its name so existing links still resolve; the label
+        is what the user reads, and this screen is settings.
+      */}
+      <Tabs.Screen name="profile" options={{ title: 'Settings' }} />
       {/*
         Insights lives at app/(tabs)/insights.tsx so it keeps the tab bar
         while open, but it is not itself a tab: href null hides the button.

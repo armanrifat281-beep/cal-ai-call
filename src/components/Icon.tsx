@@ -16,6 +16,7 @@ export type IconName =
   | 'journal'
   | 'insights'
   | 'profile'
+  | 'settings'
   | 'scan'
   | 'camera'
   | 'gallery'
@@ -156,6 +157,23 @@ function renderGlyph(
         <>
           <Circle cx={12} cy={8.5} r={3.8} {...common} fill={fill} />
           <Path d="M4.8 20.2a7.6 7.6 0 0 1 14.4 0" {...common} fill={fill} />
+        </>
+      );
+
+    /**
+     * Sliders rather than a gear. A gear at tab size turns into a ring of
+     * mush, and it says "machinery" where this set is otherwise plain
+     * shapes. Two rails with a knob each read at 24 points and at 16.
+     */
+    case 'settings':
+      return (
+        <>
+          <Path d="M4 8.5h5.2" {...common} />
+          <Path d="M14.2 8.5H20" {...common} />
+          <Circle cx={11.7} cy={8.5} r={2.5} {...common} fill={fill} />
+          <Path d="M4 15.5h3.8" {...common} />
+          <Path d="M12.8 15.5H20" {...common} />
+          <Circle cx={10.3} cy={15.5} r={2.5} {...common} fill={fill} />
         </>
       );
 

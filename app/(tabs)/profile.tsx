@@ -122,7 +122,7 @@ export default function ProfileScreen() {
   };
 
   return (
-    <Screen title="Profile" edges={{ top: true }}>
+    <Screen title="Settings" edges={{ top: true }}>
       {/* Account */}
       <Section title="Account" dense>
         <Surface variant="grouped">
@@ -132,6 +132,12 @@ export default function ProfileScreen() {
                 title={user?.email ?? 'Signed in'}
                 subtitle="Your journal is backed up to your account"
                 leading={<Icon name="profile" size={19} color="primary" />}
+              />
+              <Row
+                title="Change password"
+                divided
+                trailing={<Icon name="chevronRight" size={16} color="textSubtle" />}
+                onPress={() => router.push('/settings/change-password')}
               />
               <Row
                 title={accountBusy ? 'Signing out…' : 'Sign out'}
@@ -305,6 +311,30 @@ export default function ProfileScreen() {
             value={preferences.retainPhotos}
             onChange={setRetainPhotos}
             divided
+          />
+        </Surface>
+      </Section>
+
+      <Section title="About" dense>
+        <Surface variant="grouped">
+          <Row
+            title="Help"
+            subtitle="How the estimates work, and how to get better ones"
+            leading={<Icon name="info" size={19} color="textMuted" />}
+            trailing={<Icon name="chevronRight" size={16} color="textSubtle" />}
+            onPress={() => router.push('/settings/help')}
+          />
+          <Row
+            title="What FoodLens does with your data"
+            divided
+            trailing={<Icon name="chevronRight" size={16} color="textSubtle" />}
+            onPress={() => router.push('/settings/privacy')}
+          />
+          <Row
+            title="Terms of use"
+            divided
+            trailing={<Icon name="chevronRight" size={16} color="textSubtle" />}
+            onPress={() => router.push('/settings/terms')}
           />
         </Surface>
       </Section>
