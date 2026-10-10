@@ -59,7 +59,16 @@ export function MealRow({ entry, onPress, divided = false, compact = false }: Me
       }}
     >
       {/* Time rail: fixed width, so the column lines up down the list. */}
-      <View style={{ width: RAIL_WIDTH, paddingTop: 2, gap: 5 }}>
+      <View style={{ width: RAIL_WIDTH, paddingTop: 2, gap: 6 }}>
+        {/*
+          The time comes first and the photo hangs below it. Putting the
+          photo on top instead pushed the time to different heights on
+          photographed and typed meals, and the time column - the thing that
+          makes this list scan as a day - visibly zigzagged.
+        */}
+        <Text variant="metricS" color="textMuted">
+          {formatTimeOfDay(entry.consumedAt)}
+        </Text>
         {photoUri ? (
           <Image
             source={{ uri: photoUri }}
@@ -77,9 +86,6 @@ export function MealRow({ entry, onPress, divided = false, compact = false }: Me
             accessible={false}
           />
         ) : null}
-        <Text variant="metricS" color="textMuted">
-          {formatTimeOfDay(entry.consumedAt)}
-        </Text>
       </View>
 
       <View style={{ flex: 1, gap: theme.spacing.xs }}>

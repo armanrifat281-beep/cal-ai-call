@@ -3,7 +3,7 @@ import { useCallback } from 'react';
 import { View } from 'react-native';
 
 import { Icon } from '@/components/Icon';
-import { DaySummary, MealRow } from '@/components/nutrition';
+import { DayOverview, DayOverviewSkeleton, MealRow } from '@/components/nutrition';
 import {
   Disclosure,
   EmptyState,
@@ -69,19 +69,9 @@ export default function HomeScreen() {
           onRetry={error.retryable ? reload : undefined}
         />
       ) : loading && entries.length === 0 ? (
-        <Surface variant="raised" padding="lg" style={{ gap: theme.spacing.base }}>
-          <Skeleton width="30%" height={13} />
-          <Skeleton width="55%" height={42} />
-          <Skeleton height={6} radius={3} />
-          <Skeleton width="80%" height={13} />
-        </Surface>
+        <DayOverviewSkeleton />
       ) : (
-        <DaySummary
-          totals={summary.totals}
-          targets={targets}
-          containsEstimates={summary.containsEstimates}
-          dayLabel={dayLabel}
-        />
+        <DayOverview summary={summary} targets={targets} dayLabel={dayLabel} />
       )}
 
       <Section

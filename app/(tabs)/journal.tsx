@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { View } from 'react-native';
 
 import { Icon } from '@/components/Icon';
-import { DaySummary, MealRow } from '@/components/nutrition';
+import { DayOverview, DayOverviewSkeleton, MealRow } from '@/components/nutrition';
 import {
   Button,
   EmptyState,
@@ -12,8 +12,6 @@ import {
   Metric,
   Screen,
   Section,
-  Skeleton,
-  Surface,
   Text,
 } from '@/components/ui';
 import { useDayJournal } from '@/features/journal';
@@ -22,7 +20,11 @@ import { usePreferencesStore } from '@/store/preferencesStore';
 import { useTheme } from '@/theme';
 import { MEAL_TYPES, type MealType } from '@/types/domain';
 
-const MEAL_LABELS: Record<MealType, string> = {
+/**
+ * Section headings, which is why snacks are plural here while
+ * `MEAL_TYPE_LABELS` names a single meal.
+ */
+const MEAL_SECTION_TITLES: Record<MealType, string> = {
   breakfast: 'Breakfast',
   lunch: 'Lunch',
   dinner: 'Dinner',
@@ -103,16 +105,11 @@ export default function JournalScreen() {
           onRetry={error.retryable ? reload : undefined}
         />
       ) : loading && entries.length === 0 ? (
-        <Surface variant="raised" padding="lg" style={{ gap: theme.spacing.base }}>
-          <Skeleton width="30%" height={13} />
-          <Skeleton width="55%" height={42} />
-          <Skeleton height={6} radius={3} />
-        </Surface>
+        <DayOverviewSkeleton />
       ) : (
-        <DaySummary
-          totals={summary.totals}
+        <DayOverview
+          summary={summary}
           targets={targets}
-          containsEstimates={summary.containsEstimates}
           dayLabel={formatDayLabel(dateKey)}
         />
       )}
@@ -133,7 +130,7 @@ export default function JournalScreen() {
           return (
             <Section
               key={mealType}
-              title={MEAL_LABELS[mealType]}
+              title={MEAL_SECTION_TITLES[mealType]}
               dense
               action={{
                 label: 'Add',
