@@ -42,7 +42,7 @@ function getLocalRepository(): JournalRepository {
  * Returns the Supabase one when a client exists AND a session is stored.
  * Prefer `useJournalRepository` inside components, which reacts to sign-in.
  */
-export function getJournalRepository(): JournalRepository {
+export function getDeviceJournalRepository(): JournalRepository {
   if (overrideRepository) return overrideRepository;
   return getLocalRepository();
 }

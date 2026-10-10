@@ -4,8 +4,8 @@ import { screen, userEvent, waitFor } from '@testing-library/react-native';
 
 import {
   clearLocalRecipes,
-  getRecipeRepository,
-  getShoppingListRepository,
+  getDeviceRecipeRepository,
+  getDeviceShoppingListRepository,
 } from '@/features/recipes';
 import { renderWithProviders } from '@/test/renderWithProviders';
 import { usePreferencesStore } from '@/store/preferencesStore';
@@ -87,7 +87,7 @@ describe('recipes hub', () => {
   });
 
   it('lists a saved recipe', async () => {
-    const created = await getRecipeRepository().createRecipe(recipeInput());
+    const created = await getDeviceRecipeRepository().createRecipe(recipeInput());
     if (!created.ok) throw new Error('fixture failed');
 
     await renderWithProviders(<RecipesHubScreen />);
@@ -136,17 +136,46 @@ describe('create recipe form', () => {
     expect(screen.getByRole('checkbox', { name: '2' })).toBeTruthy();
   });
 
-  it('offers Bangladeshi among the cuisines, as asked for', async () => {
+  it('keeps the optional refinements folded away at first', async () => {
+    // The form should open as a question and a button, not as thirty-four
+    // cuisine chips.
     await renderWithProviders(<CreateRecipeScreen />);
+
+    expect(screen.queryByRole('checkbox', { name: 'Bangladeshi' })).toBeNull();
+    expect(screen.getByText('Any cuisine')).toBeTruthy();
+    expect(screen.getByText('However long it takes')).toBeTruthy();
+    expect(screen.getByText('A basic kitchen')).toBeTruthy();
+  });
+
+  it('offers Bangladeshi among the cuisines, as asked for', async () => {
+    const user = userEvent.setup();
+    await renderWithProviders(<CreateRecipeScreen />);
+
+    await user.press(screen.getByRole('button', { name: /^Cuisine\./ }));
+
     expect(screen.getByRole('checkbox', { name: 'Bangladeshi' })).toBeTruthy();
     expect(screen.getByRole('checkbox', { name: 'Italian' })).toBeTruthy();
     expect(screen.getByRole('checkbox', { name: 'Mexican' })).toBeTruthy();
+  });
+
+  it('says which cuisine is chosen without being opened', async () => {
+    const user = userEvent.setup();
+    await renderWithProviders(<CreateRecipeScreen />);
+
+    await user.press(screen.getByRole('button', { name: /^Cuisine\./ }));
+    await user.press(screen.getByRole('checkbox', { name: 'Italian' }));
+    await user.press(screen.getByRole('button', { name: /^Cuisine\./ }));
+
+    // Folded again, and still legible.
+    expect(screen.queryByRole('checkbox', { name: 'Italian' })).toBeNull();
+    expect(screen.getByText('Italian')).toBeTruthy();
   });
 
   it('asks which style when "Something else" is chosen', async () => {
     const user = userEvent.setup();
     await renderWithProviders(<CreateRecipeScreen />);
 
+    await user.press(screen.getByRole('button', { name: /^Cuisine\./ }));
     await user.press(screen.getByRole('checkbox', { name: 'Something else' }));
     expect(screen.getByLabelText('Which style?')).toBeTruthy();
   });
@@ -183,7 +212,7 @@ describe('create recipe form', () => {
 
     await waitFor(() => expect(router.replace).toHaveBeenCalled());
 
-    const saved = await getRecipeRepository().listRecipes();
+    const saved = await getDeviceRecipeRepository().listRecipes();
     expect(saved.ok).toBe(true);
     if (!saved.ok) return;
     expect(saved.value).toHaveLength(1);
@@ -197,6 +226,7 @@ describe('create recipe form', () => {
     await renderWithProviders(<CreateRecipeScreen />);
 
     await user.press(screen.getByRole('checkbox', { name: '2' }));
+    await user.press(screen.getByRole('button', { name: /^Cuisine\./ }));
     await user.press(screen.getByRole('checkbox', { name: 'Italian' }));
     await user.type(screen.getByLabelText('What do you want to cook?'), 'pasta');
     await user.press(screen.getByRole('button', { name: 'Open a demo recipe instead' }));
@@ -216,7 +246,7 @@ describe('saved recipes screen', () => {
   });
 
   it('finds a recipe by an ingredient, not just its title', async () => {
-    const created = await getRecipeRepository().createRecipe(recipeInput());
+    const created = await getDeviceRecipeRepository().createRecipe(recipeInput());
     if (!created.ok) throw new Error('fixture failed');
 
     const user = userEvent.setup();
@@ -228,7 +258,7 @@ describe('saved recipes screen', () => {
   });
 
   it('says plainly when nothing matches', async () => {
-    const created = await getRecipeRepository().createRecipe(recipeInput());
+    const created = await getDeviceRecipeRepository().createRecipe(recipeInput());
     if (!created.ok) throw new Error('fixture failed');
 
     const user = userEvent.setup();
@@ -240,9 +270,9 @@ describe('saved recipes screen', () => {
   });
 
   it('keeps a hidden recipe reachable under the Hidden filter', async () => {
-    const created = await getRecipeRepository().createRecipe(recipeInput());
+    const created = await getDeviceRecipeRepository().createRecipe(recipeInput());
     if (!created.ok) throw new Error('fixture failed');
-    await getRecipeRepository().setRejected(created.value.id, true);
+    await getDeviceRecipeRepository().setRejected(created.value.id, true);
 
     const user = userEvent.setup();
     await renderWithProviders(<SavedRecipesScreen />);
@@ -272,19 +302,19 @@ describe('shopping lists screen', () => {
     await user.press(screen.getByRole('button', { name: 'New shopping list' }));
 
     await waitFor(() => expect(router.push).toHaveBeenCalled());
-    const lists = await getShoppingListRepository().listLists();
+    const lists = await getDeviceShoppingListRepository().listLists();
     expect(lists.ok).toBe(true);
     if (!lists.ok) return;
     expect(lists.value).toHaveLength(1);
   });
 
   it('shows how many items are still to buy', async () => {
-    const created = await getShoppingListRepository().createList({
+    const created = await getDeviceShoppingListRepository().createList({
       name: 'Weekly shop',
       items: [{ name: 'Rice' }, { name: 'Onions' }],
     });
     if (!created.ok) throw new Error('fixture failed');
-    await getShoppingListRepository().setItemChecked(
+    await getDeviceShoppingListRepository().setItemChecked(
       created.value.items[0]?.id ?? '',
       true,
     );

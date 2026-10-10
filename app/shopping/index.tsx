@@ -14,7 +14,7 @@ import {
   Skeleton,
   Surface,
 } from '@/components/ui';
-import { getShoppingListRepository, useShoppingLists } from '@/features/recipes';
+import { useShoppingListRepository, useShoppingLists } from '@/features/recipes';
 import type { AppError } from '@/lib/result';
 import { useTheme } from '@/theme';
 import type { ShoppingListStatus } from '@/types/recipe';
@@ -28,6 +28,7 @@ export default function ShoppingListsScreen() {
   const theme = useTheme();
   const router = useRouter();
 
+  const repository = useShoppingListRepository();
   const [status, setStatus] = useState<ShoppingListStatus>('active');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<AppError | null>(null);
@@ -37,7 +38,7 @@ export default function ShoppingListsScreen() {
   const createList = async () => {
     setBusy(true);
     setError(null);
-    const result = await getShoppingListRepository().createList({
+    const result = await repository.createList({
       name: 'Shopping list',
     });
     setBusy(false);

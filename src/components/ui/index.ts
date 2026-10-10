@@ -2,6 +2,7 @@ export { Badge, type BadgeProps, type BadgeTone } from './Badge';
 export { Button, type ButtonProps, type ButtonSize, type ButtonVariant } from './Button';
 export { Checkbox, type CheckboxProps } from './Checkbox';
 export { Chip, type ChipProps } from './Chip';
+export { Collapsible, type CollapsibleProps } from './Collapsible';
 export { Disclosure, type DisclosureProps } from './Disclosure';
 export { Divider } from './Divider';
 export { EmptyState, type EmptyStateProps } from './EmptyState';

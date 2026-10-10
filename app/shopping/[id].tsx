@@ -18,7 +18,7 @@ import {
 } from '@/components/ui';
 import {
   formatIngredientAmount,
-  getShoppingListRepository,
+  useShoppingListRepository,
   useShoppingList,
 } from '@/features/recipes';
 import type { AppError } from '@/lib/result';
@@ -44,7 +44,7 @@ export default function ShoppingListScreen() {
   const [actionError, setActionError] = useState<AppError | null>(null);
   const [copied, setCopied] = useState(false);
 
-  const repository = getShoppingListRepository();
+  const repository = useShoppingListRepository();
 
   const outstanding = useMemo(
     () => (list ? list.items.filter((item) => !item.isChecked) : []),

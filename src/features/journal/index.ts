@@ -1,5 +1,5 @@
 export {
-  getJournalRepository,
+  getDeviceJournalRepository,
   setJournalRepository,
   useDayJournal,
   useJournalRepository,

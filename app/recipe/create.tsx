@@ -8,6 +8,7 @@ import {
   Badge,
   Button,
   Chip,
+  Collapsible,
   Disclosure,
   ErrorState,
   Screen,
@@ -25,7 +26,7 @@ import {
   generateDemoRecipe,
   generateRecipe,
   getGenerationAvailability,
-  getRecipeRepository,
+  useRecipeRepository,
   toCuisineId,
   type GeneratedRecipe,
 } from '@/features/recipes';
@@ -86,6 +87,10 @@ export default function CreateRecipeScreen() {
   const router = useRouter();
   const { session } = useAuth();
   const params = useLocalSearchParams<{ mode?: string; photoUri?: string }>();
+  // The hook, not the module getter: the getter is always device-local, so
+  // a signed-in user's new recipe would be written to the phone instead of
+  // to their account.
+  const recipes = useRecipeRepository();
 
   const preferences = usePreferencesStore((state) => state.preferences);
   const setPreferences = usePreferencesStore((state) => state.setPreferences);
@@ -175,7 +180,7 @@ export default function CreateRecipeScreen() {
   };
 
   const saveAndOpen = async (generated: GeneratedRecipe, request: RecipeRequest) => {
-    const repository = getRecipeRepository();
+    const repository = recipes;
     const created = await repository.createRecipe({
       title: generated.title,
       description: generated.description,
@@ -230,6 +235,33 @@ export default function CreateRecipeScreen() {
     await saveAndOpen(result.value, request);
     setBusy(false);
   };
+
+  /**
+   * What each folded section currently holds.
+   *
+   * Written out rather than "3 selected", because the point of the line is
+   * that the user does not have to open the section to know what it says.
+   */
+  const cuisineSummary =
+    cuisine === null
+      ? 'Any cuisine'
+      : cuisine === 'other'
+        ? cuisineNote.trim() || 'Another style'
+        : (CUISINE_OPTIONS.find((option) => option.value === cuisine)?.label ??
+          'Any cuisine');
+
+  const timeSummary =
+    maxMinutes === null
+      ? 'However long it takes'
+      : (TIME_OPTIONS.find((option) => option.value === maxMinutes)?.label ??
+        `Under ${maxMinutes} minutes`);
+
+  const equipmentSummary =
+    equipment.length === 0
+      ? 'A basic kitchen'
+      : equipment.length <= 3
+        ? equipment.join(', ')
+        : `${equipment.slice(0, 2).join(', ')} and ${equipment.length - 2} more`;
 
   const openDemo = async () => {
     setSubmitted(true);
@@ -376,7 +408,16 @@ export default function CreateRecipeScreen() {
         </View>
       </Section>
 
-      <Section title="Cuisine" dense>
+      {/*
+        Everything below has a sensible default and most people will never
+        change it. Folded away, the form is a question and a button; the
+        summary line keeps the current choices legible without opening it.
+      */}
+      <Collapsible
+        title="Cuisine"
+        summary={cuisineSummary}
+        defaultOpen={cuisine !== null}
+      >
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.sm }}>
           {CUISINE_OPTIONS.map((option) => (
             <Chip
@@ -397,9 +438,13 @@ export default function CreateRecipeScreen() {
             autoCapitalize="sentences"
           />
         ) : null}
-      </Section>
+      </Collapsible>
 
-      <Section title="Time you have" dense>
+      <Collapsible
+        title="Time you have"
+        summary={timeSummary}
+        defaultOpen={maxMinutes !== null}
+      >
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.sm }}>
           {TIME_OPTIONS.map((option) => (
             <Chip
@@ -410,12 +455,12 @@ export default function CreateRecipeScreen() {
             />
           ))}
         </View>
-      </Section>
+      </Collapsible>
 
-      <Section
+      <Collapsible
         title="What you can cook with"
-        subtitle="Leave empty and we assume a basic kitchen."
-        dense
+        summary={equipmentSummary}
+        defaultOpen={equipment.length > 0}
       >
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.sm }}>
           {EQUIPMENT_OPTIONS.map((option) => (
@@ -433,7 +478,7 @@ export default function CreateRecipeScreen() {
             />
           ))}
         </View>
-      </Section>
+      </Collapsible>
 
       <DietarySummary />
     </Screen>

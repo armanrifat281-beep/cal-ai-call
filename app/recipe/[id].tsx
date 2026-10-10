@@ -25,10 +25,10 @@ import {
   batchNutrition,
   checkRecipeConsistency,
   describeConsistencyIssue,
-  getRecipeRepository,
-  getShoppingListRepository,
   scaleRecipe,
   useRecipe,
+  useRecipeRepository,
+  useShoppingListRepository,
   type ScaledIngredient,
 } from '@/features/recipes';
 import { cuisineLabel } from '@/features/recipes/options';
@@ -53,6 +53,11 @@ export default function RecipeDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
 
   const { recipe, loading, error, notFound, reload } = useRecipe(id);
+  // The hooks, not the module getters: the getters are always device-local,
+  // so a signed-in user would read this recipe from their account and then
+  // write the change to the phone.
+  const recipes = useRecipeRepository();
+  const shoppingLists = useShoppingListRepository();
 
   const [servings, setServings] = useState<number | null>(null);
   const [owned, setOwned] = useState<Set<string>>(new Set());
@@ -86,11 +91,11 @@ export default function RecipeDetailScreen() {
   const toggleFavorite = useCallback(async () => {
     if (!recipe) return;
     setBusy(true);
-    const result = await getRecipeRepository().setFavorite(recipe.id, !recipe.isFavorite);
+    const result = await recipes.setFavorite(recipe.id, !recipe.isFavorite);
     setBusy(false);
     if (!result.ok) setActionError(result.error);
     else reload();
-  }, [recipe, reload]);
+  }, [recipe, reload, recipes]);
 
   const showMore = useCallback(() => {
     if (!recipe) return;
@@ -101,7 +106,7 @@ export default function RecipeDetailScreen() {
         onPress: () => {
           void (async () => {
             setBusy(true);
-            const result = await getRecipeRepository().setRejected(recipe.id, true);
+            const result = await recipes.setRejected(recipe.id, true);
             setBusy(false);
             if (!result.ok) setActionError(result.error);
             else router.back();
@@ -120,7 +125,7 @@ export default function RecipeDetailScreen() {
               onPress: () => {
                 void (async () => {
                   setBusy(true);
-                  const result = await getRecipeRepository().deleteRecipe(recipe.id);
+                  const result = await recipes.deleteRecipe(recipe.id);
                   setBusy(false);
                   if (!result.ok) setActionError(result.error);
                   else router.back();
@@ -131,7 +136,7 @@ export default function RecipeDetailScreen() {
         },
       },
     ]);
-  }, [recipe, router]);
+  }, [recipe, router, recipes]);
 
   // Favourite and overflow live in the navigation bar, which is where a
   // native app puts them. Earlier this screen ended with three stacked
@@ -169,7 +174,6 @@ export default function RecipeDetailScreen() {
     setBusy(true);
     setActionError(null);
 
-    const repository = getShoppingListRepository();
     const items = missing.map((item) => ({
       name: item.name,
       quantity: item.scaledQuantity,
@@ -180,11 +184,11 @@ export default function RecipeDetailScreen() {
 
     // Merge into the newest active list, so a second recipe joins the same
     // shop rather than starting another list.
-    const existing = await repository.listLists('active');
+    const existing = await shoppingLists.listLists('active');
     const target = existing.ok ? existing.value[0] : undefined;
     const result = target
-      ? await repository.addItems(target.id, items)
-      : await repository.createList({ name: 'Shopping list', items });
+      ? await shoppingLists.addItems(target.id, items)
+      : await shoppingLists.createList({ name: 'Shopping list', items });
 
     setBusy(false);
     if (!result.ok) {

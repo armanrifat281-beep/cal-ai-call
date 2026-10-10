@@ -39,12 +39,21 @@ let shoppingListRepository: ShoppingListRepository | null = null;
 let supabaseRecipes: RecipeRepository | null = null;
 let supabaseShoppingLists: ShoppingListRepository | null = null;
 
-export function getRecipeRepository(): RecipeRepository {
+/**
+ * The device-local store, whoever is signed in.
+ *
+ * Named for the device on purpose. The previous name looked
+ * interchangeable with the hook and was not, and five screens ended up
+ * reading a recipe from the signed-in user's account and writing the change
+ * to the phone. Inside a component, use `useRecipeRepository`.
+ */
+export function getDeviceRecipeRepository(): RecipeRepository {
   recipeRepository ??= createLocalRecipeRepository();
   return recipeRepository;
 }
 
-export function getShoppingListRepository(): ShoppingListRepository {
+/** The device-local store, whoever is signed in. See above. */
+export function getDeviceShoppingListRepository(): ShoppingListRepository {
   shoppingListRepository ??= createLocalShoppingListRepository();
   return shoppingListRepository;
 }
@@ -77,7 +86,7 @@ export function useRecipeRepository(): RecipeRepository {
     }
   }
 
-  return getRecipeRepository();
+  return getDeviceRecipeRepository();
 }
 
 export function useShoppingListRepository(): ShoppingListRepository {
@@ -93,7 +102,7 @@ export function useShoppingListRepository(): ShoppingListRepository {
     }
   }
 
-  return getShoppingListRepository();
+  return getDeviceShoppingListRepository();
 }
 
 export interface RecipeListState {

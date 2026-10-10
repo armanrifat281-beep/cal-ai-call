@@ -1,7 +1,7 @@
 export { DEMO_RECIPE_COUNT, pickDemoRecipe } from './demoRecipes';
 export {
-  getRecipeRepository,
-  getShoppingListRepository,
+  getDeviceRecipeRepository,
+  getDeviceShoppingListRepository,
   setRecipeRepositories,
   useRecipe,
   useRecipeRepository,

@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
 import { fireEvent, screen, userEvent } from '@testing-library/react-native';
 
-import { clearLocalJournal, getJournalRepository } from '@/features/journal';
+import { clearLocalJournal, getDeviceJournalRepository } from '@/features/journal';
 import { usePreferencesStore } from '@/store/preferencesStore';
 import { renderWithProviders } from '@/test/renderWithProviders';
 import { EMPTY_NUTRIENTS, type FoodEntryItem } from '@/types/domain';
@@ -221,7 +221,7 @@ describe('tab screens with an empty journal', () => {
 
 describe('tab screens with a logged meal', () => {
   beforeEach(async () => {
-    const created = await getJournalRepository().createEntry({
+    const created = await getDeviceJournalRepository().createEntry({
       mealType: 'breakfast',
       title: 'Morning porridge',
       items: [sampleItem()],

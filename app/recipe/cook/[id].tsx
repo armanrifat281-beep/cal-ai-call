@@ -9,7 +9,7 @@ import { Button, ErrorState, Screen, Skeleton, Surface, Text } from '@/component
 import {
   CookedScreen,
   StepTimer,
-  getRecipeRepository,
+  useRecipeRepository,
   scaleRecipe,
   useRecipe,
 } from '@/features/recipes';
@@ -32,6 +32,7 @@ export default function CookingModeScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
 
   const { recipe, loading, error, notFound, reload } = useRecipe(id);
+  const recipes = useRecipeRepository();
 
   const [stepIndex, setStepIndex] = useState(0);
   const [completed, setCompleted] = useState<Set<number>>(new Set());
@@ -81,7 +82,7 @@ export default function CookingModeScreen() {
     // Recorded so "Cook it again" reflects what the user actually cooked.
     // A failure here is not worth blocking on: they finished cooking either
     // way, and the screen that follows is the reward for it.
-    await getRecipeRepository().recordCooked(recipe.id);
+    await recipes.recordCooked(recipe.id);
     setFinishing(false);
     setCooked(true);
   };
