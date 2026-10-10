@@ -41,15 +41,18 @@ export function PressableScale({
   const scale = useSharedValue(1);
   const target = scaleTo ?? theme.pressScale;
 
+  // `.get()` and `.set()` rather than `.value`: assigning to `.value` is a
+  // mutation the React Compiler rejects, and these are the accessors
+  // Reanimated added for exactly that reason.
   const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
+    transform: [{ scale: scale.get() }],
   }));
 
   // The caller's handlers still run: a button tracks its own pressed state to
   // swap the gradient, and must not lose that by using this wrapper.
   const handlePressIn = useCallback<NonNullable<PressableProps['onPressIn']>>(
     (event) => {
-      scale.value = withTiming(target, { duration: theme.duration.press });
+      scale.set(withTiming(target, { duration: theme.duration.press }));
       onPressIn?.(event);
     },
     [scale, target, theme.duration.press, onPressIn],
@@ -57,7 +60,7 @@ export function PressableScale({
 
   const handlePressOut = useCallback<NonNullable<PressableProps['onPressOut']>>(
     (event) => {
-      scale.value = withTiming(1, { duration: theme.duration.fast });
+      scale.set(withTiming(1, { duration: theme.duration.fast }));
       onPressOut?.(event);
     },
     [scale, theme.duration.fast, onPressOut],

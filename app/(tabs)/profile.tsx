@@ -15,6 +15,7 @@ import {
 } from '@/components/ui';
 import { useAuth } from '@/features/auth';
 import { clearLocalJournal } from '@/features/journal';
+import { deleteAllMealPhotos } from '@/features/photos';
 import { clearLocalRecipes, toCuisineId } from '@/features/recipes';
 import { cuisineLabel } from '@/features/recipes/options';
 import { describeMissingConfig, env } from '@/lib/env';
@@ -68,6 +69,7 @@ export default function ProfileScreen() {
               setClearing(true);
               await clearLocalJournal();
               await clearLocalRecipes();
+              deleteAllMealPhotos();
               resetPreferences();
               setClearing(false);
               // Preferences are gone, so the boot gate sends them to onboarding.
@@ -99,12 +101,24 @@ export default function ProfileScreen() {
                 Alert.alert('Not deleted', result.error.message);
                 return;
               }
+              deleteAllMealPhotos();
               router.replace('/');
             })();
           },
         },
       ],
     );
+  };
+
+  /**
+   * Turning photo keeping off clears the photos already kept.
+   *
+   * Otherwise the setting would only be a promise about future meals, while
+   * the pictures the user is asking the app to stop keeping stay on disk.
+   */
+  const setRetainPhotos = (retainPhotos: boolean) => {
+    setPreferences({ retainPhotos });
+    if (!retainPhotos) deleteAllMealPhotos();
   };
 
   return (
@@ -287,9 +301,9 @@ export default function ProfileScreen() {
           />
           <ToggleRow
             title="Keep my meal photos"
-            subtitle="Off by default: photos are deleted after analysis"
+            subtitle="Off by default. Turning this off also deletes photos already saved"
             value={preferences.retainPhotos}
-            onChange={(retainPhotos) => setPreferences({ retainPhotos })}
+            onChange={setRetainPhotos}
             divided
           />
         </Surface>

@@ -1,7 +1,6 @@
 import { Text as RNText, type StyleProp, type TextProps, type TextStyle } from 'react-native';
 
-import { useTheme, type TypographyVariant } from '@/theme';
-import type { Palette } from '@/theme';
+import { useTheme, type Palette, type TypographyVariant } from '@/theme';
 
 export interface AppTextProps extends TextProps {
   variant?: TypographyVariant;

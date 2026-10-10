@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useState } from 'react';
 
 import type { AppError, Result } from '@/lib/result';
+import { useAsyncResult } from '@/lib/useAsyncResult';
 import type { Recipe, ShoppingList, ShoppingListStatus } from '@/types/recipe';
 
 import {
@@ -50,52 +51,6 @@ export function useRecipeRepository(): RecipeRepository {
 
 export function useShoppingListRepository(): ShoppingListRepository {
   return getShoppingListRepository();
-}
-
-interface AsyncState<T> {
-  data: T | null;
-  loading: boolean;
-  error: AppError | null;
-}
-
-/**
- * Runs a read, tracking loading and error state and discarding a result that
- * arrives after the inputs changed or the component unmounted.
- */
-function useAsyncResult<T>(
-  run: () => Promise<Result<T>>,
-  deps: readonly unknown[],
-): AsyncState<T> & { reload: () => void } {
-  const [state, setState] = useState<AsyncState<T>>({
-    data: null,
-    loading: true,
-    error: null,
-  });
-  const [nonce, setNonce] = useState(0);
-  const runRef = useRef(run);
-  runRef.current = run;
-
-  useEffect(() => {
-    let active = true;
-    setState((previous) => ({ ...previous, loading: true, error: null }));
-
-    void runRef.current().then((result) => {
-      if (!active) return;
-      setState(
-        result.ok
-          ? { data: result.value, loading: false, error: null }
-          : { data: null, loading: false, error: result.error },
-      );
-    });
-
-    return () => {
-      active = false;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [...deps, nonce]);
-
-  const reload = useCallback(() => setNonce((value) => value + 1), []);
-  return { ...state, reload };
 }
 
 export interface RecipeListState {
@@ -197,7 +152,18 @@ export interface ShoppingListState {
 
 export function useShoppingList(listId: string | undefined): ShoppingListState {
   const repository = useShoppingListRepository();
-  const [override, setOverride] = useState<ShoppingList | null>(null);
+
+  /**
+   * A locally edited copy, shown instead of the stored one until the next
+   * read lands. It carries the list id it was made for, so switching lists
+   * discards it by simply not matching - an effect that cleared it would
+   * leave one render showing the previous list's contents under the new
+   * list's heading.
+   */
+  const [override, setOverride] = useState<{
+    listId: string | undefined;
+    list: ShoppingList;
+  } | null>(null);
 
   const { data, loading, error, reload } = useAsyncResult(
     async () =>
@@ -207,12 +173,12 @@ export function useShoppingList(listId: string | undefined): ShoppingListState {
     [repository, listId],
   );
 
-  // Clear a stale override when the loaded list changes identity.
-  useEffect(() => {
-    setOverride(null);
-  }, [listId]);
+  const list = (override && override.listId === listId ? override.list : null) ?? data ?? null;
 
-  const list = override ?? data ?? null;
+  const setList = useCallback(
+    (next: ShoppingList) => setOverride({ listId, list: next }),
+    [listId],
+  );
 
   return {
     list,
@@ -220,6 +186,6 @@ export function useShoppingList(listId: string | undefined): ShoppingListState {
     error,
     notFound: !loading && error === null && data === null && Boolean(listId),
     reload,
-    setList: setOverride,
+    setList,
   };
 }

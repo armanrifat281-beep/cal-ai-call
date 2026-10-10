@@ -22,10 +22,10 @@ export function Skeleton({ width = '100%', height = 16, radius, style }: Skeleto
   const opacity = useSharedValue(0.55);
 
   useEffect(() => {
-    opacity.value = withRepeat(withTiming(1, { duration: 820 }), -1, true);
+    opacity.set(withRepeat(withTiming(1, { duration: 820 }), -1, true));
   }, [opacity]);
 
-  const animatedStyle = useAnimatedStyle(() => ({ opacity: opacity.value }));
+  const animatedStyle = useAnimatedStyle(() => ({ opacity: opacity.get() }));
 
   return (
     <Animated.View

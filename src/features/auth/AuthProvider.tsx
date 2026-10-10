@@ -69,10 +69,9 @@ export function AuthProvider({ children }: PropsWithChildren) {
   const [sessionError, setSessionError] = useState<AppError | null>(null);
 
   useEffect(() => {
-    if (!client) {
-      setStatus('unavailable');
-      return;
-    }
+    // No client means no backend in this build, which the initial state
+    // already reflects. There is nothing to subscribe to and nothing to set.
+    if (!client) return;
 
     let cancelled = false;
 

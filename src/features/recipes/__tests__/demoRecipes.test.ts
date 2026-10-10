@@ -1,9 +1,8 @@
-import type { RecipeRequest } from '@/types/recipe';
+import type { Recipe, RecipeRequest } from '@/types/recipe';
 
 import { DEMO_RECIPE_COUNT, pickDemoRecipe } from '../demoRecipes';
-import { generateDemoRecipe } from '../service';
 import { checkRecipeConsistency } from '../scaling';
-import type { Recipe } from '@/types/recipe';
+import { generateDemoRecipe } from '../service';
 
 function request(overrides: Partial<RecipeRequest> = {}): RecipeRequest {
   return {

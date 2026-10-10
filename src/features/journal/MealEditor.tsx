@@ -31,6 +31,7 @@ import {
 } from '@/types/domain';
 
 import { ItemEditor } from './ItemEditor';
+import { MealPhotoField } from './MealPhotoField';
 
 /**
  * Create or edit one meal.
@@ -49,6 +50,11 @@ export interface MealEditorProps {
   mode: 'create' | 'edit';
   /** Existing entry when editing, or a prefilled draft from the scanner. */
   initial?: Partial<Pick<FoodEntry, 'title' | 'mealType' | 'consumedAt' | 'items' | 'notes'>>;
+  /**
+   * A photo of the meal: the capture handed over by the scanner, or the one
+   * already saved with an entry being edited.
+   */
+  initialPhotoUri?: string | null;
   /** Shown above the form, e.g. the scanner's uncertainty warnings. */
   banner?: React.ReactNode;
   saving: boolean;
@@ -65,6 +71,12 @@ export interface MealDraft {
   consumedAt: string;
   items: FoodEntryItem[];
   notes: string | null;
+  /**
+   * The photo to keep with this meal, or null for none. Whether it is
+   * actually written to disk is the caller's decision, because it depends on
+   * the "Keep my meal photos" preference.
+   */
+  photoUri: string | null;
 }
 
 /** A blank item, used by "Add food". */
@@ -98,6 +110,7 @@ export function mealTypeForHour(hour: number): MealType {
 export function MealEditor({
   mode,
   initial,
+  initialPhotoUri,
   banner,
   saving,
   saveError,
@@ -116,6 +129,7 @@ export function MealEditor({
   );
   const [items, setItems] = useState<FoodEntryItem[]>(initial?.items ?? []);
   const [notes, setNotes] = useState(initial?.notes ?? '');
+  const [photoUri, setPhotoUri] = useState<string | null>(initialPhotoUri ?? null);
   const [newestItemId, setNewestItemId] = useState<string | null>(null);
   const [picker, setPicker] = useState<'none' | 'date' | 'time'>('none');
   const [submitted, setSubmitted] = useState(false);
@@ -155,6 +169,7 @@ export function MealEditor({
       consumedAt: consumedAt.toISOString(),
       items,
       notes: notes.trim().length > 0 ? notes.trim() : null,
+      photoUri,
     });
   };
 
@@ -217,6 +232,8 @@ export function MealEditor({
           retryLabel="Try saving again"
         />
       ) : null}
+
+      <MealPhotoField uri={photoUri} onChange={setPhotoUri} />
 
       <Surface variant="raised" padding="lg" style={{ gap: theme.spacing.md }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>

@@ -1,7 +1,6 @@
 import { View, type StyleProp, type ViewStyle } from 'react-native';
 
-import { useTheme, type TypographyVariant } from '@/theme';
-import type { Palette } from '@/theme';
+import { useTheme, type Palette, type TypographyVariant } from '@/theme';
 
 import { Text } from './Text';
 

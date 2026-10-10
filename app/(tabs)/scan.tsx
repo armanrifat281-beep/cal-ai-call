@@ -155,7 +155,12 @@ export default function ScanScreen() {
               leading={<Icon name="journal" size={19} color="textMuted" />}
               trailing={<Icon name="chevronRight" size={16} color="textSubtle" />}
               divided
-              onPress={() => router.push('/entry/new')}
+              onPress={() =>
+                router.push({
+                  pathname: '/entry/new',
+                  params: { photoUri: photo.uri },
+                })
+              }
             />
           </Surface>
         </Section>

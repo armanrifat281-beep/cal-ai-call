@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo } from 'react';
 
 import { todayKey, type DateKey } from '@/lib/date';
-import type { AppError, Result } from '@/lib/result';
+import type { AppError } from '@/lib/result';
+import { useAsyncResult } from '@/lib/useAsyncResult';
 import { summarizeEntries, type DaySummary } from '@/features/nutrition';
 import type { FoodEntry, SavedMeal } from '@/types/domain';
 
@@ -70,53 +71,6 @@ export function useJournalRepository(): JournalRepository {
   return getLocalRepository();
 }
 
-interface AsyncState<T> {
-  data: T | null;
-  loading: boolean;
-  error: AppError | null;
-}
-
-/**
- * Runs a repository read, tracking loading and error state and ignoring
- * results that arrive after the component unmounted or the key changed.
- */
-function useAsyncResult<T>(
-  run: () => Promise<Result<T>>,
-  deps: readonly unknown[],
-): AsyncState<T> & { reload: () => void } {
-  const [state, setState] = useState<AsyncState<T>>({
-    data: null,
-    loading: true,
-    error: null,
-  });
-  const [nonce, setNonce] = useState(0);
-  const runRef = useRef(run);
-  runRef.current = run;
-
-  useEffect(() => {
-    let active = true;
-    setState((previous) => ({ ...previous, loading: true, error: null }));
-
-    void runRef.current().then((result) => {
-      if (!active) return;
-      setState(
-        result.ok
-          ? { data: result.value, loading: false, error: null }
-          : { data: null, loading: false, error: result.error },
-      );
-    });
-
-    return () => {
-      active = false;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [...deps, nonce]);
-
-  const reload = useCallback(() => setNonce((n) => n + 1), []);
-
-  return { ...state, reload };
-}
-
 export interface DayJournal {
   entries: FoodEntry[];
   summary: DaySummary;
@@ -133,7 +87,9 @@ export function useDayJournal(dateKey: DateKey = todayKey()): DayJournal {
     [dateKey, repository],
   );
 
-  const entries = data ?? [];
+  // `data ?? []` is a new array on every render while data is null, which
+  // would make the summary recompute each time.
+  const entries = useMemo(() => data ?? [], [data]);
   const summary = useMemo(() => summarizeEntries(entries), [entries]);
 
   return { entries, summary, loading, error, reload };

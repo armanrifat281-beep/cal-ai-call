@@ -1,8 +1,10 @@
+import { Image } from 'expo-image';
 import { View } from 'react-native';
 
 import { Icon } from '@/components/Icon';
 import { PressableScale, Text } from '@/components/ui';
 import { computeEntryTotals } from '@/features/nutrition';
+import { mealPhotoUri } from '@/features/photos';
 import { formatTimeOfDay } from '@/lib/date';
 import { useTheme } from '@/theme';
 import type { FoodEntry } from '@/types/domain';
@@ -27,10 +29,18 @@ export interface MealRowProps {
  * time sits in a fixed-width rail on the left so the column aligns down the
  * list, and the energy figure is right-aligned in tabular digits so the
  * numbers line up too. Those two alignments do the work an outline was doing.
+ *
+ * When the meal has a photo, it takes over that rail with the time beneath
+ * it. The rail keeps its width either way, so a day of photographed and
+ * typed meals still reads as one aligned column rather than two.
  */
+/** Shared by the rail and the divider's inset, so they cannot drift apart. */
+const RAIL_WIDTH = 52;
+
 export function MealRow({ entry, onPress, divided = false, compact = false }: MealRowProps) {
   const theme = useTheme();
   const totals = computeEntryTotals(entry);
+  const photoUri = mealPhotoUri(entry.id);
   const source = aggregateSource(entry.items.map((item) => item.provenance.source));
   const isEstimate = source === 'ai_estimate';
 
@@ -49,7 +59,24 @@ export function MealRow({ entry, onPress, divided = false, compact = false }: Me
       }}
     >
       {/* Time rail: fixed width, so the column lines up down the list. */}
-      <View style={{ width: 52, paddingTop: 2 }}>
+      <View style={{ width: RAIL_WIDTH, paddingTop: 2, gap: 5 }}>
+        {photoUri ? (
+          <Image
+            source={{ uri: photoUri }}
+            style={{
+              width: RAIL_WIDTH,
+              height: RAIL_WIDTH,
+              borderRadius: theme.radius.control,
+              backgroundColor: theme.colors.surfaceAlt,
+            }}
+            contentFit="cover"
+            transition={160}
+            cachePolicy="memory-disk"
+            // The row already announces the meal; the picture adds nothing
+            // a screen reader can use, so it stays out of the tree.
+            accessible={false}
+          />
+        ) : null}
         <Text variant="metricS" color="textMuted">
           {formatTimeOfDay(entry.consumedAt)}
         </Text>
@@ -116,7 +143,7 @@ export function MealRow({ entry, onPress, divided = false, compact = false }: Me
       style={{
         height: theme.hairline,
         backgroundColor: theme.colors.separator,
-        marginLeft: 52 + theme.spacing.md,
+        marginLeft: RAIL_WIDTH + theme.spacing.md,
       }}
     />
   ) : null;

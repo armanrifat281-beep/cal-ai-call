@@ -173,7 +173,7 @@ export function DayPlate({
         ? ` That is ${Math.round((totalKcal / targetKcal) * 100)} per cent of a ${Math.round(targetKcal)} kilocalorie target.`
         : '';
     return `${Math.round(totalKcal)} kilocalories logged today across ${segments.length} ${segments.length === 1 ? 'meal' : 'meals'}: ${meals}.${progress}`;
-  }, [segments, targetKcal, totalKcal]);
+  }, [segments, targetKcal, totalKcal, hasTarget]);
 
   return (
     <View
