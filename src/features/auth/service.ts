@@ -237,3 +237,37 @@ export async function deleteAccount(): Promise<Result<void>> {
     );
   }
 }
+
+/**
+ * Completes a link from a confirmation or password-reset email.
+ *
+ * The client is configured for PKCE with `detectSessionInUrl` off, which is
+ * correct on a phone - there is no browser URL for it to read. The trade is
+ * that the exchange has to be done by hand: the email link returns to
+ * `foodlens://auth-callback?code=...`, and that code is worth a session
+ * exactly once.
+ */
+export async function exchangeCodeForSession(code: string): Promise<Result<Session>> {
+  const client = requireClient();
+  if (!client.ok) return client;
+
+  try {
+    const { data, error } = await client.value.auth.exchangeCodeForSession(code);
+    if (error) return err(mapAuthError(error, 'exchangeCodeForSession'));
+    if (!data.session) {
+      return err(
+        appError('unauthorized', 'That link has expired. Ask for a new one.', {
+          detail: 'exchangeCodeForSession returned no session',
+          retryable: false,
+        }),
+      );
+    }
+    return ok(data.session);
+  } catch (cause) {
+    return err(
+      appError('network', 'No connection. Check your internet and try again.', {
+        detail: String(cause),
+      }),
+    );
+  }
+}

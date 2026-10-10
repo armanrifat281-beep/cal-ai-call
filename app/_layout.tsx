@@ -1,11 +1,11 @@
-import { Stack } from 'expo-router';
+import { Stack, usePathname, useRouter } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
-import { AuthProvider } from '@/features/auth';
+import { AuthProvider, useAuth } from '@/features/auth';
 import { usePreferencesStore } from '@/store/preferencesStore';
 import { ThemeProvider, useTheme, useThemeContext } from '@/theme';
 
@@ -50,6 +50,7 @@ function AppShell() {
   return (
     <>
       <StatusBar style={theme.scheme === 'dark' ? 'light' : 'dark'} />
+      <PasswordResetGate />
       <Stack
         screenOptions={{
           headerShown: false,
@@ -64,4 +65,28 @@ function AppShell() {
       </Stack>
     </>
   );
+}
+
+/**
+ * Sends the user to choose a password after a reset link.
+ *
+ * The callback screen already does this for the usual case, where the link
+ * cold-starts the app. This covers the other one: the app is open, Supabase
+ * reports the recovery on its own channel, and nobody is watching the
+ * callback route. Without it the user ends up holding a valid session and a
+ * password they do not know, with nothing on screen about it.
+ */
+function PasswordResetGate() {
+  const { passwordResetPending } = useAuth();
+  const router = useRouter();
+  const pathname = usePathname();
+
+  const onResetScreen = pathname === '/reset-password';
+
+  useEffect(() => {
+    if (!passwordResetPending || onResetScreen) return;
+    router.replace('/(auth)/reset-password');
+  }, [passwordResetPending, onResetScreen, router]);
+
+  return null;
 }

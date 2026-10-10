@@ -19,6 +19,15 @@ export default function AuthLayout() {
       <Stack.Screen name="sign-in" options={{ title: 'Sign in' }} />
       <Stack.Screen name="sign-up" options={{ title: 'Create an account' }} />
       <Stack.Screen name="forgot-password" options={{ title: 'Reset password' }} />
+      <Stack.Screen
+        name="reset-password"
+        options={{ title: 'New password', headerBackVisible: false }}
+      />
+      {/*
+        Where the confirmation and reset emails land. It only exchanges the
+        code and redirects, so a header would flash and disappear.
+      */}
+      <Stack.Screen name="auth-callback" options={{ headerShown: false }} />
     </Stack>
   );
 }

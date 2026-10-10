@@ -19,12 +19,18 @@ const TEST_METRICS: Metrics = {
   insets: { top: 47, left: 0, right: 0, bottom: 34 },
 };
 
-export function renderWithProviders(ui: React.ReactElement) {
-  return render(
+function Providers({ children }: { children: React.ReactNode }) {
+  return (
     <SafeAreaProvider initialMetrics={TEST_METRICS}>
       <ThemeProvider>
-        <AuthProvider>{ui}</AuthProvider>
+        <AuthProvider>{children}</AuthProvider>
       </ThemeProvider>
-    </SafeAreaProvider>,
+    </SafeAreaProvider>
   );
+}
+
+export function renderWithProviders(ui: React.ReactElement) {
+  // Passed as `wrapper` rather than wrapped inline, so `rerender` keeps the
+  // providers instead of replacing the whole tree with a bare element.
+  return render(ui, { wrapper: Providers });
 }

@@ -83,11 +83,18 @@ jest.mock('expo-router', () => {
   const Passthrough = ({ children }: { children?: React.ReactNode }) =>
     React.createElement(View, null, children);
 
+  // Route params a test can set, for screens that read a deep link.
+  let searchParams: Record<string, string> = {};
+
   return {
     __esModule: true,
     router,
     useRouter: () => router,
-    useLocalSearchParams: () => ({}),
+    useLocalSearchParams: () => searchParams,
+    /** Test-only: sets what `useLocalSearchParams` returns. */
+    __setSearchParams: (next: Record<string, string>) => {
+      searchParams = next;
+    },
     useSegments: () => [],
     usePathname: () => '/',
     useNavigation: () => ({ setOptions: jest.fn(), addListener: jest.fn() }),

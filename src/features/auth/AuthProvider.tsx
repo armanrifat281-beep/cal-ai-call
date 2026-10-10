@@ -54,6 +54,14 @@ interface AuthContextValue {
   requestPasswordReset: (email: string) => Promise<Result<void>>;
   updatePassword: (newPassword: string) => Promise<Result<void>>;
   deleteAccount: () => Promise<Result<void>>;
+  /**
+   * True once Supabase reports that this session came from a password-reset
+   * link. The user holds a valid session at that point but has not chosen a
+   * password yet, so the app sends them to set one.
+   */
+  passwordResetPending: boolean;
+  /** Called once a new password has been set, or the user backs out. */
+  clearPasswordReset: () => void;
   /** Set when the last background session check failed. */
   sessionError: AppError | null;
 }
@@ -67,6 +75,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
   );
   const [session, setSession] = useState<Session | null>(null);
   const [sessionError, setSessionError] = useState<AppError | null>(null);
+  const [passwordResetPending, setPasswordResetPending] = useState(false);
 
   useEffect(() => {
     // No client means no backend in this build, which the initial state
@@ -104,6 +113,11 @@ export function AuthProvider({ children }: PropsWithChildren) {
         setSession(nextSession);
         setStatus(nextSession ? 'signed_in' : 'signed_out');
         setSessionError(null);
+
+        // The one event that means "signed in, but not by choice": the user
+        // followed a reset link and still needs to pick a password.
+        if (event === 'PASSWORD_RECOVERY') setPasswordResetPending(true);
+        if (event === 'SIGNED_OUT') setPasswordResetPending(false);
       },
     );
 
@@ -140,8 +154,12 @@ export function AuthProvider({ children }: PropsWithChildren) {
   }, []);
 
   const updatePassword = useCallback(async (newPassword: string) => {
-    return updatePasswordRequest(newPassword);
+    const result = await updatePasswordRequest(newPassword);
+    if (result.ok) setPasswordResetPending(false);
+    return result;
   }, []);
+
+  const clearPasswordReset = useCallback(() => setPasswordResetPending(false), []);
 
   const deleteAccount = useCallback(async () => {
     const result = await deleteAccountRequest();
@@ -164,6 +182,8 @@ export function AuthProvider({ children }: PropsWithChildren) {
       requestPasswordReset,
       updatePassword,
       deleteAccount,
+      passwordResetPending,
+      clearPasswordReset,
       sessionError,
     }),
     [
@@ -175,6 +195,8 @@ export function AuthProvider({ children }: PropsWithChildren) {
       requestPasswordReset,
       updatePassword,
       deleteAccount,
+      passwordResetPending,
+      clearPasswordReset,
       sessionError,
     ],
   );

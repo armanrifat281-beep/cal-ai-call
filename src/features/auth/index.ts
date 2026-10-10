@@ -2,6 +2,7 @@ export { AuthProvider, useAuth, type AuthStatus } from './AuthProvider';
 export { mapAuthError } from './errors';
 export {
   deleteAccount,
+  exchangeCodeForSession,
   getCurrentSession,
   requestPasswordReset,
   signInWithEmail,
