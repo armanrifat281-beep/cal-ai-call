@@ -4,15 +4,18 @@ import { processColor } from 'react-native';
 import { palettes } from '@/theme';
 import { renderWithProviders } from '@/test/renderWithProviders';
 
+import { Icon } from '@/components/Icon';
+
 import { Button } from '../Button';
 
 /**
- * Pins the call-to-action treatment from the supplied reference: a fully
- * rounded pill with the rose-to-crimson gradient and white text.
+ * Pins the button treatment from the supplied reference: a tall, fully
+ * rounded pill with the rose-to-crimson gradient, white text and white
+ * icons - on every variant, with none left out.
  *
- * These walk the rendered tree, so they catch the treatment being changed or
- * applied to the wrong variants. They cannot tell you it LOOKS right on a
- * device; that still needs eyes.
+ * These walk the rendered tree, so they catch the treatment being dropped
+ * from a variant. They cannot tell you it LOOKS right on a device; that
+ * still needs eyes.
  */
 
 interface JsonNode {
@@ -51,10 +54,24 @@ function flatStyle(style: unknown): Record<string, unknown> {
   return (style as Record<string, unknown>) ?? {};
 }
 
-describe('the call-to-action button', () => {
-  it('renders a gradient for primary', async () => {
-    await renderWithProviders(<Button label="Get All Access" onPress={jest.fn()} />);
+const VARIANTS = ['primary', 'accent', 'tonal', 'secondary', 'ghost', 'danger'] as const;
+
+describe('every button wears the reference treatment', () => {
+  // One render per case: unmounting inside a loop detaches `screen`, so
+  // every later assertion in the file sees an empty tree.
+  it.each(VARIANTS)('gives %s the gradient', async (variant) => {
+    await renderWithProviders(
+      <Button label="Get All Access" variant={variant} onPress={jest.fn()} />,
+    );
     expect(gradient()).not.toBeNull();
+  });
+
+  it.each(VARIANTS)('writes %s in white', async (variant) => {
+    await renderWithProviders(
+      <Button label="Get All Access" variant={variant} onPress={jest.fn()} />,
+    );
+    const style = flatStyle(screen.getByText('Get All Access').props.style);
+    expect(style.color).toBe(palettes.light.textOnCta);
   });
 
   it('uses the reference colours, running top-left to bottom-right', async () => {
@@ -70,12 +87,19 @@ describe('the call-to-action button', () => {
     expect(props.endPoint).toEqual([1, 1]);
   });
 
-  // One render per case: unmounting inside a loop detaches `screen`, so
-  // every later assertion in the file sees an empty tree.
+  it('keeps the label bold and on one line', async () => {
+    await renderWithProviders(<Button label="Get All Access" onPress={jest.fn()} />);
+    const label = screen.getByText('Get All Access');
+    expect(flatStyle(label.props.style).fontWeight).toBe('600');
+    expect(label.props.numberOfLines).toBe(1);
+  });
+});
+
+describe('the shape', () => {
   it.each([
-    ['sm', 36],
-    ['md', 48],
-    ['lg', 54],
+    ['sm', 44],
+    ['md', 54],
+    ['lg', 62],
   ] as const)('is a true pill at %s: radius is half the height', async (size, height) => {
     await renderWithProviders(
       <Button label="Get All Access" onPress={jest.fn()} size={size} />,
@@ -85,61 +109,74 @@ describe('the call-to-action button', () => {
     expect(style.borderRadius).toBe(height / 2);
   });
 
-  it('applies the same treatment to accent, the other hero action', async () => {
+  it.each([
+    ['sm', 44],
+    ['md', 54],
+    ['lg', 62],
+  ] as const)('is tall enough to read as a soft shape at %s', async (size, height) => {
     await renderWithProviders(
-      <Button label="Take a photo" variant="accent" onPress={jest.fn()} />,
+      <Button label="Get All Access" onPress={jest.fn()} size={size} />,
     );
-    expect(gradient()).not.toBeNull();
-  });
-
-  it('writes its label in white', async () => {
-    await renderWithProviders(<Button label="Get All Access" onPress={jest.fn()} />);
-    const style = flatStyle(screen.getByText('Get All Access').props.style);
-    expect(style.color).toBe(palettes.light.textOnCta);
-  });
-
-  it('keeps the label bold and on one line', async () => {
-    await renderWithProviders(<Button label="Get All Access" onPress={jest.fn()} />);
     const label = screen.getByText('Get All Access');
-    expect(flatStyle(label.props.style).fontWeight).toBe('600');
-    expect(label.props.numberOfLines).toBe(1);
+    const fontSize = Number(flatStyle(label.props.style).fontSize);
+    // The reference is roughly three and a half times its own text height.
+    expect(height / fontSize).toBeGreaterThan(3);
   });
-});
 
-describe('the gradient stays scarce', () => {
-  it.each(['tonal', 'secondary', 'ghost', 'danger'] as const)(
-    'does not apply it to %s',
-    async (variant) => {
-      await renderWithProviders(
-        <Button label="Secondary" variant={variant} onPress={jest.fn()} />,
-      );
-      // If every button were the call to action there would be no call to
-      // action. This is what keeps the treatment meaningful.
-      expect(gradient()).toBeNull();
-    },
-  );
-
-  it('keeps destructive actions flat, so they cannot be mistaken for the CTA', async () => {
+  it('clears the minimum touch target even at its smallest', async () => {
     await renderWithProviders(
-      <Button label="Delete" variant="danger" onPress={jest.fn()} />,
+      <Button label="Remove" onPress={jest.fn()} size="sm" />,
     );
-    expect(gradient()).toBeNull();
-    expect(screen.getByRole('button', { name: 'Delete' })).toBeTruthy();
+    expect(Number(flatStyle(gradient()?.props?.style).height)).toBeGreaterThanOrEqual(44);
+  });
+
+  it('pads generously, so it does not read as a tag', async () => {
+    await renderWithProviders(<Button label="Get All Access" onPress={jest.fn()} />);
+    const style = flatStyle(gradient()?.props?.style);
+    expect(Number(style.paddingHorizontal)).toBeGreaterThanOrEqual(24);
   });
 });
 
-describe('every variant is a pill', () => {
-  it.each(['tonal', 'secondary', 'danger'] as const)(
-    'rounds %s to half its height',
-    async (variant) => {
-      await renderWithProviders(
-        <Button label="Action" variant={variant} size="md" onPress={jest.fn()} />,
-      );
-      const shaped = findNode((node) => {
-        const style = flatStyle(node.props?.style);
-        return style.borderRadius === 24 && style.height === 48;
-      });
-      expect(shaped).not.toBeNull();
-    },
-  );
+describe('icons inside a button', () => {
+  it('paints a leading icon white, whatever colour the call site asked for', async () => {
+    // Call sites chose colours to suit the fill their variant used to have.
+    // Dark ink on the gradient would be unreadable, so the button overrides.
+    await renderWithProviders(
+      <Button
+        label="Back"
+        variant="tonal"
+        onPress={jest.fn()}
+        leading={<Icon name="chevronLeft" size={18} color="text" />}
+      />,
+    );
+    const path = findNode((node) => node.type === 'RNSVGPath');
+    const stroke = path?.props?.stroke as { payload?: number } | undefined;
+    expect(stroke?.payload).toBe(processColor(palettes.light.textOnCta));
+  });
+
+  it('paints a trailing icon the same way', async () => {
+    await renderWithProviders(
+      <Button
+        label="Next"
+        variant="secondary"
+        onPress={jest.fn()}
+        trailing={<Icon name="chevronRight" size={18} color="textSubtle" />}
+      />,
+    );
+    const path = findNode((node) => node.type === 'RNSVGPath');
+    const stroke = path?.props?.stroke as { payload?: number } | undefined;
+    expect(stroke?.payload).toBe(processColor(palettes.light.textOnCta));
+  });
+
+  it('shows a spinner instead of the icon while loading', async () => {
+    await renderWithProviders(
+      <Button
+        label="Saving"
+        onPress={jest.fn()}
+        loading
+        leading={<Icon name="check" size={18} color="text" />}
+      />,
+    );
+    expect(findNode((node) => node.type === 'ActivityIndicator')).not.toBeNull();
+  });
 });

@@ -73,34 +73,56 @@ background colour is the cheapest possible feedback and it reads as a web page.
 
 Haptics are on by default for filled buttons, off for list rows.
 
-### Actions have a hierarchy
+### One button, everywhere
 
-Every button is a pill — the radius is half the height, so the ends are true
-semicircles at every size and the shapes agree across the app.
+Every button in the app is the same shape and the same colour: a fully
+rounded pill — the radius is half the height — filled with the
+rose-to-crimson gradient running top-left to bottom-right, with bold white
+text and white icons. There are no exceptions, and the `variant` prop no
+longer changes anything visual.
 
-Only `primary` and `accent` carry the **call-to-action gradient**: a
-rose-to-crimson fill running top-left to bottom-right, with bold white text.
-That treatment is scarce on purpose. If every button were the call to action
-there would be no call to action.
+This is a deliberate reversal, and it is worth knowing why so nobody
+"fixes" it back. An earlier version gave the gradient only to `primary` and
+`accent` on the standard argument that a call to action means nothing if
+everything looks like one. The brief that replaced it was explicit: every
+button is to match the reference, with none left out. Consistency won over
+scarcity.
 
-| variant | treatment | use |
-| --- | --- | --- |
-| `primary` | gradient pill | the one commitment on a screen |
-| `accent` | gradient pill | a hero action that is not the main commitment (the camera) |
-| `tonal` | brand-tinted fill | a secondary commitment |
-| `secondary` | neutral fill | cancel, dismiss, choose another |
-| `ghost` | text only | tertiary |
-| `danger` | flat, darker red | destructive — deliberately *not* a gradient, so it cannot be mistaken for the thing you are being invited to press |
+Because colour no longer carries emphasis, three other things do:
 
-One CTA per screen. `scripts/` has no linter for this, but
-`src/components/ui/__tests__/ButtonAppearance.test.tsx` pins the treatment, and
-the placement audit in the commit history shows how to re-check it: static
-analysis flags screens with two CTAs, and each flag then needs reading, because
-most are mutually exclusive branches rather than real duplicates.
+- **Size.** The primary action on a screen is `lg`; alternatives are `md`
+  or `sm`.
+- **Width.** The primary action is `fullWidth`; alternatives are not, or
+  are narrower.
+- **Order.** The primary action comes first in a footer, with alternatives
+  under it.
 
-Three stacked full-width buttons means the screen has no primary action.
-Destructive and lifecycle actions belong in the navigation bar or an action
-sheet.
+`variant` is still accepted and still worth setting, because it says what
+an action is *for* to the next person reading the code. It simply has no
+effect on rendering.
+
+**The cost, named plainly:** a destructive button now looks exactly like a
+confirming one. What guards destructive actions is that every one of them
+is behind a separate confirmation dialog — not the colour of the button.
+If that ever stops being true, this rule needs revisiting.
+
+Buttons are tall on purpose: roughly three and a half times the height of
+their own text, which is the proportion in the reference and what makes
+them read as soft, confident shapes rather than tags. The smallest size is
+44 points, so even an inline button clears the minimum touch target.
+
+The button paints its own contents. A `leading` or `trailing` icon is
+cloned with the button's foreground colour, so a call site cannot leave a
+dark icon on the gradient — which is exactly what happened to a dozen of
+them when the treatment changed.
+
+`src/components/ui/__tests__/ButtonAppearance.test.tsx` pins all of this:
+the gradient on every variant, the pill geometry, the height-to-text ratio,
+the touch target and the icon tinting.
+
+Three stacked full-width buttons still means the screen has no primary
+action. Destructive and lifecycle actions still belong in the navigation
+bar or an action sheet.
 
 ### Colour is scarce
 

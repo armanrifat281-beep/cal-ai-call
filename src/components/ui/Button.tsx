@@ -1,5 +1,5 @@
 import { LinearGradient } from 'expo-linear-gradient';
-import { useState } from 'react';
+import { cloneElement, isValidElement, useState } from 'react';
 import { ActivityIndicator, View, type StyleProp, type ViewStyle } from 'react-native';
 
 import { useTheme, type TypographyVariant } from '@/theme';
@@ -7,18 +7,25 @@ import { useTheme, type TypographyVariant } from '@/theme';
 import { PressableScale } from './PressableScale';
 import { Text } from './Text';
 
+/**
+ * Every variant now renders the same call-to-action pill.
+ *
+ * The names are kept because the call sites use them and because they still
+ * say what an action is for, which matters to anyone reading the code. They
+ * no longer change how the button looks.
+ */
 export type ButtonVariant =
-  /** The one commitment on a screen. The red gradient pill. */
+  /** The main commitment on a screen. */
   | 'primary'
-  /** A hero action that is not the screen's main commitment. Same treatment. */
+  /** A hero action that is not the screen's main commitment. */
   | 'accent'
-  /** A secondary commitment. Brand-tinted fill. */
+  /** A secondary commitment. */
   | 'tonal'
   /** A neutral alternative: cancel, dismiss, choose another. */
   | 'secondary'
-  /** A tertiary action. Text only. */
+  /** A tertiary action. */
   | 'ghost'
-  /** Destructive. Flat and darker, so it cannot be mistaken for the CTA. */
+  /** Destructive. */
   | 'danger';
 
 export type ButtonSize = 'sm' | 'md' | 'lg';
@@ -52,33 +59,46 @@ interface SizeSpec {
 /**
  * Sizes.
  *
- * The horizontal padding is deliberately generous on `lg`: a pill with tight
- * padding reads as a tag rather than a button, and the reference is a wide,
- * confident shape.
+ * Deliberately tall and generously padded. In the supplied reference the
+ * button is roughly three and a half times the height of its own text, which
+ * is what makes it read as a soft, confident shape rather than a tag; these
+ * follow that ratio. The padding is wide for the same reason.
+ *
+ * The smallest size is 44 points, so even an inline button clears the
+ * minimum touch target on its own.
  */
 const SIZES: Record<ButtonSize, SizeSpec> = {
-  sm: { height: 36, paddingHorizontal: 16, text: 'label', gap: 6, iconSize: 15 },
-  md: { height: 48, paddingHorizontal: 22, text: 'headline', gap: 8, iconSize: 18 },
-  lg: { height: 54, paddingHorizontal: 30, text: 'headline', gap: 10, iconSize: 20 },
+  sm: { height: 44, paddingHorizontal: 20, text: 'label', gap: 7, iconSize: 16 },
+  md: { height: 54, paddingHorizontal: 26, text: 'headline', gap: 9, iconSize: 19 },
+  lg: { height: 62, paddingHorizontal: 34, text: 'title2', gap: 11, iconSize: 22 },
 };
 
 /**
  * A button.
  *
- * `primary` and `accent` render the call-to-action style from the supplied
- * reference: a fully rounded pill with a rose-to-crimson gradient running
- * top-left to bottom-right, and bold white text.
+ * One look, used by every button in the app: a fully rounded pill with a
+ * rose-to-crimson gradient running top-left to bottom-right, and bold white
+ * text, matching the supplied reference.
  *
- * Everything is a pill, so the shapes agree across the app, but only the two
- * hero variants carry the gradient. If every button were the CTA there would
- * be no call to action - the point of the treatment is that it is scarce.
- * `danger` is flat and darker for the same reason: a destructive action must
- * not look like the thing you are being invited to press.
+ * This is a deliberate change from scarcity to consistency. An earlier
+ * version gave the gradient only to the two hero variants and left the rest
+ * flat, on the usual argument that a call to action means nothing if
+ * everything looks like one. The brief here is the opposite and explicit:
+ * every button is to look like the reference, with none left out. So
+ * emphasis is no longer carried by colour. It is carried by size, by order,
+ * and by which button is full width - the primary action on a screen is the
+ * large, full-width one, and the alternatives sit below it, smaller.
+ *
+ * The cost is worth naming where it lands hardest: a destructive button is
+ * now the same colour as a confirming one. Every destructive action in the
+ * app is behind a separate confirmation dialog, which is what actually
+ * guards it, but the button itself no longer warns on sight.
  */
 export function Button({
   label,
   onPress,
-  variant = 'primary',
+  // `variant` is accepted and ignored: it still documents what an action is
+  // for at the call site, but it no longer changes how the button looks.
   size = 'md',
   disabled = false,
   loading = false,
@@ -95,45 +115,13 @@ export function Button({
   const spec = SIZES[size];
   const isBlocked = disabled || loading;
 
-  const isCta = variant === 'primary' || variant === 'accent';
-  const isFilled = isCta || variant === 'danger';
-  const wantsHaptic = haptic ?? isFilled;
-
-  const foreground = (() => {
-    switch (variant) {
-      case 'primary':
-      case 'accent':
-        return theme.colors.textOnCta;
-      case 'danger':
-        return '#FFFFFF';
-      case 'tonal':
-        return theme.colors.primaryOnSoft;
-      case 'secondary':
-        return theme.colors.text;
-      case 'ghost':
-      default:
-        return theme.colors.primaryOnSoft;
-    }
-  })();
-
-  const flatBackground = (() => {
-    switch (variant) {
-      case 'danger':
-        return pressed ? theme.colors.dangerPressed : theme.colors.danger;
-      case 'tonal':
-        return theme.colors.primarySoft;
-      case 'secondary':
-        return theme.colors.surfaceAlt;
-      case 'ghost':
-      default:
-        return 'transparent';
-    }
-  })();
+  // Every button is filled now, so every button gets the tap feedback.
+  const wantsHaptic = haptic ?? true;
+  const foreground = theme.colors.textOnCta;
 
   const shape: ViewStyle = {
     height: spec.height,
-    paddingHorizontal:
-      variant === 'ghost' ? spec.paddingHorizontal / 2 : spec.paddingHorizontal,
+    paddingHorizontal: spec.paddingHorizontal,
     // Fully rounded: the radius is half the height, so the ends are true
     // semicircles at every size.
     borderRadius: spec.height / 2,
@@ -143,13 +131,40 @@ export function Button({
     gap: spec.gap,
   };
 
+  /**
+   * Forces a slot's icon onto the button's own foreground.
+   *
+   * Call sites used to pick a colour to suit whichever fill their variant
+   * had. Now that every button is the same gradient, any of those would be
+   * dark ink on red. Rather than correcting dozens of call sites and
+   * trusting the next one to remember, the button paints its own contents.
+   */
+  const tint = (node: React.ReactNode): React.ReactNode =>
+    isValidElement<{ color?: string }>(node)
+      ? cloneElement(node, { color: foreground })
+      : node;
+
   const content = (
     <>
-      {loading ? <ActivityIndicator size="small" color={foreground} /> : leading}
-      <Text variant={spec.text} color={foreground} numberOfLines={1}>
+      {loading ? (
+        <ActivityIndicator size="small" color={foreground} />
+      ) : (
+        tint(leading)
+      )}
+      {/*
+        `flexShrink` so a long label in a narrow button ellipsizes instead
+        of pushing past the pill. Two of these sit side by side in a row in
+        several places, and the padding is generous.
+      */}
+      <Text
+        variant={spec.text}
+        color={foreground}
+        numberOfLines={1}
+        style={{ flexShrink: 1 }}
+      >
         {label}
       </Text>
-      {trailing ? <View>{trailing}</View> : null}
+      {trailing ? <View>{tint(trailing)}</View> : null}
     </>
   );
 
@@ -167,23 +182,19 @@ export function Button({
       accessibilityState={{ disabled: isBlocked, busy: loading }}
       style={[{ alignSelf: fullWidth ? 'stretch' : 'flex-start' }, style]}
     >
-      {isCta ? (
-        <LinearGradient
-          colors={
-            pressed
-              ? [...theme.colors.ctaGradientPressed]
-              : [...theme.colors.ctaGradient]
-          }
-          // Top-left to bottom-right, as in the reference.
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={shape}
-        >
-          {content}
-        </LinearGradient>
-      ) : (
-        <View style={[shape, { backgroundColor: flatBackground }]}>{content}</View>
-      )}
+      <LinearGradient
+        colors={
+          pressed
+            ? [...theme.colors.ctaGradientPressed]
+            : [...theme.colors.ctaGradient]
+        }
+        // Top-left to bottom-right, as in the reference.
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={shape}
+      >
+        {content}
+      </LinearGradient>
     </PressableScale>
   );
 }
