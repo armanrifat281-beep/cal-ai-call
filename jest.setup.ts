@@ -63,3 +63,40 @@ jest.mock('expo-image', () => {
   const { View } = require('react-native');
   return { Image: View };
 });
+
+// expo-router needs a real navigation context, which these tests do not have.
+// The mock gives screens a router they can call and params they can read, so a
+// render test still exercises the component's own logic and effects.
+jest.mock('expo-router', () => {
+  const React = require('react');
+  const { View } = require('react-native');
+
+  const router = {
+    push: jest.fn(),
+    replace: jest.fn(),
+    back: jest.fn(),
+    navigate: jest.fn(),
+    dismiss: jest.fn(),
+    setParams: jest.fn(),
+  };
+
+  const Passthrough = ({ children }: { children?: React.ReactNode }) =>
+    React.createElement(View, null, children);
+
+  return {
+    __esModule: true,
+    router,
+    useRouter: () => router,
+    useLocalSearchParams: () => ({}),
+    useSegments: () => [],
+    usePathname: () => '/',
+    useNavigation: () => ({ setOptions: jest.fn(), addListener: jest.fn() }),
+    useFocusEffect: (callback: () => void) => React.useEffect(callback, []),
+    Redirect: ({ href }: { href: string }) =>
+      React.createElement(View, { testID: `redirect-${String(href)}` }),
+    Link: Passthrough,
+    Stack: Object.assign(Passthrough, { Screen: () => null }),
+    Tabs: Object.assign(Passthrough, { Screen: () => null }),
+    SplashScreen: { preventAutoHideAsync: jest.fn(), hideAsync: jest.fn() },
+  };
+});

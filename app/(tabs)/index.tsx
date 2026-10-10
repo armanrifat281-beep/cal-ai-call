@@ -94,7 +94,7 @@ export default function HomeScreen() {
               title="Nothing logged yet"
               body="Take a photo of your next meal, or add one by hand. Everything you save stays editable."
               illustration={<Icon name="leaf" size={44} color="primary" />}
-              actionLabel="Scan a meal"
+              actionLabel="Scan your first meal"
               onAction={() => router.push('/scan')}
               secondaryActionLabel="Add a meal manually"
               onSecondaryAction={() => router.push('/entry/new')}
