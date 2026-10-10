@@ -8,6 +8,7 @@ import HelpScreen from '../settings/help';
 import PrivacyScreen from '../settings/privacy';
 import TermsScreen from '../settings/terms';
 import ProfileScreen from '../(tabs)/profile';
+import WelcomeScreen from '../(onboarding)/welcome';
 
 beforeEach(() => {
   jest.clearAllMocks();
@@ -118,5 +119,27 @@ describe('changing a password', () => {
 
     await user.press(screen.getByRole('button', { name: 'Go back' }));
     expect(router.back).toHaveBeenCalled();
+  });
+});
+
+describe('the welcome screen', () => {
+  it('says an account is not required, before asking for anything', async () => {
+    await renderWithProviders(<WelcomeScreen />);
+
+    expect(screen.getByText(/No account needed/)).toBeTruthy();
+  });
+
+  it('offers a way past the questions', async () => {
+    const user = userEvent.setup();
+    await renderWithProviders(<WelcomeScreen />);
+
+    await user.press(screen.getByRole('button', { name: 'Look around first' }));
+    expect(router.push).toHaveBeenCalledWith('/(onboarding)/privacy');
+  });
+
+  it('is honest about estimates on the first screen, not later', async () => {
+    await renderWithProviders(<WelcomeScreen />);
+
+    expect(screen.getByText('Estimates, not measurements')).toBeTruthy();
   });
 });

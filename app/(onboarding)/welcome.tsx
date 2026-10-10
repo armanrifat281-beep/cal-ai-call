@@ -2,6 +2,7 @@ import { useRouter } from 'expo-router';
 import { View } from 'react-native';
 
 import { BrandMark } from '@/components/BrandMark';
+import { Icon } from '@/components/Icon';
 import { Button, Disclosure, Screen, Text } from '@/components/ui';
 import { useTheme } from '@/theme';
 
@@ -28,6 +29,11 @@ const VALUE_POINTS = [
  * It previously put each value point in its own outlined card, which made a
  * first impression of three identical boxes. Here the numbered rail carries
  * the structure and the mark carries the identity.
+ *
+ * There is deliberately no chart on this screen. The dial is the app's
+ * signature, and showing it here would mean either inventing a day that
+ * nobody ate or drawing an empty ring as decoration. Neither is worth the
+ * first impression, so the type does the work instead.
  */
 export default function WelcomeScreen() {
   const theme = useTheme();
@@ -55,10 +61,15 @@ export default function WelcomeScreen() {
         </>
       }
     >
-      <View style={{ gap: theme.spacing.lg }}>
-        <BrandMark size={52} />
-        <View style={{ gap: theme.spacing.md }}>
-          <Text variant="display" style={{ fontSize: 36, lineHeight: 42 }}>
+      <View style={{ gap: theme.spacing.xl }}>
+        <BrandMark size={58} />
+        <View style={{ gap: theme.spacing.base }}>
+          {/* Set larger and tighter than the display token, because this is
+              the one line on the one screen that has to carry the app. */}
+          <Text
+            variant="display"
+            style={{ fontSize: 40, lineHeight: 45, letterSpacing: -1.1 }}
+          >
             Understand what is on your plate.
           </Text>
           <Text variant="body" color="textMuted">
@@ -85,6 +96,19 @@ export default function WelcomeScreen() {
             </View>
           </View>
         ))}
+      </View>
+
+      {/*
+        Worth saying before the first tap rather than after: the thing most
+        apps of this kind ask for immediately is the thing this one never
+        requires.
+      */}
+      <View style={{ flexDirection: 'row', gap: theme.spacing.md, alignItems: 'center' }}>
+        <Icon name="check" size={17} color="primary" strokeWidth={2} />
+        <Text variant="footnote" color="textMuted" style={{ flex: 1 }}>
+          No account needed. Everything works on this device, and you can sign
+          in later if you want it backed up.
+        </Text>
       </View>
 
       <Disclosure
