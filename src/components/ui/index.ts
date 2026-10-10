@@ -8,6 +8,7 @@ export { ErrorState, type ErrorStateProps } from './ErrorState';
 export { IconButton, type IconButtonProps } from './IconButton';
 export { InfoNote, type InfoNoteProps, type InfoNoteTone } from './InfoNote';
 export { ListRow, type ListRowProps } from './ListRow';
+export { NumberField, type NumberFieldProps } from './NumberField';
 export { ProgressBar, type ProgressBarProps } from './ProgressBar';
 export { Screen, type ScreenProps } from './Screen';
 export {
