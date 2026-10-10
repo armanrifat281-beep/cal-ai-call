@@ -2,6 +2,7 @@ import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
+import { View } from 'react-native';
 
 
 import { Icon } from '@/components/Icon';
@@ -216,6 +217,7 @@ export default function ScanScreen() {
           gap: theme.spacing.lg,
         }}
       >
+        <FramingCorners />
         <Icon name="scan" size={64} color="textSubtle" strokeWidth={1.2} />
         <Button
           label="Take a photo"
@@ -253,5 +255,52 @@ export default function ScanScreen() {
         />
       ) : null}
     </Screen>
+  );
+}
+
+/**
+ * The brackets at the corners of the viewfinder.
+ *
+ * They say "frame the plate inside this", which is the one instruction that
+ * most affects whether a photo can be read at all - the same thing the
+ * subtitle says in words, in the place the user is actually looking. Drawn
+ * inside the square rather than on its edges, so they read as a frame and
+ * not as a border on the panel.
+ */
+function FramingCorners() {
+  const theme = useTheme();
+  const inset = theme.spacing.base;
+  const length = 26;
+  const weight = 2;
+  const color = theme.colors.border;
+
+  const corners = [
+    { top: inset, left: inset, borderTopWidth: weight, borderLeftWidth: weight },
+    { top: inset, right: inset, borderTopWidth: weight, borderRightWidth: weight },
+    { bottom: inset, left: inset, borderBottomWidth: weight, borderLeftWidth: weight },
+    { bottom: inset, right: inset, borderBottomWidth: weight, borderRightWidth: weight },
+  ];
+
+  return (
+    <View
+      pointerEvents="none"
+      accessibilityElementsHidden
+      importantForAccessibility="no-hide-descendants"
+      style={{ position: 'absolute', inset: 0 }}
+    >
+      {corners.map((corner, index) => (
+        <View
+          key={index}
+          style={{
+            position: 'absolute',
+            width: length,
+            height: length,
+            borderColor: color,
+            borderRadius: 4,
+            ...corner,
+          }}
+        />
+      ))}
+    </View>
   );
 }

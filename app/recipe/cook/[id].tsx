@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon } from '@/components/Icon';
 import { Button, ErrorState, Screen, Skeleton, Surface, Text } from '@/components/ui';
 import {
+  StepTimer,
   getRecipeRepository,
   scaleRecipe,
   useRecipe,
@@ -250,25 +251,21 @@ export default function CookingModeScreen() {
           </Surface>
         ) : null}
 
-        {step.durationMinutes || step.temperatureC ? (
-          <View style={{ flexDirection: 'row', gap: theme.spacing.lg }}>
-            {step.durationMinutes ? (
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                <Icon name="timer" size={16} color="textMuted" strokeWidth={1.7} />
-                <Text variant="metricM" color="textMuted">
-                  {step.durationMinutes} min
-                </Text>
-              </View>
-            ) : null}
-            {step.temperatureC ? (
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                <Icon name="flame" size={16} color="accent" strokeWidth={1.7} />
-                <Text variant="metricM" color="accentOnSoft">
-                  {step.temperatureC}°C
-                </Text>
-              </View>
-            ) : null}
+        {step.temperatureC ? (
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <Icon name="flame" size={16} color="accent" strokeWidth={1.7} />
+            <Text variant="metricM" color="accentOnSoft">
+              {step.temperatureC}°C
+            </Text>
           </View>
+        ) : null}
+
+        {/*
+          Keyed on the step, so moving on gives the next step its own timer
+          rather than carrying the previous one's clock forward.
+        */}
+        {step.durationMinutes ? (
+          <StepTimer key={step.number} minutes={step.durationMinutes} />
         ) : null}
 
         {/* Large type: this is read from across a worktop. */}
