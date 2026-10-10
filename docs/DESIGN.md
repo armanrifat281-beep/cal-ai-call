@@ -164,3 +164,103 @@ Every screen handles loading, empty and error. Beyond that:
 - **Offline** is scoped. Most of the app is local-first and keeps working, so a
   blanket banner would be noise. `OfflineNotice` goes on the screens whose
   primary action needs the network, and it names the affected action.
+
+## The second round: what was still generic
+
+The first round removed what was wrong. The app still read as generated,
+and the reason was what it did not have rather than what it did:
+
+**There was no data visualisation anywhere.** The only SVG in the app was
+the icon set and the brand mark. A nutrition app whose entire output is
+rows of numbers looks like a form, however well set.
+
+**It never showed any food.** The scanner validated and compressed a
+photograph of the user's meal and then discarded it — `/entry/new` was
+opened with no photo parameter, nothing read `photoPath`, and no screen
+displayed a meal photograph. The one source of authentic food imagery the
+app could honestly have was being thrown away at the last step.
+
+**The macro colours were off-brand and barely distinguishable.** Blue,
+mustard and purple, chosen as three arbitrary hues, against a warm clay
+palette built from forest and ember. Protein and fat differed by 1.02:1 in
+luminance, so a macro chart disappeared completely in greyscale.
+
+**Nothing was ever rewarded.** Cooking ended by closing the screen.
+
+### What answers it
+
+**The day plate.** One dial that answers three questions at once: how far
+through the day you are (the ring's travel against the target), how the day
+broke into meals (the gaps), and what those meals were made of (the macro
+bands inside each arc). It replaced four stacked widgets on Home. Past the
+target the dial rescales to the day and marks where the target fell, rather
+than capping and hiding the overshoot.
+
+**The week strip.** Seven small rings as the journal's day navigation, so
+the shape of the week is visible before you tap anything. Energy only — the
+full dial's twelve bands are noise inside thirty points.
+
+**The period chart** on Insights, where a day with nothing logged draws a
+baseline mark rather than a bar of zero height. Those look identical and
+mean opposite things.
+
+**Two kinds of real photograph**, both the user's own: the meal photo from
+the scanner, now carried into the journal, and a photo of a dish taken
+after cooking it, which then replaces the stand-in on that recipe
+everywhere it appears. The app does not invent a picture of a dish nobody
+cooked, so these are the only food photographs it has, and they are better
+than a provider's would be.
+
+### Rules this round added
+
+#### A chart must not be able to lie
+
+Every chart here had at least one way to mislead, and each was closed
+deliberately:
+
+- A day with nothing logged is not a day of no energy. It never draws as
+  zero; it draws as absence.
+- An average covers only the days with data, and the label says so.
+- A scale covers the target as well as the largest value, so an overshoot
+  is never clipped flat into looking like a hit.
+- A minimum bar size must never make a small day look larger. The floor is
+  rescaled away when it would exceed what the day earned.
+- A meal with no macro data draws one neutral arc, never a guessed split.
+
+#### Colours are chosen for separation, not for looks
+
+Macro colours are drawn from the forest and ember ramps so a chart still
+looks like this app, and they are separated by lightness as well as hue so
+they survive greyscale and the common colour-blindness types. The closest
+pair is 1.6:1 in light and 1.7:1 in dark, against 1.02:1 before. Each also
+clears roughly 2.7:1 against the empty track behind a chart, so a filled
+arc can be told from an unfilled one.
+
+They are fills only — bars, arcs, legend dots — never text, which is what
+makes a ratio below 4.5:1 acceptable.
+
+#### Motion asks first
+
+Reanimated's layout animations follow the system's reduce-motion setting on
+their own. Imperative animations do not, and must call `useMotion()`:
+before this the press scale and the indefinitely pulsing skeleton ignored
+the setting entirely. Reducing motion means going to the end state
+immediately, never skipping it — a skipped animation leaves a view faded
+out or scaled to nothing.
+
+#### Verify a visual by looking at it
+
+Tests prove arithmetic, not appearance. Every chart here was rendered to
+SVG from the same functions the app uses and inspected in a browser, in
+both schemes, across every state. That turned up four defects the tests had
+passed:
+
+- the gaps between meals could consume the whole arc on a barely-started
+  day, leaving a dial that looked broken;
+- the over-target mark was indistinguishable from an ordinary gap;
+- the first macro palette was muddy and dated at a glance, whatever its
+  contrast figures said;
+- with the photo above the time in a meal row, the time column zigzagged
+  down a list of mixed photographed and typed meals.
+
+None of these were findable from a passing test suite.
