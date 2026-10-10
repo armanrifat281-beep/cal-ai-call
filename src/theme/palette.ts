@@ -79,7 +79,24 @@ export interface Palette {
   infoSoft: string;
   infoOnSoft: string;
 
-  /** Macro nutrient identity colours, used consistently app-wide. */
+  /**
+   * Macro nutrient identity colours, used consistently app-wide.
+   *
+   * Drawn from the forest and ember ramps rather than picked as three
+   * arbitrary hues, so a chart of a meal still looks like this app and like
+   * food - deep green, wheat, terracotta.
+   *
+   * They are chosen for separation, not just for looks. The three are set
+   * apart by lightness as well as hue, so they survive greyscale and the
+   * common colour-blindness types: the closest pair differs by 1.6:1 in
+   * light and 1.7:1 in dark, where the previous blue/mustard/purple set had
+   * a protein-to-fat ratio of 1.02:1 and vanished entirely in greyscale.
+   * Every one of them also clears roughly 2.7:1 against the empty track
+   * behind a chart, so a filled arc can be told from an unfilled one.
+   *
+   * These are fills only - bars, arcs, legend dots - never text, which is
+   * what makes a ratio below 4.5:1 acceptable here.
+   */
   protein: string;
   carbs: string;
   fat: string;
@@ -197,9 +214,9 @@ const light: Palette = {
   infoSoft: '#E4EDF5',
   infoOnSoft: '#17456A',
 
-  protein: '#3A6FA0',
-  carbs: '#A5761C',
-  fat: '#8A59A6',
+  protein: '#1A543E',
+  carbs: '#B5861F',
+  fat: '#A8502C',
 
   scrim: 'rgba(21, 19, 14, 0.5)',
   skeleton: clay[100],
@@ -260,9 +277,9 @@ const dark: Palette = {
   infoSoft: '#15232E',
   infoOnSoft: '#A6C9E4',
 
-  protein: '#7FAADA',
-  carbs: '#D8AD5E',
-  fat: '#BC8FD2',
+  protein: '#378463',
+  carbs: '#EFD293',
+  fat: '#DA8A62',
 
   scrim: 'rgba(0, 0, 0, 0.64)',
   skeleton: '#242117',

@@ -138,6 +138,19 @@ export type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack';
 
 export const MEAL_TYPES: readonly MealType[] = ['breakfast', 'lunch', 'dinner', 'snack'];
 
+/**
+ * How each meal type is written in the interface.
+ *
+ * Defined once rather than capitalised at each call site, so a chart legend
+ * and a form label can never drift apart.
+ */
+export const MEAL_TYPE_LABELS: Record<MealType, string> = {
+  breakfast: 'Breakfast',
+  lunch: 'Lunch',
+  dinner: 'Dinner',
+  snack: 'Snack',
+};
+
 export interface FoodEntryItem {
   id: string;
   /** Display name, e.g. "Grilled chicken thigh". */

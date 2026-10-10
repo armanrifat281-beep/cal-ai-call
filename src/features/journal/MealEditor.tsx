@@ -24,6 +24,7 @@ import { useTheme } from '@/theme';
 import {
   EMPTY_NUTRIENTS,
   MEAL_TYPES,
+  MEAL_TYPE_LABELS,
   type FoodEntry,
   type FoodEntryItem,
   type MealType,
@@ -41,7 +42,7 @@ import { ItemEditor } from './ItemEditor';
 
 const MEAL_TYPE_OPTIONS = MEAL_TYPES.map((type) => ({
   value: type,
-  label: type.charAt(0).toUpperCase() + type.slice(1),
+  label: MEAL_TYPE_LABELS[type],
 }));
 
 export interface MealEditorProps {
