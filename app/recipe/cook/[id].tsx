@@ -116,11 +116,7 @@ export default function CookingModeScreen() {
 
   if (cooked) {
     return (
-      <CookedScreen
-        recipeId={recipe.id}
-        recipeTitle={recipe.title}
-        onDone={() => router.back()}
-      />
+      <CookedScreen recipe={recipe} onDone={() => router.back()} />
     );
   }
 

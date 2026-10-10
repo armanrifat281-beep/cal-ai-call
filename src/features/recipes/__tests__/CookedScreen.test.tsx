@@ -6,6 +6,8 @@ import { prepareImageForUpload } from '@/features/scanner/image';
 import { ok } from '@/lib/result';
 import { renderWithProviders } from '@/test/renderWithProviders';
 
+import type { Recipe } from '@/types/recipe';
+
 import { CookedScreen } from '../CookedScreen';
 
 // Babel hoists these above the imports above, so the component under test
@@ -56,10 +58,46 @@ beforeEach(() => {
   mockedSave.mockResolvedValue(ok('file:///documents/dish-photos/r1.jpg'));
 });
 
+/** A recipe with nutrition, so the journal option is available. */
+function recipe(nutrition: Recipe['nutritionPerServing'] = NUTRITION): Recipe {
+  return {
+    id: 'r1',
+    userId: 'u1',
+    title: 'Masoor dal',
+    description: null,
+    cuisine: 'bangladeshi',
+    cuisineNote: null,
+    origin: 'ai_generated',
+    servings: 4,
+    prepMinutes: null,
+    cookMinutes: null,
+    equipment: [],
+    ingredients: [],
+    steps: [],
+    tips: [],
+    tags: [],
+    nutritionPerServing: nutrition,
+    image: null,
+    isFavorite: false,
+    rejectedAt: null,
+    lastCookedAt: null,
+    cookCount: 0,
+    createdAt: '2026-10-10T08:00:00.000Z',
+    updatedAt: '2026-10-10T08:00:00.000Z',
+  };
+}
+
+const NUTRITION: Recipe['nutritionPerServing'] = {
+  caloriesKcal: 320,
+  proteinG: 18,
+  carbsG: 52,
+  fatG: 6,
+  source: 'ai_estimate',
+  providerLabel: 'Claude',
+};
+
 function render() {
-  return renderWithProviders(
-    <CookedScreen recipeId="r1" recipeTitle="Masoor dal" onDone={jest.fn()} />,
-  );
+  return renderWithProviders(<CookedScreen recipe={recipe()} onDone={jest.fn()} />);
 }
 
 describe('CookedScreen', () => {
@@ -142,11 +180,44 @@ describe('CookedScreen', () => {
   it('calls back when the user is done', async () => {
     const onDone = jest.fn();
     const user = userEvent.setup();
-    await renderWithProviders(
-      <CookedScreen recipeId="r1" recipeTitle="Masoor dal" onDone={onDone} />,
-    );
+    await renderWithProviders(<CookedScreen recipe={recipe()} onDone={onDone} />);
 
     await user.press(screen.getByRole('button', { name: 'Finish without a photo' }));
     expect(onDone).toHaveBeenCalled();
+  });
+});
+
+
+describe('logging a cooked recipe to the journal', () => {
+  it('offers it, with the recipe\u2019s own estimate', async () => {
+    await render();
+
+    expect(screen.getByText('How much did you eat?')).toBeTruthy();
+    expect(
+      screen.getByRole('button', { name: 'Add to today\u2019s journal' }),
+    ).toBeTruthy();
+    expect(screen.getByText(/labelled as one/)).toBeTruthy();
+  });
+
+  it('writes the entry and says so', async () => {
+    const user = userEvent.setup();
+    await render();
+
+    await user.press(screen.getByRole('button', { name: 'Add to today\u2019s journal' }));
+
+    expect(await screen.findByText('Added to today\u2019s journal.')).toBeTruthy();
+    expect(
+      screen.queryByRole('button', { name: 'Add to today\u2019s journal' }),
+    ).toBeNull();
+  });
+
+  it('does not offer it when the recipe has no nutrition', async () => {
+    // A made-up figure in the journal is worse than a gap.
+    await renderWithProviders(<CookedScreen recipe={recipe(null)} onDone={jest.fn()} />);
+
+    expect(screen.queryByText('How much did you eat?')).toBeNull();
+    expect(
+      screen.getByText('This recipe has no nutrition estimate to log'),
+    ).toBeTruthy();
   });
 });

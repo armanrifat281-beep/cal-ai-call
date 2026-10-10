@@ -4,14 +4,21 @@ import { useState } from 'react';
 import { View } from 'react-native';
 
 import { Icon } from '@/components/Icon';
-import { Button, Screen, Text } from '@/components/ui';
+import { Button, Disclosure, Screen, Stepper, Text } from '@/components/ui';
+import { useJournalRepository } from '@/features/journal';
+import { mealTypeForHour } from '@/features/journal/MealEditor';
 import { saveDishPhoto } from '@/features/photos';
 import { prepareImageForUpload } from '@/features/scanner/image';
+import type { AppError } from '@/lib/result';
 import { useTheme } from '@/theme';
+import type { Recipe } from '@/types/recipe';
+
+import { MAX_SERVINGS } from './scaling';
+import { recipeToJournalItem } from './toJournalEntry';
 
 export interface CookedScreenProps {
-  recipeId: string;
-  recipeTitle: string;
+  /** The recipe just cooked, for the photo and for logging it. */
+  recipe: Recipe;
   onDone: () => void;
 }
 
@@ -29,11 +36,46 @@ export interface CookedScreenProps {
  *
  * Skipping is a plain, equal option. Nothing here nags.
  */
-export function CookedScreen({ recipeId, recipeTitle, onDone }: CookedScreenProps) {
+export function CookedScreen({ recipe, onDone }: CookedScreenProps) {
   const theme = useTheme();
+  const journal = useJournalRepository();
+
+  const recipeId = recipe.id;
+  const recipeTitle = recipe.title;
+
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
+
+  const [servingsEaten, setServingsEaten] = useState(1);
+  const [logging, setLogging] = useState(false);
+  const [logged, setLogged] = useState(false);
+  const [logError, setLogError] = useState<AppError | null>(null);
+
+  const canLog = recipe.nutritionPerServing !== null;
+
+  const logToJournal = async () => {
+    const item = recipeToJournalItem({ recipe, servingsEaten });
+    if (!item) return;
+
+    setLogging(true);
+    setLogError(null);
+
+    const result = await journal.createEntry({
+      consumedAt: new Date().toISOString(),
+      mealType: mealTypeForHour(new Date().getHours()),
+      title: recipeTitle,
+      items: [item],
+      notes: null,
+    });
+
+    setLogging(false);
+    if (!result.ok) {
+      setLogError(result.error);
+      return;
+    }
+    setLogged(true);
+  };
 
   const capture = async (source: 'camera' | 'library') => {
     setFailed(false);
@@ -99,6 +141,69 @@ export function CookedScreen({ recipeId, recipeTitle, onDone }: CookedScreenProp
           again”.
         </Text>
       </View>
+
+      {/*
+        The recipe already knows what a serving contains. Until now the user
+        had to retype those figures into the journal by hand.
+      */}
+      {canLog ? (
+        <View style={{ gap: theme.spacing.md }}>
+          {logged ? (
+            <View
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}
+            >
+              <Icon name="check" size={16} color="success" />
+              <Text variant="footnote" color="textMuted">
+                Added to today’s journal.
+              </Text>
+            </View>
+          ) : (
+            <>
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: theme.spacing.md,
+                }}
+              >
+                <Text variant="headline" style={{ flex: 1 }}>
+                  How much did you eat?
+                </Text>
+                <Stepper
+                  value={servingsEaten}
+                  onChange={setServingsEaten}
+                  min={1}
+                  max={MAX_SERVINGS}
+                  label="Servings eaten"
+                />
+              </View>
+
+              {logError ? (
+                <Text variant="footnote" color="danger" accessibilityLiveRegion="polite">
+                  {logError.message}
+                </Text>
+              ) : null}
+
+              <Button
+                label="Add to today’s journal"
+                variant="secondary"
+                onPress={() => void logToJournal()}
+                loading={logging}
+                fullWidth
+              />
+              <Text variant="caption" color="textSubtle">
+                Logged with the recipe’s own estimate, labelled as one.
+              </Text>
+            </>
+          )}
+        </View>
+      ) : (
+        <Disclosure
+          summary="This recipe has no nutrition estimate to log"
+          detail="Nothing was written for it, and a made-up figure in your journal is worse than a gap. You can still add the meal by hand from the Journal tab."
+        />
+      )}
 
       {photoUri ? (
         <View style={{ gap: theme.spacing.sm }}>
