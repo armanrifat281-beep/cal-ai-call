@@ -22,6 +22,7 @@ import type {
 export type LocalPreferences = Omit<UserPreferences, 'userId' | 'updatedAt'>;
 
 export const DEFAULT_PREFERENCES: LocalPreferences = {
+  displayName: null,
   language: 'en',
   countryCode: null,
   measurementSystem: 'metric',

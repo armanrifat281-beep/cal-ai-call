@@ -16,6 +16,7 @@ export default function SettingsLayout() {
         contentStyle: { backgroundColor: theme.colors.background },
       }}
     >
+      <Stack.Screen name="profile" options={{ title: 'Your profile' }} />
       <Stack.Screen name="privacy" options={{ title: 'Your data' }} />
       <Stack.Screen name="terms" options={{ title: 'Terms of use' }} />
       <Stack.Screen name="help" options={{ title: 'Help' }} />

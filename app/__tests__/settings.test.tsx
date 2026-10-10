@@ -1,13 +1,16 @@
 import { router } from 'expo-router';
 import { screen, userEvent } from '@testing-library/react-native';
 
+import { usePreferencesStore } from '@/store/preferencesStore';
 import { renderWithProviders } from '@/test/renderWithProviders';
 
 import ChangePasswordScreen from '../settings/change-password';
 import HelpScreen from '../settings/help';
 import PrivacyScreen from '../settings/privacy';
 import TermsScreen from '../settings/terms';
+import HomeScreen from '../(tabs)/index';
 import ProfileScreen from '../(tabs)/profile';
+import EditProfileScreen from '../settings/profile';
 import WelcomeScreen from '../(onboarding)/welcome';
 
 beforeEach(() => {
@@ -141,5 +144,78 @@ describe('the welcome screen', () => {
     await renderWithProviders(<WelcomeScreen />);
 
     expect(screen.getByText('Estimates, not measurements')).toBeTruthy();
+  });
+});
+
+describe('your profile', () => {
+  beforeEach(() => {
+    usePreferencesStore.getState().reset();
+  });
+
+  it('offers to add a name when there is none', async () => {
+    await renderWithProviders(<ProfileScreen />);
+    expect(screen.getByText('Add your name')).toBeTruthy();
+    expect(screen.getByText('So Home can greet you by name')).toBeTruthy();
+  });
+
+  it('shows the name once it is set', async () => {
+    usePreferencesStore.getState().setPreferences({ displayName: 'Yeasin' });
+    await renderWithProviders(<ProfileScreen />);
+    expect(screen.getByText('Yeasin')).toBeTruthy();
+  });
+
+  it('saves a name, trimmed', async () => {
+    const user = userEvent.setup();
+    await renderWithProviders(<EditProfileScreen />);
+
+    await user.type(screen.getByLabelText('What should we call you?'), '  Yeasin  ');
+    await user.press(screen.getByRole('button', { name: 'Save' }));
+
+    expect(usePreferencesStore.getState().preferences.displayName).toBe('Yeasin');
+  });
+
+  it('cannot be saved until something changes', async () => {
+    usePreferencesStore.getState().setPreferences({ displayName: 'Yeasin' });
+    await renderWithProviders(<EditProfileScreen />);
+
+    expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
+  });
+
+  it('says where the data lives when there is no account', async () => {
+    await renderWithProviders(<EditProfileScreen />);
+    expect(screen.getByText('No account')).toBeTruthy();
+    expect(screen.getByText('Everything is saved on this device only')).toBeTruthy();
+  });
+
+  it('does not offer a password change without an account', async () => {
+    await renderWithProviders(<EditProfileScreen />);
+    expect(screen.queryByText('Change password')).toBeNull();
+  });
+
+  it('is clear that the name does not leave the device', async () => {
+    await renderWithProviders(<EditProfileScreen />);
+    expect(screen.getByText('Your name stays on this device')).toBeTruthy();
+  });
+});
+
+describe('the home greeting', () => {
+  beforeEach(() => {
+    usePreferencesStore.getState().reset();
+  });
+
+  it('greets by part of day before a name is set', async () => {
+    await renderWithProviders(<HomeScreen />);
+    expect(screen.getByText(/^Good (morning|afternoon|evening)$/)).toBeTruthy();
+  });
+
+  it('uses the name once there is one', async () => {
+    usePreferencesStore.getState().setPreferences({ displayName: 'Yeasin' });
+    await renderWithProviders(<HomeScreen />);
+    expect(screen.getByText(/^Good (morning|afternoon|evening), Yeasin$/)).toBeTruthy();
+  });
+
+  it('still says which day it is', async () => {
+    await renderWithProviders(<HomeScreen />);
+    expect(screen.getByText(/^Today · /)).toBeTruthy();
   });
 });

@@ -17,6 +17,7 @@ import {
 import { useDayJournal, useRecentEntries } from '@/features/journal';
 import { formatDayLabel, todayKey } from '@/lib/date';
 import { env } from '@/lib/env';
+import { greetingFor } from '@/lib/greeting';
 import { usePreferencesStore } from '@/store/preferencesStore';
 import { useTheme } from '@/theme';
 
@@ -49,15 +50,17 @@ export default function HomeScreen() {
   );
 
   const dayLabel = formatDayLabel(dateKey);
+  const displayName = usePreferencesStore((state) => state.preferences.displayName);
+  const greeting = greetingFor(new Date().getHours(), displayName);
 
   return (
     <Screen
-      title={dayLabel}
-      subtitle={new Date().toLocaleDateString(undefined, {
+      title={greeting}
+      subtitle={`${dayLabel} · ${new Date().toLocaleDateString(undefined, {
         weekday: 'long',
         day: 'numeric',
         month: 'long',
-      })}
+      })}`}
       edges={{ top: true }}
       refreshing={loading}
       onRefresh={refreshAll}

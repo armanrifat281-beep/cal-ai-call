@@ -124,6 +124,22 @@ export default function ProfileScreen() {
   return (
     <Screen title="Settings" edges={{ top: true }}>
       {/* Account */}
+      <Section title="You" dense>
+        <Surface variant="grouped">
+          <Row
+            title={preferences.displayName ?? 'Add your name'}
+            subtitle={
+              preferences.displayName
+                ? 'Shown when FoodLens greets you'
+                : 'So Home can greet you by name'
+            }
+            leading={<Icon name="profile" size={19} color="primary" />}
+            trailing={<Icon name="chevronRight" size={16} color="textSubtle" />}
+            onPress={() => router.push('/settings/profile')}
+          />
+        </Surface>
+      </Section>
+
       <Section title="Account" dense>
         <Surface variant="grouped">
           {status === 'signed_in' ? (

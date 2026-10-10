@@ -236,6 +236,13 @@ export interface DailyTargets {
 
 export interface UserPreferences {
   userId: string;
+  /**
+   * What the user would like to be called. Null until they say.
+   *
+   * Local-first like the rest of this record: it works with no account, and
+   * is pushed to `profiles.display_name` when there is one.
+   */
+  displayName: string | null;
   /** BCP-47 tag, e.g. "en", "en-GB". */
   language: string;
   /** ISO 3166-1 alpha-2, used to pick regional food datasets. */
