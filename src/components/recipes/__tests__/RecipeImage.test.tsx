@@ -1,14 +1,15 @@
 import { screen } from '@testing-library/react-native';
 
+import { dishPhotoUri } from '@/features/photos';
 import { renderWithProviders } from '@/test/renderWithProviders';
 
+import { RecipeImage } from '../RecipeImage';
+
+// Babel hoists this above the imports, so the module under test picks up the
+// mock even though it is written below them.
 jest.mock('@/features/photos', () => ({
   dishPhotoUri: jest.fn<string | null, [string]>(() => null),
 }));
-
-import { dishPhotoUri } from '@/features/photos';
-
-import { RecipeImage } from '../RecipeImage';
 
 const mockedDishPhoto = dishPhotoUri as jest.MockedFunction<typeof dishPhotoUri>;
 

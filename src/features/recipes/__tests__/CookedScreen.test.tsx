@@ -1,8 +1,15 @@
 import { screen, userEvent } from '@testing-library/react-native';
+import * as ImagePicker from 'expo-image-picker';
 
-import { renderWithProviders } from '@/test/renderWithProviders';
+import { saveDishPhoto } from '@/features/photos';
+import { prepareImageForUpload } from '@/features/scanner/image';
 import { ok } from '@/lib/result';
+import { renderWithProviders } from '@/test/renderWithProviders';
 
+import { CookedScreen } from '../CookedScreen';
+
+// Babel hoists these above the imports above, so the component under test
+// picks them up.
 jest.mock('expo-image-picker', () => ({
   requestCameraPermissionsAsync: jest.fn(async () => ({ granted: true })),
   launchCameraAsync: jest.fn(async () => ({ canceled: true, assets: null })),
@@ -22,12 +29,6 @@ jest.mock('@/features/scanner/image', () => ({
     value: { uri: 'file:///cache/prepared.jpg', width: 800, height: 600, byteSize: 1000 },
   })),
 }));
-
-import * as ImagePicker from 'expo-image-picker';
-import { saveDishPhoto } from '@/features/photos';
-import { prepareImageForUpload } from '@/features/scanner/image';
-
-import { CookedScreen } from '../CookedScreen';
 
 const picker = ImagePicker as jest.Mocked<typeof ImagePicker>;
 const mockedSave = saveDishPhoto as jest.MockedFunction<typeof saveDishPhoto>;
