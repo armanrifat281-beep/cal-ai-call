@@ -98,7 +98,7 @@ export default function CookingModeScreen() {
     return (
       <Screen edges={{ top: true }} contentStyle={{ gap: theme.spacing.base }}>
         <Skeleton width="50%" height={20} />
-        <Skeleton height={160} radius={theme.radius.lg} />
+        <Skeleton height={160} radius={theme.radius.surface} />
         <Skeleton height={56} />
       </Screen>
     );
@@ -198,7 +198,7 @@ export default function CookingModeScreen() {
         {showIngredients && scaled ? (
           <Card padding="none" style={{ overflow: 'hidden' }}>
             <View style={{ padding: theme.spacing.base, gap: theme.spacing.xxs }}>
-              <Text variant="bodySmStrong" color="textMuted">
+              <Text variant="label" color="textMuted">
                 EVERYTHING IN THIS RECIPE
               </Text>
               <Text variant="caption" color="textMuted">
@@ -217,10 +217,10 @@ export default function CookingModeScreen() {
                     paddingVertical: theme.spacing.sm,
                   }}
                 >
-                  <Text variant="bodySm" style={{ flex: 1 }}>
+                  <Text variant="callout" style={{ flex: 1 }}>
                     {ingredient.name}
                   </Text>
-                  <Text variant="bodySmStrong" color="textMuted">
+                  <Text variant="label" color="textMuted">
                     {ingredient.displayAmount}
                   </Text>
                 </View>
@@ -243,12 +243,12 @@ export default function CookingModeScreen() {
                 <Text variant="body" style={{ flex: 1 }}>
                   {ingredient.name}
                   {ingredient.preparation ? (
-                    <Text variant="bodySm" color="textMuted">
+                    <Text variant="callout" color="textMuted">
                       {`, ${ingredient.preparation}`}
                     </Text>
                   ) : null}
                 </Text>
-                <Text variant="bodyStrong">{ingredient.displayAmount}</Text>
+                <Text variant="headline">{ingredient.displayAmount}</Text>
               </View>
             ))}
           </Card>
@@ -279,7 +279,7 @@ export default function CookingModeScreen() {
           accessibilityHint={isLastStep ? undefined : 'Marks this step done and moves on'}
           style={{ flex: 1 }}
         >
-          <Text variant="heading" style={{ fontSize: 24, lineHeight: 34 }}>
+          <Text variant="title2" style={{ fontSize: 24, lineHeight: 34 }}>
             {step.instruction}
           </Text>
         </Pressable>
@@ -300,7 +300,7 @@ export default function CookingModeScreen() {
             style={{
               width: 26,
               height: 26,
-              borderRadius: theme.radius.sm,
+              borderRadius: theme.radius.xs,
               borderWidth: completed.has(step.number) ? 0 : 2,
               borderColor: theme.colors.borderStrong,
               backgroundColor: completed.has(step.number)
@@ -314,7 +314,7 @@ export default function CookingModeScreen() {
               <Icon name="check" size={17} color={theme.colors.textOnPrimary} strokeWidth={2.6} />
             ) : null}
           </View>
-          <Text variant="bodySm" color="textMuted">
+          <Text variant="callout" color="textMuted">
             {completed.has(step.number) ? 'Done' : 'Mark this step done'}
           </Text>
         </Pressable>
@@ -334,7 +334,7 @@ export default function CookingModeScreen() {
       >
         <Button
           label="Back"
-          variant="secondary"
+          variant="tonal"
           size="lg"
           onPress={goPrevious}
           disabled={stepIndex === 0}

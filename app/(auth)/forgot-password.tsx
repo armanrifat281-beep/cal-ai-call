@@ -40,7 +40,7 @@ export default function ForgotPasswordScreen() {
     return (
       <Screen contentStyle={{ gap: theme.spacing.lg }}>
         <View style={{ gap: theme.spacing.sm }}>
-          <Text variant="title">Check your email</Text>
+          <Text variant="title1">Check your email</Text>
           {/*
             Worded so it does not reveal whether an account exists for this
             address. Saying "no account found" would turn this form into a way
@@ -52,7 +52,7 @@ export default function ForgotPasswordScreen() {
           </Text>
         </View>
         <Card variant="soft">
-          <Text variant="bodySm" color="textMuted">
+          <Text variant="callout" color="textMuted">
             Nothing arrived within a few minutes? Check your spam folder, and
             make sure the address is the one you signed up with.
           </Text>
@@ -81,8 +81,8 @@ export default function ForgotPasswordScreen() {
       }
     >
       <View style={{ gap: theme.spacing.sm }}>
-        <Text variant="title">Reset your password</Text>
-        <Text variant="bodySm" color="textMuted">
+        <Text variant="title1">Reset your password</Text>
+        <Text variant="callout" color="textMuted">
           Enter the email you signed up with and we will send a link to set a
           new password.
         </Text>

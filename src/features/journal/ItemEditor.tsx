@@ -80,7 +80,7 @@ export function ItemEditor({
         }}
       >
         <View style={{ flex: 1, gap: theme.spacing.xxs }}>
-          <Text variant="bodyStrong" numberOfLines={1}>
+          <Text variant="headline" numberOfLines={1}>
             {item.name.trim().length > 0 ? item.name : 'Untitled food'}
           </Text>
           <Text variant="caption" color="textMuted">
@@ -134,7 +134,7 @@ export function ItemEditor({
                 containerStyle={{ flex: 1 }}
               />
               <View style={{ flex: 1.6, gap: theme.spacing.xs }}>
-                <Text variant="bodySmStrong" color="textMuted">
+                <Text variant="label" color="textMuted">
                   Unit
                 </Text>
                 <SegmentedControl
@@ -155,7 +155,7 @@ export function ItemEditor({
 
             <Divider />
 
-            <Text variant="bodySmStrong" color="textMuted">
+            <Text variant="label" color="textMuted">
               NUTRITION FOR THIS PORTION
             </Text>
 
@@ -233,7 +233,7 @@ export function ItemEditor({
 
             <Button
               label="Done editing"
-              variant="secondary"
+              variant="tonal"
               size="sm"
               onPress={() => setExpanded(false)}
             />

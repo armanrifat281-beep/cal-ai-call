@@ -1,43 +1,45 @@
 import { useRouter } from 'expo-router';
 import { View } from 'react-native';
 
-import { Icon, type IconName } from '@/components/Icon';
+import { Icon } from '@/components/Icon';
 import { RecipeImage } from '@/components/recipes/RecipeImage';
 import {
-  Badge,
-  Card,
+  Disclosure,
   EmptyState,
   ErrorState,
-  InfoNote,
+  PressableScale,
+  Row,
   Screen,
+  Section,
   Skeleton,
+  Surface,
   Text,
 } from '@/components/ui';
+import { getGenerationAvailability, useRecipes, useShoppingLists } from '@/features/recipes';
 import { cuisineLabel } from '@/features/recipes/options';
-import { useRecipes, useShoppingLists } from '@/features/recipes';
-import { getGenerationAvailability } from '@/features/recipes';
 import { useTheme } from '@/theme';
 import type { Recipe } from '@/types/recipe';
-import { Pressable } from 'react-native';
 
 /**
  * The Recipes hub.
  *
- * Four ways in, then what the user already has. Every entry here goes
- * somewhere real: none of these are placeholders.
+ * One prominent way in, the rest as a grouped list. Earlier this was four
+ * equally-weighted outlined panels, which gave the eye nowhere to land and
+ * made every option look like the same kind of thing.
  */
 export default function RecipesScreen() {
   const theme = useTheme();
   const router = useRouter();
 
   const saved = useRecipes({ limit: 20 });
-  const recentlyCooked = useRecipes({ orderBy: 'cooked', limit: 5 });
+  const recentlyCooked = useRecipes({ orderBy: 'cooked', limit: 4 });
   const lists = useShoppingLists('active');
 
   const availability = getGenerationAvailability();
 
   return (
     <Screen
+      title="Recipes"
       edges={{ top: true }}
       refreshing={saved.loading}
       onRefresh={() => {
@@ -45,78 +47,89 @@ export default function RecipesScreen() {
         recentlyCooked.reload();
         lists.reload();
       }}
-      contentStyle={{ gap: theme.spacing.lg }}
     >
-      <View style={{ gap: theme.spacing.sm }}>
-        <Text variant="title">Recipes</Text>
-        <Text variant="bodySm" color="textMuted">
-          Tell FoodLens what you want to cook, or cook from what you already
-          have.
-        </Text>
-      </View>
+      {/* The one thing this screen is for. */}
+      <PressableScale
+        onPress={() => router.push('/recipe/create')}
+        haptic
+        accessibilityRole="button"
+        accessibilityLabel="Create a recipe"
+        accessibilityHint="Name a dish, describe one, or use a photo"
+      >
+        <Surface
+          variant="raised"
+          padding="lg"
+          style={{ gap: theme.spacing.md, backgroundColor: theme.colors.primary }}
+        >
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm }}>
+            <Icon name="sparkle" size={20} color={theme.colors.textOnPrimary} />
+            <Text variant="title2" color="textOnPrimary">
+              Create a recipe
+            </Text>
+          </View>
+          <Text variant="callout" color={theme.colors.primarySoft}>
+            Name a dish, describe one in your own words, or show a photo.
+          </Text>
+        </Surface>
+      </PressableScale>
 
-      {!availability.available ? (
-        <InfoNote
-          title="Recipe writing is not set up yet"
-          body={`${availability.reason} You can still write recipes by hand, use your saved ones, and try a bundled demo recipe to see how the feature works.`}
-          tone="warning"
-        />
-      ) : null}
-
-      <View style={{ gap: theme.spacing.md }}>
-        <HubAction
-          icon="sparkle"
-          title="Create a recipe"
-          body="Name a dish, describe one, or show a photo."
-          onPress={() => router.push('/recipe/create')}
-          primary
-        />
-        <HubAction
-          icon="basket"
+      <Surface variant="grouped">
+        <Row
           title="Cook with what I have"
-          body="List your ingredients and get something you can make tonight."
+          subtitle="List your ingredients, get something for tonight"
+          leading={<Icon name="basket" size={19} color="textMuted" />}
+          trailing={<Icon name="chevronRight" size={16} color="textSubtle" />}
           onPress={() =>
             router.push({ pathname: '/recipe/create', params: { mode: 'from_pantry' } })
           }
         />
-        <HubAction
-          icon="journal"
-          title="Search my recipes"
-          body="Find a dish you saved earlier."
+        <Row
+          title="My recipes"
+          subtitle={
+            saved.recipes.length > 0
+              ? `${saved.recipes.length} saved`
+              : 'Nothing saved yet'
+          }
+          leading={<Icon name="recipes" size={19} color="textMuted" />}
+          trailing={<Icon name="chevronRight" size={16} color="textSubtle" />}
+          divided
           onPress={() => router.push('/recipe/saved')}
         />
-        <HubAction
-          icon="basket"
+        <Row
           title="Shopping lists"
-          body={
+          subtitle={
             lists.lists.length > 0
-              ? `${lists.lists.length} active list${lists.lists.length === 1 ? '' : 's'}`
-              : 'Build a list from a recipe you are cooking.'
+              ? `${lists.lists.length} active`
+              : 'Build one from a recipe you are cooking'
           }
+          leading={<Icon name="basket" size={19} color="textMuted" />}
+          trailing={<Icon name="chevronRight" size={16} color="textSubtle" />}
+          divided
           onPress={() => router.push('/shopping')}
         />
-      </View>
+      </Surface>
 
       {recentlyCooked.recipes.length > 0 ? (
-        <Section
-          title="Cook it again"
-          subtitle="Dishes you have made before."
-          onSeeAll={() => router.push('/recipe/saved')}
-        >
-          {recentlyCooked.recipes.map((recipe) => (
-            <RecipeRow
-              key={recipe.id}
-              recipe={recipe}
-              onPress={() => router.push(`/recipe/${recipe.id}`)}
-            />
-          ))}
+        <Section title="Cook it again" subtitle="Dishes you have made before">
+          <View style={{ gap: theme.spacing.md }}>
+            {recentlyCooked.recipes.map((recipe) => (
+              <RecipeRow
+                key={recipe.id}
+                recipe={recipe}
+                onPress={() => router.push(`/recipe/${recipe.id}`)}
+              />
+            ))}
+          </View>
         </Section>
       ) : null}
 
       <Section
-        title="Saved recipes"
-        subtitle={saved.recipes.length > 0 ? undefined : 'Nothing saved yet.'}
-        onSeeAll={saved.recipes.length > 0 ? () => router.push('/recipe/saved') : undefined}
+        title="Saved"
+        action={
+          saved.recipes.length > 5
+            ? { label: 'See all', onPress: () => router.push('/recipe/saved') }
+            : undefined
+        }
       >
         {saved.error ? (
           <ErrorState
@@ -125,154 +138,49 @@ export default function RecipesScreen() {
             onRetry={saved.error.retryable ? saved.reload : undefined}
           />
         ) : saved.loading && saved.recipes.length === 0 ? (
-          <View style={{ gap: theme.spacing.sm }}>
-            <Skeleton height={84} radius={theme.radius.lg} />
-            <Skeleton height={84} radius={theme.radius.lg} />
+          <View style={{ gap: theme.spacing.md }}>
+            <Skeleton height={72} radius={theme.radius.media} />
+            <Skeleton height={72} radius={theme.radius.media} />
           </View>
         ) : saved.recipes.length === 0 ? (
-          <Card variant="soft" padding="none">
-            <EmptyState
-              title="No saved recipes"
-              body="Create one and it is saved automatically, so you can come back to it and cook it again."
-              illustration={<Icon name="recipes" size={44} color="primary" />}
-              actionLabel="Create your first recipe"
-              onAction={() => router.push('/recipe/create')}
-            />
-          </Card>
+          <EmptyState
+            title="No saved recipes"
+            body="Create one and it is saved automatically, so you can come back and cook it again."
+            illustration={<Icon name="recipes" size={38} color="primary" strokeWidth={1.5} />}
+            actionLabel="Create your first recipe"
+            onAction={() => router.push('/recipe/create')}
+          />
         ) : (
-          saved.recipes
-            .slice(0, 5)
-            .map((recipe) => (
+          <View style={{ gap: theme.spacing.md }}>
+            {saved.recipes.slice(0, 5).map((recipe) => (
               <RecipeRow
                 key={recipe.id}
                 recipe={recipe}
                 onPress={() => router.push(`/recipe/${recipe.id}`)}
               />
-            ))
+            ))}
+          </View>
         )}
       </Section>
+
+      {!availability.available ? (
+        <Disclosure
+          summary="Recipe writing is not set up in this build"
+          detail={`${availability.reason} You can still write recipes by hand, use your saved ones, and open a bundled demo recipe to see how the feature works.`}
+          tone="caution"
+        />
+      ) : null}
     </Screen>
   );
 }
 
-function HubAction({
-  icon,
-  title,
-  body,
-  onPress,
-  primary = false,
-}: {
-  icon: IconName;
-  title: string;
-  body: string;
-  onPress: () => void;
-  primary?: boolean;
-}) {
-  const theme = useTheme();
-
-  return (
-    <Pressable
-      onPress={onPress}
-      accessibilityRole="button"
-      accessibilityLabel={title}
-      accessibilityHint={body}
-      style={({ pressed }) => ({
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: theme.spacing.base,
-        padding: theme.spacing.base,
-        borderRadius: theme.radius.lg,
-        borderWidth: 1,
-        borderColor: primary ? theme.colors.primary : theme.colors.border,
-        backgroundColor: primary
-          ? pressed
-            ? theme.colors.surfacePressed
-            : theme.colors.primarySoft
-          : pressed
-            ? theme.colors.surfacePressed
-            : theme.colors.surface,
-      })}
-    >
-      <View
-        style={{
-          width: 44,
-          height: 44,
-          borderRadius: theme.radius.pill,
-          alignItems: 'center',
-          justifyContent: 'center',
-          backgroundColor: primary ? theme.colors.primary : theme.colors.surfaceAlt,
-        }}
-      >
-        <Icon
-          name={icon}
-          size={22}
-          color={primary ? theme.colors.textOnPrimary : theme.colors.text}
-        />
-      </View>
-
-      <View style={{ flex: 1, gap: theme.spacing.xxs }}>
-        <Text variant="subheading" color={primary ? 'primaryOnSoft' : 'text'}>
-          {title}
-        </Text>
-        <Text variant="bodySm" color={primary ? 'primaryOnSoft' : 'textMuted'}>
-          {body}
-        </Text>
-      </View>
-
-      <Icon name="chevronRight" size={20} color="textMuted" />
-    </Pressable>
-  );
-}
-
-function Section({
-  title,
-  subtitle,
-  onSeeAll,
-  children,
-}: {
-  title: string;
-  subtitle?: string;
-  onSeeAll?: () => void;
-  children: React.ReactNode;
-}) {
-  const theme = useTheme();
-
-  return (
-    <View style={{ gap: theme.spacing.md }}>
-      <View
-        style={{
-          flexDirection: 'row',
-          alignItems: 'flex-end',
-          justifyContent: 'space-between',
-        }}
-      >
-        <View style={{ gap: theme.spacing.xxs, flex: 1 }}>
-          <Text variant="heading">{title}</Text>
-          {subtitle ? (
-            <Text variant="bodySm" color="textMuted">
-              {subtitle}
-            </Text>
-          ) : null}
-        </View>
-        {onSeeAll ? (
-          <Pressable
-            onPress={onSeeAll}
-            accessibilityRole="button"
-            accessibilityLabel={`See all ${title.toLowerCase()}`}
-            hitSlop={8}
-          >
-            <Text variant="bodySmStrong" color="primaryOnSoft">
-              See all
-            </Text>
-          </Pressable>
-        ) : null}
-      </View>
-      <View style={{ gap: theme.spacing.sm }}>{children}</View>
-    </View>
-  );
-}
-
-/** One recipe in a list. Shared by the hub and the saved-recipes screen. */
+/**
+ * One recipe in a list.
+ *
+ * A thumbnail, a name, and the facts as one line of text. The facts used to
+ * be a row of four coloured pills per recipe, which turned any list into a
+ * wall of chips.
+ */
 export function RecipeRow({
   recipe,
   onPress,
@@ -282,53 +190,44 @@ export function RecipeRow({
 }) {
   const theme = useTheme();
   const totalMinutes = (recipe.prepMinutes ?? 0) + (recipe.cookMinutes ?? 0);
-  const cuisine = cuisineLabel(recipe.cuisine);
+
+  const facts = [
+    recipe.origin === 'demo_sample' ? 'Demo' : null,
+    cuisineLabel(recipe.cuisine),
+    totalMinutes > 0 ? `${totalMinutes} min` : null,
+    `serves ${recipe.servings}`,
+  ].filter(Boolean);
 
   return (
-    <Pressable
+    <PressableScale
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={recipe.title}
       accessibilityHint="Opens the recipe"
-      style={({ pressed }) => ({
-        flexDirection: 'row',
-        gap: theme.spacing.md,
-        padding: theme.spacing.md,
-        borderRadius: theme.radius.lg,
-        borderWidth: 1,
-        borderColor: theme.colors.border,
-        backgroundColor: pressed ? theme.colors.surfacePressed : theme.colors.surface,
-      })}
+      scaleTo={0.985}
     >
-      <RecipeImage
-        image={recipe.image}
-        title={recipe.title}
-        height={64}
-        style={{ width: 64 }}
-      />
+      <View style={{ flexDirection: 'row', gap: theme.spacing.md, alignItems: 'center' }}>
+        <RecipeImage
+          image={recipe.image}
+          title={recipe.title}
+          height={66}
+          style={{ width: 66, borderRadius: theme.radius.media }}
+        />
 
-      <View style={{ flex: 1, gap: theme.spacing.xs, justifyContent: 'center' }}>
-        <Text variant="bodyStrong" numberOfLines={2}>
-          {recipe.title}
-        </Text>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.xs }}>
-          {recipe.origin === 'demo_sample' ? (
-            <Badge label="Demo" tone="warning" />
-          ) : null}
-          {cuisine ? <Badge label={cuisine} tone="neutral" /> : null}
-          {totalMinutes > 0 ? (
-            <Badge label={`${totalMinutes} min`} tone="neutral" />
-          ) : null}
-          <Badge
-            label={`Serves ${recipe.servings}`}
-            tone="neutral"
-          />
+        <View style={{ flex: 1, gap: 3 }}>
+          <Text variant="headline" numberOfLines={2}>
+            {recipe.title}
+          </Text>
+          <Text variant="footnote" color="textSubtle">
+            {facts.join('  ·  ')}
+          </Text>
         </View>
-      </View>
 
-      <View style={{ justifyContent: 'center' }}>
-        <Icon name="chevronRight" size={18} color="textMuted" />
+        {recipe.isFavorite ? (
+          <Icon name="star" size={16} color="accent" filled />
+        ) : null}
+        <Icon name="chevronRight" size={16} color="textSubtle" />
       </View>
-    </Pressable>
+    </PressableScale>
   );
 }

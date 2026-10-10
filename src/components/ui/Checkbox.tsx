@@ -52,7 +52,7 @@ export function Checkbox({
           minHeight: theme.minTouchTarget + 6,
           paddingVertical: theme.spacing.sm,
           paddingHorizontal: theme.spacing.md,
-          borderRadius: theme.radius.md,
+          borderRadius: theme.radius.control,
           backgroundColor: pressed ? theme.colors.surfacePressed : 'transparent',
           opacity: disabled ? 0.5 : 1,
         },
@@ -63,7 +63,7 @@ export function Checkbox({
         style={{
           width: 24,
           height: 24,
-          borderRadius: theme.radius.sm,
+          borderRadius: theme.radius.xs,
           borderWidth: checked ? 0 : 2,
           borderColor: theme.colors.borderStrong,
           backgroundColor: checked ? theme.colors.primary : 'transparent',
@@ -85,7 +85,7 @@ export function Checkbox({
           {label}
         </Text>
         {detail ? (
-          <Text variant="bodySm" color="textMuted">
+          <Text variant="callout" color="textMuted">
             {detail}
           </Text>
         ) : null}

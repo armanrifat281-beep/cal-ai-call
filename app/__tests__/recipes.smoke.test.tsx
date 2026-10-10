@@ -66,15 +66,19 @@ describe('recipes hub', () => {
   it('offers every way in, and none of them is a placeholder', async () => {
     await renderWithProviders(<RecipesHubScreen />);
 
+    // A row's accessible name is its title plus its supporting line, so
+    // these are matched by prefix.
     expect(screen.getByRole('button', { name: 'Create a recipe' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Cook with what I have' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Search my recipes' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Shopping lists' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /^Cook with what I have/ })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /^My recipes/ })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /^Shopping lists/ })).toBeTruthy();
   });
 
   it('says recipe writing is not set up, rather than failing later', async () => {
     await renderWithProviders(<RecipesHubScreen />);
-    expect(screen.getByText('Recipe writing is not set up yet')).toBeTruthy();
+    expect(
+      screen.getByText('Recipe writing is not set up in this build'),
+    ).toBeTruthy();
   });
 
   it('shows an empty state before anything is saved', async () => {
@@ -94,7 +98,7 @@ describe('recipes hub', () => {
     const user = userEvent.setup();
     await renderWithProviders(<RecipesHubScreen />);
 
-    await user.press(screen.getByRole('button', { name: 'Cook with what I have' }));
+    await user.press(screen.getByRole('button', { name: /^Cook with what I have/ }));
     expect(router.push).toHaveBeenCalledWith({
       pathname: '/recipe/create',
       params: { mode: 'from_pantry' },
@@ -106,7 +110,9 @@ describe('create recipe form', () => {
   it('explains that writing is unavailable and offers a labelled demo instead', async () => {
     await renderWithProviders(<CreateRecipeScreen />);
 
-    expect(screen.getByText('Recipe writing is not set up yet')).toBeTruthy();
+    expect(
+      screen.getByText('Recipe writing is not set up in this build'),
+    ).toBeTruthy();
     // No "write me this recipe" button while it cannot be done.
     expect(screen.queryByRole('button', { name: 'Write me this recipe' })).toBeNull();
     expect(
@@ -161,8 +167,11 @@ describe('create recipe form', () => {
 
     expect(screen.getByText('This recipe will respect')).toBeTruthy();
     expect(screen.getByText('no Peanuts')).toBeTruthy();
-    // The disclaimer must appear wherever allergies affect the output.
-    expect(screen.getByText('Not a safety check')).toBeTruthy();
+    // The caveat must still appear wherever allergies affect the output. It
+    // is now one expandable line rather than a stacked warning panel.
+    expect(
+      screen.getByText('Filtering allergens is not a safety check'),
+    ).toBeTruthy();
   });
 
   it('saves a demo recipe with the demo origin and opens it', async () => {

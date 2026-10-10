@@ -25,7 +25,7 @@ export function ChipGroup<T extends string>({
   return (
     <View style={{ gap: theme.spacing.sm }}>
       {label ? (
-        <Text variant="bodySmStrong" color="textMuted">
+        <Text variant="label" color="textMuted">
           {label}
         </Text>
       ) : null}

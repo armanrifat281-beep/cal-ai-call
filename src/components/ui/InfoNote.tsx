@@ -34,7 +34,7 @@ export function InfoNote({ title, body, tone = 'info', style }: InfoNoteProps) {
         {
           gap: theme.spacing.xs,
           padding: theme.spacing.md,
-          borderRadius: theme.radius.md,
+          borderRadius: theme.radius.control,
           backgroundColor: theme.colors[t.bg],
           borderLeftWidth: 3,
           borderLeftColor: theme.colors[t.border],
@@ -43,7 +43,7 @@ export function InfoNote({ title, body, tone = 'info', style }: InfoNoteProps) {
       ]}
     >
       {title ? (
-        <Text variant="bodySmStrong" color={t.fg}>
+        <Text variant="label" color={t.fg}>
           {title}
         </Text>
       ) : null}

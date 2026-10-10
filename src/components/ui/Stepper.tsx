@@ -61,7 +61,7 @@ export function Stepper({
       </IconButton>
 
       <View style={{ minWidth: 72, alignItems: 'center' }}>
-        <Text variant="bodyStrong">
+        <Text variant="headline">
           {value}
           {unitLabel ? ` ${unitLabel}` : ''}
         </Text>

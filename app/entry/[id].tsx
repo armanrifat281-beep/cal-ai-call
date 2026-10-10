@@ -104,10 +104,10 @@ export default function EntryDetailScreen() {
   if (loading) {
     return (
       <Screen contentStyle={{ gap: theme.spacing.base }}>
-        <Skeleton height={120} radius={theme.radius.lg} />
+        <Skeleton height={120} radius={theme.radius.surface} />
         <Skeleton height={48} />
         <Skeleton height={48} />
-        <Skeleton height={96} radius={theme.radius.lg} />
+        <Skeleton height={96} radius={theme.radius.surface} />
       </Screen>
     );
   }
@@ -153,11 +153,11 @@ export default function EntryDetailScreen() {
             style={{
               gap: theme.spacing.sm,
               padding: theme.spacing.base,
-              borderRadius: theme.radius.lg,
+              borderRadius: theme.radius.surface,
               backgroundColor: theme.colors.primarySoft,
             }}
           >
-            <Text variant="bodySmStrong" color="primaryOnSoft">
+            <Text variant="label" color="primaryOnSoft">
               Saved on {formatDayLabel(toDateKey(new Date(entry.consumedAt)))}
             </Text>
             <Text variant="caption" color="primaryOnSoft">
@@ -166,7 +166,7 @@ export default function EntryDetailScreen() {
             </Text>
             <Button
               label="Log this again today"
-              variant="secondary"
+              variant="tonal"
               size="sm"
               onPress={() => void logAgain()}
               leading={<Icon name="copy" size={16} color="text" />}

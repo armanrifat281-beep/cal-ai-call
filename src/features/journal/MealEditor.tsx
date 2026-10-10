@@ -241,7 +241,7 @@ export function MealEditor({
         />
 
         <View style={{ gap: theme.spacing.xs }}>
-          <Text variant="bodySmStrong" color="textMuted">
+          <Text variant="label" color="textMuted">
             Meal
           </Text>
           <SegmentedControl
@@ -253,20 +253,20 @@ export function MealEditor({
         </View>
 
         <View style={{ gap: theme.spacing.xs }}>
-          <Text variant="bodySmStrong" color="textMuted">
+          <Text variant="label" color="textMuted">
             When
           </Text>
           <View style={{ flexDirection: 'row', gap: theme.spacing.sm }}>
             <Button
               label={formatDayLabel(toDateKey(consumedAt))}
-              variant="secondary"
+              variant="tonal"
               onPress={() => setPicker('date')}
               leading={<Icon name="clock" size={16} color="textMuted" />}
               style={{ flex: 1 }}
             />
             <Button
               label={formatTimeOfDay(consumedAt.toISOString())}
-              variant="secondary"
+              variant="tonal"
               onPress={() => setPicker('time')}
               style={{ flex: 1 }}
             />
@@ -295,7 +295,7 @@ export function MealEditor({
       </View>
 
       <View style={{ gap: theme.spacing.md }}>
-        <Text variant="heading">Foods in this meal</Text>
+        <Text variant="title2">Foods in this meal</Text>
 
         {items.length === 0 ? (
           <InfoNote
@@ -318,7 +318,7 @@ export function MealEditor({
 
         <Button
           label="Add food"
-          variant="secondary"
+          variant="tonal"
           onPress={addItem}
           leading={<Icon name="plus" size={18} color="text" />}
           fullWidth

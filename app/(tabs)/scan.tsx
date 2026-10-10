@@ -2,16 +2,17 @@ import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { View } from 'react-native';
+
 
 import { Icon } from '@/components/Icon';
 import {
-  Badge,
   Button,
-  Card,
+  Disclosure,
   ErrorState,
-  InfoNote,
+  Row,
   Screen,
+  Section,
+  Surface,
   Text,
 } from '@/components/ui';
 import {
@@ -27,16 +28,10 @@ import { useTheme } from '@/theme';
 /**
  * Photo capture.
  *
- * Capture, validation and compression all work today and run entirely on the
- * device. Nutrition analysis needs a configured server; when there is none,
- * this screen says so and still offers two real routes forward:
- *
- *   "Make this at home"  - sends the photo to the recipe creator, which
- *                          identifies the dish itself from the photo.
- *   "Log this meal"      - opens manual entry, which needs nothing.
- *
- * Neither is a placeholder. There is deliberately no "Analyse" button while
- * the analysis endpoint does not exist.
+ * Capture, validation and compression run entirely on the device and work
+ * today. Nutrition analysis needs a configured server; when there is none,
+ * this screen says so once and still offers two real routes forward. There
+ * is deliberately no "Analyse" button while that endpoint does not exist.
  */
 export default function ScanScreen() {
   const theme = useTheme();
@@ -65,7 +60,6 @@ export default function ScanScreen() {
 
       setBusy(true);
       setError(null);
-
       const prepared = await prepareImageForUpload(asset.uri, asset.mimeType);
       setBusy(false);
 
@@ -82,60 +76,115 @@ export default function ScanScreen() {
   const takePhoto = async () => {
     const permission = await ImagePicker.requestCameraPermissionsAsync();
     if (!permission.granted) {
+      // A denied permission is a state with its own copy and its own way out,
+      // not a generic failure.
       setError({
         code: 'unauthorized',
         message:
-          'FoodLens needs camera access to photograph your meal. You can enable it in your device settings, or pick a photo from your library instead.',
+          'FoodLens does not have camera access. You can turn it on in your device settings, or pick a photo from your library instead.',
         retryable: false,
       });
       return;
     }
 
-    const result = await ImagePicker.launchCameraAsync({
-      mediaTypes: ['images'],
-      quality: 1,
-      // Cropping here would cut off food and skew portion estimates.
-      allowsEditing: false,
-      exif: false,
-    });
-    await handlePicked(result);
+    await handlePicked(
+      await ImagePicker.launchCameraAsync({
+        mediaTypes: ['images'],
+        quality: 1,
+        // Cropping here would cut off food and skew portion estimates.
+        allowsEditing: false,
+        exif: false,
+      }),
+    );
   };
 
   const pickFromLibrary = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      quality: 1,
-      allowsEditing: false,
-      exif: false,
-    });
-    await handlePicked(result);
+    await handlePicked(
+      await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        quality: 1,
+        allowsEditing: false,
+        exif: false,
+      }),
+    );
   };
 
-  const makeAtHome = () => {
-    if (!photo) return;
-    router.push({
-      pathname: '/recipe/create',
-      params: { mode: 'from_photo', photoUri: photo.uri },
-    });
-  };
+  if (photo) {
+    return (
+      <Screen
+        title="Your photo"
+        edges={{ top: true }}
+        contentStyle={{ gap: theme.spacing.xl }}
+      >
+        <Image
+          source={{ uri: photo.uri }}
+          style={{
+            width: '100%',
+            aspectRatio: photo.width / Math.max(1, photo.height),
+            borderRadius: theme.radius.media,
+            backgroundColor: theme.colors.surfaceAlt,
+          }}
+          contentFit="cover"
+          accessibilityLabel="The meal photo you just captured"
+        />
+
+        <Text variant="footnote" color="textSubtle">
+          {photo.width} × {photo.height} · {Math.round(photo.byteSize / 1024)} KB ·
+          resized on this device
+        </Text>
+
+        <Section title="What next?" dense>
+          <Surface variant="grouped">
+            <Row
+              title="Make this at home"
+              subtitle="Works out the dish from the photo and writes a recipe"
+              leading={<Icon name="recipes" size={19} color="primary" />}
+              trailing={<Icon name="chevronRight" size={16} color="textSubtle" />}
+              haptic
+              onPress={() =>
+                router.push({
+                  pathname: '/recipe/create',
+                  params: { mode: 'from_photo', photoUri: photo.uri },
+                })
+              }
+            />
+            <Row
+              title="Log this meal"
+              subtitle="Add it to today's journal, entering the foods yourself"
+              leading={<Icon name="journal" size={19} color="textMuted" />}
+              trailing={<Icon name="chevronRight" size={16} color="textSubtle" />}
+              divided
+              onPress={() => router.push('/entry/new')}
+            />
+          </Surface>
+        </Section>
+
+        <Button
+          label="Choose a different photo"
+          variant="secondary"
+          onPress={() => void pickFromLibrary()}
+          fullWidth
+        />
+
+        <Disclosure
+          summary={
+            retainPhotos
+              ? 'This photo will be kept after analysis'
+              : 'This photo is deleted after analysis'
+          }
+          detail="A photo can usually identify the foods on a plate. It cannot see the oil a dish was cooked in, sugar stirred into a drink, or the exact weight of anything. A recipe generated from a photo is a close guess at the dish, not the original cook's method. You can change photo retention in Profile."
+        />
+      </Screen>
+    );
+  }
 
   return (
-    <Screen edges={{ top: true }} contentStyle={{ gap: theme.spacing.lg }}>
-      <View style={{ gap: theme.spacing.sm }}>
-        <Text variant="title">Scan a meal</Text>
-        <Text variant="bodySm" color="textMuted">
-          Shoot the whole plate from above, with good light.
-        </Text>
-      </View>
-
-      {!availability.available ? (
-        <InfoNote
-          title="Nutrition analysis is not set up yet"
-          body={availability.reason ?? ''}
-          tone="warning"
-        />
-      ) : null}
-
+    <Screen
+      title="Scan"
+      subtitle="Photograph the whole plate from above, in good light."
+      edges={{ top: true }}
+      contentStyle={{ gap: theme.spacing.xl }}
+    >
       {error ? (
         <ErrorState
           message={error.message}
@@ -145,148 +194,56 @@ export default function ScanScreen() {
         />
       ) : null}
 
-      {photo ? (
-        <>
-          <Card padding="md" style={{ gap: theme.spacing.md }}>
-            <Image
-              source={{ uri: photo.uri }}
-              style={{
-                width: '100%',
-                aspectRatio: photo.width / Math.max(1, photo.height),
-                borderRadius: theme.radius.md,
-                backgroundColor: theme.colors.surfaceAlt,
-              }}
-              contentFit="cover"
-              accessibilityLabel="The meal photo you just captured"
-            />
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.sm }}>
-              <Badge label={`${photo.width} x ${photo.height}`} tone="neutral" />
-              <Badge label={`${Math.round(photo.byteSize / 1024)} KB`} tone="neutral" />
-              <Badge label="Ready" tone="success" />
-            </View>
-            <Text variant="caption" color="textMuted">
-              Resized and compressed on your device before any upload.
-              {retainPhotos
-                ? ' Your settings keep this photo after analysis.'
-                : ' Your settings delete this photo right after analysis.'}
-            </Text>
-            <Button
-              label="Choose a different photo"
-              variant="ghost"
-              size="sm"
-              onPress={() => void pickFromLibrary()}
-            />
-          </Card>
+      {/*
+        The viewfinder stands in for the camera. It is the single large
+        element on the screen, and tapping it is the primary action - which
+        is how a camera tool behaves, rather than a form with two buttons.
+      */}
+      <Surface
+        variant="sunken"
+        style={{
+          aspectRatio: 1,
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: theme.spacing.lg,
+        }}
+      >
+        <Icon name="scan" size={64} color="textSubtle" strokeWidth={1.2} />
+        <Button
+          label="Take a photo"
+          onPress={() => void takePhoto()}
+          loading={busy}
+          variant="accent"
+          size="lg"
+          leading={<Icon name="camera" size={20} color={theme.colors.textOnAccent} />}
+        />
+        <Button
+          label="Choose from library"
+          variant="ghost"
+          onPress={() => void pickFromLibrary()}
+          disabled={busy}
+        />
+      </Surface>
 
-          <View style={{ gap: theme.spacing.md }}>
-            <Text variant="heading">What next?</Text>
-
-            <ActionCard
-              icon="recipes"
-              title="Make this at home"
-              body="Sends the photo to the recipe creator, which works out what the dish is and writes a recipe for it."
-              onPress={makeAtHome}
-              primary
-            />
-
-            <ActionCard
-              icon="journal"
-              title="Log this meal"
-              body="Adds it to today's journal. You enter the foods, so this works without any analysis."
-              onPress={() => router.push('/entry/new')}
-            />
-          </View>
-
-          <InfoNote
-            title="What a photo cannot show"
-            body="A photo can usually identify the foods on a plate. It cannot see the oil a dish was cooked in, sugar stirred into a drink, or the exact weight of anything. A recipe generated from a photo is a close guess at the dish, not the original cook's method."
-            tone="warning"
+      <Section title="Or skip the photo" dense>
+        <Surface variant="grouped">
+          <Row
+            title="Add a meal by hand"
+            subtitle="About as quick, and the numbers are yours rather than an estimate"
+            leading={<Icon name="journal" size={19} color="textMuted" />}
+            trailing={<Icon name="chevronRight" size={16} color="textSubtle" />}
+            onPress={() => router.push('/entry/new')}
           />
-        </>
-      ) : (
-        <>
-          <View style={{ gap: theme.spacing.md }}>
-            <Button
-              label="Take a photo"
-              onPress={() => void takePhoto()}
-              disabled={busy}
-              loading={busy}
-              variant="accent"
-              size="lg"
-              fullWidth
-              haptic
-              leading={<Icon name="camera" size={22} color={theme.colors.textOnAccent} />}
-            />
-            <Button
-              label="Choose from library"
-              onPress={() => void pickFromLibrary()}
-              disabled={busy}
-              variant="secondary"
-              size="lg"
-              fullWidth
-              leading={<Icon name="gallery" size={22} color="text" />}
-            />
-          </View>
+        </Surface>
+      </Section>
 
-          <Card variant="soft" style={{ gap: theme.spacing.sm }}>
-            <Text variant="subheading">You can also skip the photo</Text>
-            <Text variant="bodySm" color="textMuted">
-              Adding a meal by hand takes about as long and the numbers are
-              yours rather than an estimate.
-            </Text>
-            <Button
-              label="Add a meal by hand"
-              variant="secondary"
-              size="sm"
-              onPress={() => router.push('/entry/new')}
-            />
-          </Card>
-        </>
-      )}
+      {!availability.available ? (
+        <Disclosure
+          summary="Nutrition analysis is not set up in this build"
+          detail={`${availability.reason} Capturing, validating and compressing a photo all work now; only the analysis step needs a server.`}
+          tone="caution"
+        />
+      ) : null}
     </Screen>
-  );
-}
-
-function ActionCard({
-  icon,
-  title,
-  body,
-  onPress,
-  primary = false,
-}: {
-  icon: 'recipes' | 'journal';
-  title: string;
-  body: string;
-  onPress: () => void;
-  primary?: boolean;
-}) {
-  const theme = useTheme();
-
-  return (
-    <Card
-      variant={primary ? 'soft' : 'outlined'}
-      style={{
-        gap: theme.spacing.sm,
-        backgroundColor: primary ? theme.colors.primarySoft : theme.colors.surface,
-        borderColor: primary ? theme.colors.primary : theme.colors.border,
-      }}
-    >
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm }}>
-        <Icon name={icon} size={22} color={primary ? 'primaryOnSoft' : 'text'} />
-        <Text variant="subheading" color={primary ? 'primaryOnSoft' : 'text'}>
-          {title}
-        </Text>
-      </View>
-      <Text variant="bodySm" color={primary ? 'primaryOnSoft' : 'textMuted'}>
-        {body}
-      </Text>
-      <Button
-        label={title}
-        variant={primary ? 'primary' : 'secondary'}
-        onPress={onPress}
-        fullWidth
-        haptic
-      />
-    </Card>
   );
 }

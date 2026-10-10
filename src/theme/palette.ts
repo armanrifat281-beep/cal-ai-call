@@ -1,49 +1,58 @@
 /**
- * Semantic color palette for FoodLens AI.
+ * Color for FoodLens AI.
  *
- * Original palette: warm off-white paper, herb green as the brand color, and a
- * terracotta accent. Chosen to feel calm and food-adjacent without looking like
- * any existing nutrition app.
+ * Built from two ramps rather than picked ad hoc:
  *
- * Every pairing used for text-on-background in the app was checked to clear
- * WCAG AA (4.5:1) for body text, or AA Large (3:1) for >=20pt bold text.
+ *   **Clay** - a warm neutral. Paper, not grey. Food photography sits badly
+ *   on cold grey, and a warm page makes the greens look like food rather than
+ *   like a finance app.
+ *
+ *   **Forest** - a deep, slightly blue-leaning green as the single brand
+ *   colour, with **Ember**, a burnt orange, reserved for exactly one job: the
+ *   scan action. Keeping the accent scarce is what makes it mean something.
+ *
+ * Every text-on-background pairing used in the app clears WCAG AA (4.5:1) for
+ * body text, or AA Large (3:1) for text at or above 19pt semibold.
  */
 
 export type ColorScheme = 'light' | 'dark';
 
 export interface Palette {
-  /** Page background. */
+  /** The page. */
   background: string;
-  /** Raised card / sheet surface. */
+  /** A surface sitting on the page: grouped lists, panels. */
   surface: string;
-  /** Secondary fill inside a surface (chips, inputs, progress tracks). */
+  /** A surface that lifts off the page with a shadow. */
+  surfaceRaised: string;
+  /** Secondary fill inside a surface: inputs, progress tracks, chips. */
   surfaceAlt: string;
-  /** Pressed/hover state fill. */
+  /** Pressed state fill. */
   surfacePressed: string;
-  /** Hairline dividers and input outlines. */
+  /** Hairline between rows in a list. Quieter than a border. */
+  separator: string;
+  /** Outline on an input or an outlined control. */
   border: string;
-  /** Stronger outline for focus rings. */
+  /** Stronger outline: focus rings, selected controls. */
   borderStrong: string;
+  /** Shadow colour. Warm near-black, never pure black. */
+  shadow: string;
 
-  /** Primary body text. */
+  /** Primary text. */
   text: string;
-  /** De-emphasized text: labels, help text, timestamps. */
+  /** Secondary text: supporting lines, metadata. */
   textMuted: string;
-  /** Text on top of `primary`. */
+  /** Tertiary text: placeholders, disabled. */
+  textSubtle: string;
   textOnPrimary: string;
-  /** Text on top of `accent`. */
   textOnAccent: string;
 
-  /** Brand green: primary actions. */
   primary: string;
-  /** Darker brand green for pressed state. */
   primaryPressed: string;
-  /** Low-opacity brand tint for badges and selected rows. */
+  /** Low-opacity brand tint: selected rows, badges. */
   primarySoft: string;
-  /** Text/icon color readable on `primarySoft`. */
+  /** Text and icons readable on `primarySoft`. */
   primaryOnSoft: string;
 
-  /** Terracotta accent: the scan action and highlights. */
   accent: string;
   accentPressed: string;
   accentSoft: string;
@@ -63,105 +72,164 @@ export interface Palette {
   infoSoft: string;
   infoOnSoft: string;
 
-  /** Macro nutrient identity colors, used consistently app-wide. */
+  /** Macro nutrient identity colours, used consistently app-wide. */
   protein: string;
   carbs: string;
   fat: string;
 
-  /** Scrim behind modals. */
+  /** Scrim behind a modal. */
   scrim: string;
   /** Skeleton loader base. */
   skeleton: string;
 }
 
-const light: Palette = {
-  background: '#FBFAF6',
-  surface: '#FFFFFF',
-  surfaceAlt: '#F2F0E9',
-  surfacePressed: '#E8E5DC',
-  border: '#E4E0D6',
-  borderStrong: '#C8C3B5',
+// ---------------------------------------------------------------------------
+// Ramps
+// ---------------------------------------------------------------------------
 
-  text: '#1B1A17',
-  textMuted: '#67635B',
+/** Warm neutral. 0 is paper, 900 is ink. */
+const clay = {
+  0: '#FFFFFF',
+  25: '#FAF8F4',
+  50: '#F4F1EA',
+  100: '#EBE7DE',
+  200: '#DCD7CA',
+  300: '#C3BCAB',
+  400: '#9B9382',
+  500: '#736C5D',
+  600: '#55503F',
+  700: '#3A362A',
+  800: '#26231B',
+  900: '#15130E',
+} as const;
+
+const forest = {
+  50: '#E8F1EC',
+  100: '#C9E0D4',
+  200: '#9BC7B2',
+  300: '#6BAB90',
+  400: '#3F8B6C',
+  500: '#246B4F',
+  600: '#1A543E',
+  700: '#133F2F',
+  800: '#0D2C21',
+} as const;
+
+const ember = {
+  50: '#FCEDE3',
+  100: '#F7D6C1',
+  300: '#E09468',
+  500: '#B95223',
+  600: '#99411A',
+  700: '#6F2E12',
+} as const;
+
+const light: Palette = {
+  background: clay[25],
+  surface: clay[0],
+  surfaceRaised: clay[0],
+  surfaceAlt: clay[50],
+  surfacePressed: clay[100],
+  separator: clay[100],
+  border: clay[200],
+  borderStrong: clay[300],
+  shadow: clay[900],
+
+  text: clay[900],
+  textMuted: clay[500],
+  textSubtle: clay[400],
   textOnPrimary: '#FFFFFF',
   textOnAccent: '#FFFFFF',
 
-  primary: '#24664B',
-  primaryPressed: '#1B503A',
-  primarySoft: '#E2EFE8',
-  primaryOnSoft: '#1B503A',
+  primary: forest[500],
+  primaryPressed: forest[600],
+  primarySoft: forest[50],
+  primaryOnSoft: forest[600],
 
-  accent: '#B2541F',
-  accentPressed: '#8E4218',
-  accentSoft: '#FAE8DC',
-  accentOnSoft: '#8E4218',
+  accent: ember[500],
+  accentPressed: ember[600],
+  accentSoft: ember[50],
+  accentOnSoft: ember[600],
 
-  success: '#1F7A4D',
-  successSoft: '#E1F2E8',
-  successOnSoft: '#15603A',
+  success: forest[500],
+  successSoft: forest[50],
+  successOnSoft: forest[600],
   warning: '#8A5A08',
-  warningSoft: '#FBEFD6',
-  warningOnSoft: '#6E4706',
-  danger: '#A52A2A',
-  dangerPressed: '#842121',
-  dangerSoft: '#F9E3E3',
-  dangerOnSoft: '#842121',
-  info: '#215C8F',
-  infoSoft: '#E2ECF6',
-  infoOnSoft: '#1A4870',
+  warningSoft: '#FBF0DB',
+  warningOnSoft: '#6B4606',
+  danger: '#A3291F',
+  dangerPressed: '#842019',
+  dangerSoft: '#FAE7E4',
+  dangerOnSoft: '#842019',
+  info: '#1F5A86',
+  infoSoft: '#E4EDF5',
+  infoOnSoft: '#17456A',
 
-  protein: '#3C6E9F',
-  carbs: '#A9761F',
-  fat: '#8C5AA8',
+  protein: '#3A6FA0',
+  carbs: '#A5761C',
+  fat: '#8A59A6',
 
-  scrim: 'rgba(20, 19, 16, 0.45)',
-  skeleton: '#EBE8E0',
+  scrim: 'rgba(21, 19, 14, 0.5)',
+  skeleton: clay[100],
 };
 
+/**
+ * Dark mode.
+ *
+ * Not an inversion. The page is a warm near-black, surfaces step UP in
+ * lightness rather than down, and the brand green is lifted well past its
+ * light-mode value so it stays legible without glowing.
+ */
 const dark: Palette = {
-  background: '#121410',
-  surface: '#1B1E19',
-  surfaceAlt: '#252923',
-  surfacePressed: '#30352E',
-  border: '#343930',
-  borderStrong: '#4C5248',
+  background: '#121109',
+  surface: '#1C1A12',
+  surfaceRaised: '#242117',
+  surfaceAlt: '#262319',
+  surfacePressed: '#322E21',
+  separator: '#2B2819',
+  border: '#36321F',
+  borderStrong: '#4E4934',
+  shadow: '#000000',
 
-  text: '#F2F1EC',
-  textMuted: '#A3A79C',
-  textOnPrimary: '#0D1A13',
-  textOnAccent: '#1F1008',
+  text: '#F3F0E7',
+  textMuted: '#A49D88',
+  textSubtle: '#7D765F',
+  textOnPrimary: '#06150E',
+  textOnAccent: '#190A03',
 
-  primary: '#79C9A1',
-  primaryPressed: '#5FAF87',
-  primarySoft: '#1D3428',
-  primaryOnSoft: '#A3DCBE',
+  primary: forest[300],
+  primaryPressed: forest[400],
+  primarySoft: '#16281F',
+  primaryOnSoft: forest[200],
 
-  accent: '#E79C6B',
-  accentPressed: '#CE8551',
-  accentSoft: '#3A271B',
-  accentOnSoft: '#F0BC95',
+  accent: ember[300],
+  accentPressed: '#C47A4E',
+  accentSoft: '#2E1B10',
+  accentOnSoft: ember[100],
 
-  success: '#6FC996',
-  successSoft: '#1A3326',
-  successOnSoft: '#9BDCB7',
-  warning: '#E0B259',
-  warningSoft: '#352B17',
-  warningOnSoft: '#EFCE8E',
-  danger: '#EC8A8A',
-  dangerPressed: '#D06F6F',
-  dangerSoft: '#3A1F1F',
-  dangerOnSoft: '#F3AFAF',
-  info: '#7FB3E0',
-  infoSoft: '#1B2B3A',
-  infoOnSoft: '#A8CCEC',
+  success: forest[300],
+  successSoft: '#16281F',
+  successOnSoft: forest[200],
+  warning: '#D9A94F',
+  warningSoft: '#2E2412',
+  warningOnSoft: '#EBC684',
+  danger: '#E8857C',
+  dangerPressed: '#CC6E66',
+  dangerSoft: '#301713',
+  dangerOnSoft: '#F2ACA5',
+  info: '#79ACD6',
+  infoSoft: '#15232E',
+  infoOnSoft: '#A6C9E4',
 
-  protein: '#7FAEDC',
-  carbs: '#DFB264',
-  fat: '#C093D8',
+  protein: '#7FAADA',
+  carbs: '#D8AD5E',
+  fat: '#BC8FD2',
 
-  scrim: 'rgba(0, 0, 0, 0.6)',
-  skeleton: '#262A24',
+  scrim: 'rgba(0, 0, 0, 0.64)',
+  skeleton: '#242117',
 };
 
 export const palettes: Record<ColorScheme, Palette> = { light, dark };
+
+/** The ramps, for the rare case a component needs a specific step. */
+export const ramps = { clay, forest, ember } as const;

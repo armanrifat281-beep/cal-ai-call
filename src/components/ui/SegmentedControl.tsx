@@ -34,7 +34,7 @@ export function SegmentedControl<T extends string>({
         {
           flexDirection: 'row',
           backgroundColor: theme.colors.surfaceAlt,
-          borderRadius: theme.radius.md,
+          borderRadius: theme.radius.control,
           padding: theme.spacing.xxs,
           gap: theme.spacing.xxs,
         },
@@ -55,12 +55,12 @@ export function SegmentedControl<T extends string>({
               minHeight: 38,
               alignItems: 'center',
               justifyContent: 'center',
-              borderRadius: theme.radius.sm,
+              borderRadius: theme.radius.xs,
               backgroundColor: active ? theme.colors.surface : 'transparent',
             }}
           >
             <Text
-              variant={active ? 'bodySmStrong' : 'bodySm'}
+              variant={active ? 'label' : 'callout'}
               color={active ? 'text' : 'textMuted'}
             >
               {option.label}

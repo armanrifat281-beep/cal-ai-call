@@ -110,20 +110,20 @@ export default function FoodPreferencesScreen() {
       />
 
       <View style={{ gap: theme.spacing.md }}>
-        <Text variant="bodySmStrong" color="textMuted">
+        <Text variant="label" color="textMuted">
           INGREDIENTS TO AVOID
         </Text>
 
         {!wantsAllergyFiltering ? (
           <View style={{ gap: theme.spacing.sm }}>
-            <Text variant="bodySm" color="textMuted">
+            <Text variant="callout" color="textMuted">
               If you tell FoodLens which ingredients to avoid, meal suggestions
               that list them will be filtered out. We store these only for that
               purpose, and you can delete them at any time.
             </Text>
             <Button
               label="Add ingredients to avoid"
-              variant="secondary"
+              variant="tonal"
               size="sm"
               onPress={() => setWantsAllergyFiltering(true)}
             />
@@ -183,7 +183,7 @@ export default function FoodPreferencesScreen() {
               />
               <Button
                 label="Add"
-                variant="secondary"
+                variant="tonal"
                 onPress={addCustomAllergen}
                 disabled={customAllergen.trim().length === 0}
               />

@@ -47,7 +47,7 @@ export default function WelcomeScreen() {
       }
     >
       <View style={{ gap: theme.spacing.sm, paddingTop: theme.spacing.xl }}>
-        <Text variant="overline" color="primaryOnSoft">
+        <Text variant="label" color="primaryOnSoft">
           FOODLENS AI
         </Text>
         <Text variant="display">Understand what is on your plate.</Text>
@@ -71,13 +71,13 @@ export default function WelcomeScreen() {
                   justifyContent: 'center',
                 }}
               >
-                <Text variant="bodySmStrong" color="textOnPrimary">
+                <Text variant="label" color="textOnPrimary">
                   {index + 1}
                 </Text>
               </View>
               <View style={{ flex: 1, gap: theme.spacing.xxs }}>
-                <Text variant="subheading">{point.title}</Text>
-                <Text variant="bodySm" color="textMuted">
+                <Text variant="headline">{point.title}</Text>
+                <Text variant="callout" color="textMuted">
                   {point.body}
                 </Text>
               </View>

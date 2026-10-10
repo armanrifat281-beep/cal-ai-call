@@ -7,11 +7,11 @@ import { RecipeImage } from '@/components/recipes/RecipeImage';
 import {
   Badge,
   Button,
-  Card,
   Chip,
+  Disclosure,
   ErrorState,
-  InfoNote,
   Screen,
+  Section,
   SegmentedControl,
   Stepper,
   Text,
@@ -243,7 +243,8 @@ export default function CreateRecipeScreen() {
 
   return (
     <Screen
-      contentStyle={{ gap: theme.spacing.lg }}
+      title="Create a recipe"
+      contentStyle={{ gap: theme.spacing.xl }}
       footer={
         <>
           {submitted && hasErrors ? (
@@ -277,10 +278,10 @@ export default function CreateRecipeScreen() {
       }
     >
       {!availability.available ? (
-        <InfoNote
-          title="Recipe writing is not set up yet"
-          body={`${availability.reason} The demo button below opens a real, followable recipe from a small bundled set, labelled as a demo throughout. It is not written for your request.`}
-          tone="warning"
+        <Disclosure
+          summary="Recipe writing is not set up in this build"
+          detail={`${availability.reason} The demo button below opens a real, followable recipe from a small bundled set, labelled as a demo throughout. It is not written for your request.`}
+          tone="caution"
         />
       ) : null}
 
@@ -294,33 +295,26 @@ export default function CreateRecipeScreen() {
       ) : null}
 
       {mode === 'from_photo' && photoUri ? (
-        <View style={{ gap: theme.spacing.sm }}>
-          <Text variant="bodySmStrong" color="textMuted">
-            YOUR PHOTO
-          </Text>
+        <Section title="Your photo" dense>
           <RecipeImage
             image={{ uri: photoUri, kind: 'user_photo', attribution: null }}
             title="Your photo"
             height={160}
           />
-          <Text variant="caption" color="textMuted">
-            FoodLens will work out what the dish is from this photo. A photo
-            cannot reveal hidden ingredients or the original method, so the
-            recipe is a close guess rather than the same dish.
-          </Text>
-        </View>
+          <Disclosure
+            summary="FoodLens will work out the dish from this photo"
+            detail="A photo cannot reveal hidden ingredients or the original method, so the recipe is a close guess at the dish rather than the same one."
+          />
+        </Section>
       ) : (
-        <View style={{ gap: theme.spacing.sm }}>
-          <Text variant="bodySmStrong" color="textMuted">
-            HOW DO YOU WANT TO ASK?
-          </Text>
+        <Section title="How do you want to ask?" dense>
           <SegmentedControl
             options={MODE_OPTIONS}
             value={mode === 'from_photo' ? 'dish_name' : mode}
             onChange={setMode}
             accessibilityLabel="How to describe what you want to cook"
           />
-        </View>
+        </Section>
       )}
 
       <TextField
@@ -358,10 +352,7 @@ export default function CreateRecipeScreen() {
         </View>
       ) : null}
 
-      <View style={{ gap: theme.spacing.sm }}>
-        <Text variant="bodySmStrong" color="textMuted">
-          HOW MANY SERVINGS?
-        </Text>
+      <Section title="How many servings?" dense>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.sm, alignItems: 'center' }}>
           {SERVING_PRESETS.map((preset) => (
             <Chip
@@ -380,12 +371,9 @@ export default function CreateRecipeScreen() {
             unitLabel={servings === 1 ? 'serving' : 'servings'}
           />
         </View>
-      </View>
+      </Section>
 
-      <View style={{ gap: theme.spacing.sm }}>
-        <Text variant="bodySmStrong" color="textMuted">
-          CUISINE
-        </Text>
+      <Section title="Cuisine" dense>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.sm }}>
           {CUISINE_OPTIONS.map((option) => (
             <Chip
@@ -406,12 +394,9 @@ export default function CreateRecipeScreen() {
             autoCapitalize="sentences"
           />
         ) : null}
-      </View>
+      </Section>
 
-      <View style={{ gap: theme.spacing.sm }}>
-        <Text variant="bodySmStrong" color="textMuted">
-          TIME YOU HAVE
-        </Text>
+      <Section title="Time you have" dense>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.sm }}>
           {TIME_OPTIONS.map((option) => (
             <Chip
@@ -422,12 +407,13 @@ export default function CreateRecipeScreen() {
             />
           ))}
         </View>
-      </View>
+      </Section>
 
-      <View style={{ gap: theme.spacing.sm }}>
-        <Text variant="bodySmStrong" color="textMuted">
-          WHAT YOU CAN COOK WITH
-        </Text>
+      <Section
+        title="What you can cook with"
+        subtitle="Leave empty and we assume a basic kitchen."
+        dense
+      >
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.sm }}>
           {EQUIPMENT_OPTIONS.map((option) => (
             <Chip
@@ -444,10 +430,7 @@ export default function CreateRecipeScreen() {
             />
           ))}
         </View>
-        <Text variant="caption" color="textMuted">
-          Leave this empty and we will assume a basic kitchen.
-        </Text>
-      </View>
+      </Section>
 
       <DietarySummary />
     </Screen>
@@ -455,10 +438,11 @@ export default function CreateRecipeScreen() {
 }
 
 /**
- * What the recipe will respect, taken from the user's saved preferences.
+ * What the recipe will respect, taken from saved preferences.
  *
- * Shown rather than applied invisibly: Food Memory should be inspectable, and
- * the allergy disclaimer has to appear wherever allergies affect the output.
+ * Shown rather than applied invisibly: Food Memory should be inspectable.
+ * The allergy caveat has to appear wherever allergies affect the output, and
+ * it does - as one line that expands, not as a stacked warning panel.
  */
 function DietarySummary() {
   const theme = useTheme();
@@ -471,33 +455,30 @@ function DietarySummary() {
 
   if (!hasPatterns && !hasAllergens) {
     return (
-      <Card variant="soft" style={{ gap: theme.spacing.sm }}>
-        <Text variant="subheading">No dietary preferences saved</Text>
-        <Text variant="bodySm" color="textMuted">
-          If you tell FoodLens how you eat, recipes will respect it without you
-          repeating yourself each time.
-        </Text>
+      <Section
+        title="No dietary preferences saved"
+        subtitle="Tell FoodLens how you eat and recipes will respect it without you repeating yourself."
+        dense
+      >
         <Button
           label="Set my preferences"
-          variant="secondary"
+          variant="tonal"
           size="sm"
           onPress={() => router.push('/(onboarding)/food')}
         />
-      </Card>
+      </Section>
     );
   }
 
   return (
-    <Card variant="soft" style={{ gap: theme.spacing.sm }}>
-      <Text variant="subheading">This recipe will respect</Text>
-
+    <Section
+      title="This recipe will respect"
+      action={{ label: 'Change', onPress: () => router.push('/(onboarding)/food') }}
+      dense
+    >
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.xs }}>
         {preferences.dietaryPatterns.map((pattern) => (
-          <Badge
-            key={pattern}
-            label={pattern.replace(/_/g, ' ')}
-            tone="primary"
-          />
+          <Badge key={pattern} label={pattern.replace(/_/g, ' ')} tone="primary" />
         ))}
         {hasAllergens
           ? preferences.allergens.map((allergen) => (
@@ -507,19 +488,12 @@ function DietarySummary() {
       </View>
 
       {hasAllergens ? (
-        <InfoNote
-          title="Not a safety check"
-          body="FoodLens asks the model to leave these out, but AI output can be wrong or incomplete. Never rely on a generated recipe to decide whether something is safe for an allergy. Read the labels on what you actually buy."
-          tone="warning"
+        <Disclosure
+          summary="Filtering allergens is not a safety check"
+          detail="FoodLens asks the model to leave these out, but AI output can be wrong or incomplete. Never rely on a generated recipe to decide whether something is safe for an allergy. Read the labels on what you actually buy."
+          tone="caution"
         />
       ) : null}
-
-      <Button
-        label="Change my preferences"
-        variant="ghost"
-        size="sm"
-        onPress={() => router.push('/(onboarding)/food')}
-      />
-    </Card>
+    </Section>
   );
 }

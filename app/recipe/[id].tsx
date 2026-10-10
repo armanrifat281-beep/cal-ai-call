@@ -1,47 +1,50 @@
 import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, View } from 'react-native';
 
 import { Icon } from '@/components/Icon';
 import { RecipeImage } from '@/components/recipes/RecipeImage';
 import {
-  Badge,
   Button,
-  Card,
-  Checkbox,
-  Divider,
+  Disclosure,
   ErrorState,
-  InfoNote,
+  IconButton,
+  Metric,
+  PressableScale,
   Screen,
+  Section,
   Skeleton,
   Stepper,
+  Surface,
   Text,
 } from '@/components/ui';
+import { SOURCE_EXPLANATIONS, formatGrams } from '@/features/nutrition';
 import {
   MAX_SERVINGS,
   MIN_SERVINGS,
   batchNutrition,
   checkRecipeConsistency,
   describeConsistencyIssue,
-  formatIngredientAmount,
   getRecipeRepository,
   getShoppingListRepository,
   scaleRecipe,
   useRecipe,
+  type ScaledIngredient,
 } from '@/features/recipes';
 import { cuisineLabel } from '@/features/recipes/options';
-import { SOURCE_EXPLANATIONS, SOURCE_LABELS, formatCalories, formatGrams } from '@/features/nutrition';
 import type { AppError } from '@/lib/result';
 import { useTheme } from '@/theme';
-import type { ScaledIngredient } from '@/features/recipes';
 
 /**
- * One recipe: what it is, what you need, and how to cook it.
+ * One recipe.
  *
- * The ingredient checklist is the working part of this screen. Ticking an
- * ingredient means "I have this"; everything unticked is what the shopping
- * list is built from. Nothing is pre-ticked - assuming an ingredient is in
- * someone's cupboard is how a shopping list ends up missing it.
+ * Reworked from a stack of five outlined cards and four warning panels into
+ * a single reading flow: image, title, the facts as one line of text, then
+ * ingredients as a checklist and the method as a numbered rail.
+ *
+ * The ingredient checklist is the working part. Ticking means "I have this";
+ * whatever is left is what the shopping list is built from. Nothing is
+ * pre-ticked.
  */
 export default function RecipeDetailScreen() {
   const theme = useTheme();
@@ -52,7 +55,6 @@ export default function RecipeDetailScreen() {
   const { recipe, loading, error, notFound, reload } = useRecipe(id);
 
   const [servings, setServings] = useState<number | null>(null);
-  /** Ids the user has ticked as already owned, for this visit. */
   const [owned, setOwned] = useState<Set<string>>(new Set());
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState<AppError | null>(null);
@@ -63,12 +65,10 @@ export default function RecipeDetailScreen() {
     () => (recipe ? scaleRecipe(recipe, targetServings) : null),
     [recipe, targetServings],
   );
-
   const consistency = useMemo(
     () => (recipe ? checkRecipeConsistency(recipe) : null),
     [recipe],
   );
-
   const missing = useMemo(
     () => (scaled ? scaled.ingredients.filter((item) => !owned.has(item.id)) : []),
     [scaled, owned],
@@ -83,6 +83,86 @@ export default function RecipeDetailScreen() {
     });
   }, []);
 
+  const toggleFavorite = useCallback(async () => {
+    if (!recipe) return;
+    setBusy(true);
+    const result = await getRecipeRepository().setFavorite(recipe.id, !recipe.isFavorite);
+    setBusy(false);
+    if (!result.ok) setActionError(result.error);
+    else reload();
+  }, [recipe, reload]);
+
+  const showMore = useCallback(() => {
+    if (!recipe) return;
+    Alert.alert(recipe.title, undefined, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Stop suggesting this',
+        onPress: () => {
+          void (async () => {
+            setBusy(true);
+            const result = await getRecipeRepository().setRejected(recipe.id, true);
+            setBusy(false);
+            if (!result.ok) setActionError(result.error);
+            else router.back();
+          })();
+        },
+      },
+      {
+        text: 'Delete recipe',
+        style: 'destructive',
+        onPress: () => {
+          Alert.alert('Delete this recipe?', 'This cannot be undone.', [
+            { text: 'Keep it', style: 'cancel' },
+            {
+              text: 'Delete',
+              style: 'destructive',
+              onPress: () => {
+                void (async () => {
+                  setBusy(true);
+                  const result = await getRecipeRepository().deleteRecipe(recipe.id);
+                  setBusy(false);
+                  if (!result.ok) setActionError(result.error);
+                  else router.back();
+                })();
+              },
+            },
+          ]);
+        },
+      },
+    ]);
+  }, [recipe, router]);
+
+  // Favourite and overflow live in the navigation bar, which is where a
+  // native app puts them. Earlier this screen ended with three stacked
+  // full-width ghost buttons.
+  useEffect(() => {
+    if (!recipe) return;
+    navigation.setOptions({
+      title: recipe.title,
+      headerRight: () => (
+        <View style={{ flexDirection: 'row', gap: 2, marginRight: -6 }}>
+          <IconButton
+            accessibilityLabel={
+              recipe.isFavorite ? 'Remove from favourites' : 'Save to favourites'
+            }
+            onPress={() => void toggleFavorite()}
+          >
+            <Icon
+              name="star"
+              size={21}
+              color={recipe.isFavorite ? 'accent' : 'textMuted'}
+              filled={recipe.isFavorite}
+            />
+          </IconButton>
+          <IconButton accessibilityLabel="More actions" onPress={showMore}>
+            <Icon name="more" size={21} color="textMuted" />
+          </IconButton>
+        </View>
+      ),
+    });
+  }, [recipe, navigation, toggleFavorite, showMore]);
+
   const addMissingToList = async () => {
     if (!recipe || missing.length === 0) return;
 
@@ -92,24 +172,21 @@ export default function RecipeDetailScreen() {
     const repository = getShoppingListRepository();
     const items = missing.map((item) => ({
       name: item.name,
-      // The scaled amount, so the list matches the servings being cooked.
       quantity: item.scaledQuantity,
       unit: item.unit,
       note: item.preparation,
       sourceRecipeId: recipe.id,
     }));
 
-    // Add to the newest active list if there is one, so a second recipe
-    // merges into the same shop rather than starting another list.
+    // Merge into the newest active list, so a second recipe joins the same
+    // shop rather than starting another list.
     const existing = await repository.listLists('active');
     const target = existing.ok ? existing.value[0] : undefined;
-
     const result = target
       ? await repository.addItems(target.id, items)
       : await repository.createList({ name: 'Shopping list', items });
 
     setBusy(false);
-
     if (!result.ok) {
       setActionError(result.error);
       return;
@@ -117,69 +194,13 @@ export default function RecipeDetailScreen() {
     router.push(`/shopping/${result.value.id}`);
   };
 
-  const toggleFavorite = async () => {
-    if (!recipe) return;
-    setBusy(true);
-    const result = await getRecipeRepository().setFavorite(recipe.id, !recipe.isFavorite);
-    setBusy(false);
-    if (!result.ok) setActionError(result.error);
-    else reload();
-  };
-
-  const reject = () => {
-    if (!recipe) return;
-    Alert.alert(
-      'Not interested in this recipe?',
-      'It stays in your recipes so you can find it, but FoodLens will stop suggesting it.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Stop suggesting it',
-          onPress: () => {
-            void (async () => {
-              setBusy(true);
-              const result = await getRecipeRepository().setRejected(recipe.id, true);
-              setBusy(false);
-              if (!result.ok) setActionError(result.error);
-              else router.back();
-            })();
-          },
-        },
-      ],
-    );
-  };
-
-  const remove = () => {
-    if (!recipe) return;
-    Alert.alert(
-      'Delete this recipe?',
-      'It will be removed from your recipes. This cannot be undone.',
-      [
-        { text: 'Keep it', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: () => {
-            void (async () => {
-              setBusy(true);
-              const result = await getRecipeRepository().deleteRecipe(recipe.id);
-              setBusy(false);
-              if (!result.ok) setActionError(result.error);
-              else router.back();
-            })();
-          },
-        },
-      ],
-    );
-  };
-
   if (loading) {
     return (
-      <Screen contentStyle={{ gap: theme.spacing.base }}>
-        <Skeleton height={190} radius={theme.radius.lg} />
+      <Screen contentStyle={{ gap: theme.spacing.lg }}>
+        <Skeleton height={200} radius={theme.radius.media} />
         <Skeleton width="70%" height={28} />
+        <Skeleton width="45%" height={14} />
         <Skeleton height={60} />
-        <Skeleton height={120} radius={theme.radius.lg} />
       </Screen>
     );
   }
@@ -209,15 +230,24 @@ export default function RecipeDetailScreen() {
     );
   }
 
-  navigation.setOptions({ title: recipe.title });
-
   const isDemo = recipe.origin === 'demo_sample';
-  const totalMinutes = (recipe.prepMinutes ?? 0) + (recipe.cookMinutes ?? 0);
   const nutrition = scaled.nutritionPerServing;
+
+  // The facts as one line of plain text, separated by middots. These were
+  // five coloured pills, which is a lot of visual noise for metadata.
+  const facts = [
+    `Serves ${recipe.servings}`,
+    recipe.prepMinutes ? `${recipe.prepMinutes} min prep` : null,
+    recipe.cookMinutes ? `${recipe.cookMinutes} min cook` : null,
+    cuisineLabel(recipe.cuisine),
+    recipe.cookCount > 0
+      ? `cooked ${recipe.cookCount} time${recipe.cookCount === 1 ? '' : 's'}`
+      : null,
+  ].filter(Boolean);
 
   return (
     <Screen
-      contentStyle={{ gap: theme.spacing.lg }}
+      contentStyle={{ gap: theme.spacing.xl }}
       footer={
         <>
           <Button
@@ -225,300 +255,288 @@ export default function RecipeDetailScreen() {
             onPress={() => router.push(`/recipe/cook/${recipe.id}`)}
             size="lg"
             fullWidth
-            haptic
-            leading={<Icon name="flame" size={20} color={theme.colors.textOnPrimary} />}
+            leading={<Icon name="flame" size={19} color={theme.colors.textOnPrimary} />}
           />
           {missing.length > 0 ? (
             <Button
-              label={`Add ${missing.length} missing item${missing.length === 1 ? '' : 's'} to a shopping list`}
-              variant="secondary"
+              label={`Add ${missing.length} missing to a list`}
+              variant="tonal"
               onPress={() => void addMissingToList()}
               loading={busy}
               fullWidth
             />
-          ) : (
-            <Text variant="caption" color="textMuted" align="center">
-              You have everything. Nothing to buy.
+          ) : scaled.ingredients.length > 0 ? (
+            <Text variant="footnote" color="textMuted" align="center">
+              You have everything.
             </Text>
-          )}
+          ) : null}
         </>
       }
     >
-      {isDemo ? (
-        <InfoNote
-          title="This is a demo recipe"
-          body="It came from a small bundled set, not from AI, and it was not written for your request. It is a real recipe you can cook, but its nutrition figures are rough demo values."
-          tone="warning"
-        />
-      ) : null}
-
-      {actionError ? (
-        <ErrorState message={actionError.message} detail={actionError.detail} />
-      ) : null}
-
-      <RecipeImage image={recipe.image} title={recipe.title} />
+      {/* Full-bleed hero: the gutter is cancelled so the image meets the edges. */}
+      <RecipeImage
+        image={recipe.image}
+        title={recipe.title}
+        height={210}
+        style={{
+          marginHorizontal: -theme.gutter,
+          marginTop: -theme.spacing.lg,
+          borderRadius: 0,
+        }}
+      />
 
       <View style={{ gap: theme.spacing.sm }}>
-        <Text variant="title">{recipe.title}</Text>
+        <Text variant="title1">{recipe.title}</Text>
         {recipe.description ? (
           <Text variant="body" color="textMuted">
             {recipe.description}
           </Text>
         ) : null}
-
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.xs }}>
-          {isDemo ? <Badge label="Demo recipe" tone="warning" /> : null}
-          {cuisineLabel(recipe.cuisine) ? (
-            <Badge label={cuisineLabel(recipe.cuisine) ?? ''} tone="neutral" />
-          ) : null}
-          {recipe.prepMinutes ? (
-            <Badge label={`${recipe.prepMinutes} min prep`} tone="neutral" />
-          ) : null}
-          {recipe.cookMinutes ? (
-            <Badge label={`${recipe.cookMinutes} min cook`} tone="neutral" />
-          ) : null}
-          {recipe.cookCount > 0 ? (
-            <Badge
-              label={`Cooked ${recipe.cookCount} time${recipe.cookCount === 1 ? '' : 's'}`}
-              tone="primary"
-            />
-          ) : null}
-        </View>
+        <Text variant="footnote" color="textSubtle">
+          {facts.join('  ·  ')}
+        </Text>
       </View>
 
-      {consistency && !consistency.isConsistent ? (
-        <InfoNote
-          title="Check this recipe before you cook"
-          body={consistency.issues.map(describeConsistencyIssue).join(' ')}
-          tone="warning"
+      {actionError ? (
+        <ErrorState message={actionError.message} detail={actionError.detail} />
+      ) : null}
+
+      {/*
+        Two caveats that have to be on this screen, as single lines rather
+        than stacked panels: that a demo recipe is a demo, and anything the
+        recipe says that contradicts itself.
+      */}
+      {isDemo ? (
+        <Disclosure
+          summary="Demo recipe, not written for your request"
+          detail="This came from a small bundled set rather than from AI. It is a real recipe you can cook, but its nutrition figures are rough demo values."
+          tone="caution"
         />
       ) : null}
 
-      {/* ---- Servings ---- */}
-      <Card style={{ gap: theme.spacing.md }}>
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-          }}
-        >
-          <View style={{ gap: theme.spacing.xxs }}>
-            <Text variant="bodySmStrong" color="textMuted">
-              SERVINGS
-            </Text>
-            <Text variant="caption" color="textMuted">
-              Written for {recipe.servings}
-              {totalMinutes > 0 ? ` - about ${totalMinutes} min total` : ''}
-            </Text>
-          </View>
-          <Stepper
-            value={targetServings}
-            onChange={setServings}
-            min={MIN_SERVINGS}
-            max={MAX_SERVINGS}
-            label="Servings"
-          />
+      {consistency && !consistency.isConsistent ? (
+        <Disclosure
+          summary="Some amounts in this recipe do not add up"
+          detail={consistency.issues.map(describeConsistencyIssue).join(' ')}
+          tone="caution"
+        />
+      ) : null}
+
+      {/* Servings. A labelled row, not a panel. */}
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: theme.spacing.md,
+        }}
+      >
+        <View style={{ flex: 1, gap: 2 }}>
+          <Text variant="label">Servings</Text>
+          <Text variant="footnote" color="textMuted">
+            {scaled.factor === 1
+              ? 'As written'
+              : `Amounts adjusted from ${recipe.servings}`}
+          </Text>
         </View>
+        <Stepper
+          value={targetServings}
+          onChange={setServings}
+          min={MIN_SERVINGS}
+          max={MAX_SERVINGS}
+          label="Servings"
+        />
+      </View>
 
-        {scaled.factor !== 1 ? (
-          <Text variant="caption" color="primaryOnSoft">
-            Amounts below are adjusted for {targetServings} servings.
-          </Text>
-        ) : null}
-
-        {scaled.hasHeldIngredients ? (
-          <Text variant="caption" color="textMuted">
-            Some amounts do not change with servings, because they depend on
-            your pan rather than how many people are eating.
-          </Text>
-        ) : null}
-      </Card>
-
-      {/* ---- Nutrition ---- */}
+      {/* Nutrition. Four figures in a row, no box. */}
       {nutrition ? (
-        <Card style={{ gap: theme.spacing.sm }}>
-          <View
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-            }}
-          >
-            <Text variant="bodySmStrong" color="textMuted">
-              PER SERVING
-            </Text>
-            <Badge
-              label={SOURCE_LABELS[nutrition.source]}
-              tone={nutrition.source === 'demo_sample' ? 'neutral' : 'warning'}
+        <Section title="Per serving" dense>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+            <Metric
+              value={String(Math.round(nutrition.caloriesKcal))}
+              unit="kcal"
+              label="Energy"
+              size="l"
             />
+            <Metric value={formatGrams(nutrition.proteinG)} label="Protein" size="m" />
+            <Metric value={formatGrams(nutrition.carbsG)} label="Carbs" size="m" />
+            <Metric value={formatGrams(nutrition.fatG)} label="Fat" size="m" />
           </View>
 
-          <View style={{ flexDirection: 'row', gap: theme.spacing.lg }}>
-            <NutrientCell label="Calories" value={formatCalories(nutrition.caloriesKcal)} />
-            <NutrientCell label="Protein" value={formatGrams(nutrition.proteinG)} />
-            <NutrientCell label="Carbs" value={formatGrams(nutrition.carbsG)} />
-            <NutrientCell label="Fat" value={formatGrams(nutrition.fatG)} />
-          </View>
-
-          {targetServings !== recipe.servings ? (
-            <Text variant="caption" color="textMuted">
-              These are per serving, so they do not change when you adjust the
-              serving count. The whole batch at {targetServings} servings comes
-              to about{' '}
-              {formatCalories(batchNutrition(nutrition, targetServings)?.caloriesKcal ?? null)}.
-            </Text>
-          ) : null}
-
-          <InfoNote body={SOURCE_EXPLANATIONS[nutrition.source]} tone="neutral" />
-        </Card>
+          <Disclosure
+            summary={
+              targetServings === recipe.servings
+                ? 'These are estimates, per serving'
+                : `Per serving, so unchanged at ${targetServings} servings`
+            }
+            detail={`${SOURCE_EXPLANATIONS[nutrition.source]}${
+              targetServings !== recipe.servings
+                ? ` The whole batch at ${targetServings} servings comes to about ${Math.round(
+                    batchNutrition(nutrition, targetServings)?.caloriesKcal ?? 0,
+                  )} kcal.`
+                : ''
+            }`}
+          />
+        </Section>
       ) : (
-        <InfoNote
-          title="No nutrition estimate"
-          body="This recipe has no nutrition figures. That is more honest than a number nobody stands behind - log the meal from your journal if you want to track it."
-          tone="neutral"
+        <Disclosure
+          summary="No nutrition estimate for this recipe"
+          detail="That is more honest than a number nobody stands behind. Log the meal from your journal if you want to track it."
         />
       )}
 
-      {/* ---- Ingredient checklist ---- */}
-      <View style={{ gap: theme.spacing.md }}>
-        <View style={{ gap: theme.spacing.xxs }}>
-          <Text variant="heading">Ingredients</Text>
-          <Text variant="bodySm" color="textMuted">
-            Tick what you already have. Everything left is what you need to buy.
-          </Text>
-        </View>
-
-        <Card padding="none">
+      {/* Ingredients. */}
+      <Section
+        title="Ingredients"
+        subtitle="Tick what you already have."
+        dense
+      >
+        <Surface variant="grouped">
           {groupIngredients(scaled.ingredients).map((group, groupIndex) => (
-            <View key={group.name ?? `group-${groupIndex}`}>
+            <View key={group.name ?? `g-${groupIndex}`}>
               {group.name ? (
                 <View
                   style={{
                     paddingHorizontal: theme.spacing.base,
                     paddingTop: theme.spacing.md,
                     paddingBottom: theme.spacing.xs,
+                    backgroundColor: theme.colors.surfaceAlt,
                   }}
                 >
-                  <Text variant="caption" color="textMuted">
-                    {group.name.toUpperCase()}
+                  <Text variant="label" color="textMuted">
+                    {group.name}
                   </Text>
                 </View>
               ) : null}
 
               {group.items.map((item, index) => (
-                <View key={item.id}>
-                  {index > 0 || group.name ? <Divider inset={theme.spacing.base} /> : null}
-                  <IngredientRow
-                    item={item}
-                    checked={owned.has(item.id)}
-                    onToggle={() => toggleOwned(item.id)}
-                  />
-                </View>
+                <IngredientRow
+                  key={item.id}
+                  item={item}
+                  checked={owned.has(item.id)}
+                  onToggle={() => toggleOwned(item.id)}
+                  divided={index > 0 || Boolean(group.name)}
+                />
               ))}
             </View>
           ))}
-        </Card>
+        </Surface>
 
-        {missing.length > 0 && missing.length < scaled.ingredients.length ? (
-          <Text variant="bodySm" color="textMuted">
-            {missing.length} still needed, {scaled.ingredients.length - missing.length}{' '}
-            already in your kitchen.
-          </Text>
+        {scaled.hasHeldIngredients ? (
+          <Disclosure summary="Amounts marked “fixed” depend on your pan, not the serving count." />
         ) : null}
-      </View>
+      </Section>
 
-      {/* ---- Equipment ---- */}
       {recipe.equipment.length > 0 ? (
-        <View style={{ gap: theme.spacing.sm }}>
-          <Text variant="heading">You will need</Text>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.sm }}>
-            {recipe.equipment.map((item) => (
-              <Badge key={item} label={item} tone="neutral" />
-            ))}
-          </View>
-        </View>
+        <Section title="You will need" dense>
+          <Text variant="body" color="textMuted">
+            {recipe.equipment.join(', ')}
+          </Text>
+        </Section>
       ) : null}
 
-      {/* ---- Method ---- */}
-      <View style={{ gap: theme.spacing.md }}>
-        <Text variant="heading">Method</Text>
-        {recipe.steps.map((step) => (
-          <Card key={step.number} style={{ gap: theme.spacing.sm }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm }}>
-              <View
-                style={{
-                  width: 26,
-                  height: 26,
-                  borderRadius: theme.radius.pill,
-                  backgroundColor: theme.colors.primarySoft,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <Text variant="caption" color="primaryOnSoft">
-                  {step.number}
-                </Text>
-              </View>
-              {step.durationMinutes ? (
-                <Badge label={`${step.durationMinutes} min`} tone="neutral" />
-              ) : null}
-              {step.temperatureC ? (
-                <Badge label={`${step.temperatureC} C`} tone="accent" />
-              ) : null}
-            </View>
-            <Text variant="body">{step.instruction}</Text>
-          </Card>
-        ))}
-      </View>
-
-      {/* ---- Tips ---- */}
-      {recipe.tips.length > 0 ? (
-        <View style={{ gap: theme.spacing.sm }}>
-          <Text variant="heading">Tips</Text>
-          {recipe.tips.map((tip) => (
-            <Card key={tip} variant="soft">
-              <Text variant="bodySm">{tip}</Text>
-            </Card>
+      {/* Method as a numbered rail. */}
+      <Section title="Method" dense>
+        <View>
+          {recipe.steps.map((step, index) => (
+            <MethodStep
+              key={step.number}
+              number={step.number}
+              instruction={step.instruction}
+              durationMinutes={step.durationMinutes}
+              temperatureC={step.temperatureC}
+              isLast={index === recipe.steps.length - 1}
+            />
           ))}
         </View>
-      ) : null}
+      </Section>
 
-      {/* ---- Recipe actions ---- */}
-      <View style={{ gap: theme.spacing.sm }}>
-        <Button
-          label={recipe.isFavorite ? 'Remove from favourites' : 'Save to favourites'}
-          variant="secondary"
-          onPress={() => void toggleFavorite()}
-          fullWidth
-        />
-        <Button
-          label="Stop suggesting this"
-          variant="ghost"
-          size="sm"
-          onPress={reject}
-          fullWidth
-        />
-        <Button
-          label="Delete this recipe"
-          variant="ghost"
-          size="sm"
-          onPress={remove}
-          fullWidth
-        />
-      </View>
+      {recipe.tips.length > 0 ? (
+        <Section title="Tips" dense>
+          <View style={{ gap: theme.spacing.md }}>
+            {recipe.tips.map((tip) => (
+              <View key={tip} style={{ flexDirection: 'row', gap: theme.spacing.sm }}>
+                <View
+                  style={{
+                    width: 3,
+                    borderRadius: 2,
+                    backgroundColor: theme.colors.primarySoft,
+                  }}
+                />
+                <Text variant="callout" color="textMuted" style={{ flex: 1 }}>
+                  {tip}
+                </Text>
+              </View>
+            ))}
+          </View>
+        </Section>
+      ) : null}
     </Screen>
   );
 }
 
-function NutrientCell({ label, value }: { label: string; value: string }) {
+/**
+ * One step on a vertical rail.
+ *
+ * The connecting line is what makes a sequence read as a sequence. Each step
+ * used to be its own outlined card, which read as a list of unrelated notes.
+ */
+function MethodStep({
+  number,
+  instruction,
+  durationMinutes,
+  temperatureC,
+  isLast,
+}: {
+  number: number;
+  instruction: string;
+  durationMinutes: number | null;
+  temperatureC: number | null;
+  isLast: boolean;
+}) {
   const theme = useTheme();
+
+  const meta = [
+    durationMinutes ? `${durationMinutes} min` : null,
+    temperatureC ? `${temperatureC}°C` : null,
+  ].filter(Boolean);
+
   return (
-    <View style={{ gap: theme.spacing.xxs }}>
-      <Text variant="caption" color="textMuted">
-        {label.toUpperCase()}
-      </Text>
-      <Text variant="metricSm">{value}</Text>
+    <View style={{ flexDirection: 'row', gap: theme.spacing.md }}>
+      <View style={{ alignItems: 'center', width: 26 }}>
+        <View
+          style={{
+            width: 26,
+            height: 26,
+            borderRadius: theme.radius.pill,
+            backgroundColor: theme.colors.primarySoft,
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <Text variant="metricS" color="primaryOnSoft">
+            {number}
+          </Text>
+        </View>
+        {!isLast ? (
+          <View style={{ flex: 1, width: theme.hairline * 2, backgroundColor: theme.colors.separator }} />
+        ) : null}
+      </View>
+
+      <View
+        style={{
+          flex: 1,
+          gap: theme.spacing.xs,
+          paddingBottom: isLast ? 0 : theme.spacing.lg,
+        }}
+      >
+        <Text variant="body">{instruction}</Text>
+        {meta.length > 0 ? (
+          <Text variant="caption" color="textMuted">
+            {meta.join('  ·  ')}
+          </Text>
+        ) : null}
+      </View>
     </View>
   );
 }
@@ -527,66 +545,154 @@ function IngredientRow({
   item,
   checked,
   onToggle,
+  divided,
 }: {
   item: ScaledIngredient;
   checked: boolean;
   onToggle: () => void;
+  divided: boolean;
 }) {
   const theme = useTheme();
 
-  const detailParts = [item.displayAmount, item.preparation].filter(
-    (part): part is string => Boolean(part && part.length > 0),
-  );
+  const detail = [item.preparation, item.wasHeldFixed ? 'fixed' : null]
+    .filter((part): part is string => Boolean(part))
+    .join('  ·  ');
 
   return (
     <View>
-      <Checkbox
-        checked={checked}
-        onChange={onToggle}
-        label={item.name}
-        detail={detailParts.join(' - ')}
-        trailing={
-          item.wasHeldFixed ? (
-            <Badge label="fixed" tone="neutral" />
-          ) : undefined
-        }
-      />
-      {item.substitution ? (
+      {divided ? (
         <View
           style={{
-            paddingHorizontal: theme.spacing.base + 36,
-            paddingBottom: theme.spacing.sm,
+            height: theme.hairline,
+            backgroundColor: theme.colors.separator,
+            marginLeft: theme.spacing.base + 24 + theme.spacing.md,
           }}
-        >
-          <Text variant="caption" color="textMuted">
-            Or: {item.substitution}
-          </Text>
-        </View>
+        />
       ) : null}
+
+      <View>
+        <IngredientCheckbox
+          checked={checked}
+          onToggle={onToggle}
+          name={item.name}
+          amount={item.displayAmount}
+          detail={detail}
+        />
+        {item.substitution ? (
+          <Text
+            variant="caption"
+            color="textSubtle"
+            style={{
+              paddingLeft: theme.spacing.base + 24 + theme.spacing.md,
+              paddingRight: theme.spacing.base,
+              paddingBottom: theme.spacing.sm,
+            }}
+          >
+            or {item.substitution}
+          </Text>
+        ) : null}
+      </View>
     </View>
   );
 }
 
-/** Groups ingredients by their section, keeping ungrouped ones first. */
+/**
+ * An ingredient line.
+ *
+ * The amount is right-aligned in tabular digits, so the quantities form a
+ * readable column down the list rather than trailing each name.
+ */
+function IngredientCheckbox({
+  checked,
+  onToggle,
+  name,
+  amount,
+  detail,
+}: {
+  checked: boolean;
+  onToggle: () => void;
+  name: string;
+  amount: string;
+  detail: string;
+}) {
+  const theme = useTheme();
+
+  return (
+    <PressableScale
+      onPress={onToggle}
+      accessibilityRole="checkbox"
+      accessibilityState={{ checked }}
+      accessibilityLabel={`${name}${amount ? `, ${amount}` : ''}`}
+      accessibilityHint={
+        checked ? 'Marks this as not yet bought' : 'Marks this as already in your kitchen'
+      }
+      scaleTo={0.99}
+    >
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: theme.spacing.md,
+          minHeight: theme.minTouchTarget + 2,
+          paddingHorizontal: theme.spacing.base,
+          paddingVertical: theme.spacing.sm,
+        }}
+      >
+        <View
+          style={{
+            width: 24,
+            height: 24,
+            borderRadius: theme.radius.xs,
+            borderWidth: checked ? 0 : 1.5,
+            borderColor: theme.colors.borderStrong,
+            backgroundColor: checked ? theme.colors.primary : 'transparent',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          {checked ? (
+            <Icon name="check" size={15} color={theme.colors.textOnPrimary} strokeWidth={2.8} />
+          ) : null}
+        </View>
+
+        <View style={{ flex: 1, gap: 1 }}>
+          <Text
+            variant="body"
+            color={checked ? 'textSubtle' : 'text'}
+            style={checked ? { textDecorationLine: 'line-through' } : undefined}
+          >
+            {name}
+          </Text>
+          {detail ? (
+            <Text variant="caption" color="textSubtle">
+              {detail}
+            </Text>
+          ) : null}
+        </View>
+
+        <Text variant="metricS" color={checked ? 'textSubtle' : 'textMuted'}>
+          {amount}
+        </Text>
+      </View>
+    </PressableScale>
+  );
+}
+
+/** Groups ingredients by section, keeping ungrouped ones first. */
 function groupIngredients(
   ingredients: ScaledIngredient[],
 ): { name: string | null; items: ScaledIngredient[] }[] {
   const ungrouped = ingredients.filter((item) => !item.group);
-  const groupNames = [
+  const names = [
     ...new Set(
-      ingredients
-        .map((item) => item.group)
-        .filter((group): group is string => Boolean(group)),
+      ingredients.map((item) => item.group).filter((group): group is string => Boolean(group)),
     ),
   ];
 
   const groups: { name: string | null; items: ScaledIngredient[] }[] = [];
   if (ungrouped.length > 0) groups.push({ name: null, items: ungrouped });
-  for (const name of groupNames) {
+  for (const name of names) {
     groups.push({ name, items: ingredients.filter((item) => item.group === name) });
   }
   return groups;
 }
-
-/** Re-exported so the formatter is available to other recipe screens. */
-export { formatIngredientAmount };

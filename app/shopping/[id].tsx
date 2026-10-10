@@ -189,7 +189,7 @@ export default function ShoppingListScreen() {
             />
             <Button
               label="Add"
-              variant="secondary"
+              variant="tonal"
               onPress={() => void addItem()}
               disabled={newItem.trim().length === 0}
             />
@@ -202,7 +202,7 @@ export default function ShoppingListScreen() {
       ) : null}
 
       <View style={{ gap: theme.spacing.sm }}>
-        <Text variant="title">{list.name}</Text>
+        <Text variant="title1">{list.name}</Text>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.xs }}>
           <Badge
             label={
@@ -248,7 +248,7 @@ export default function ShoppingListScreen() {
 
           {ticked.length > 0 ? (
             <View style={{ gap: theme.spacing.sm }}>
-              <Text variant="bodySmStrong" color="textMuted">
+              <Text variant="label" color="textMuted">
                 IN THE BASKET ({ticked.length})
               </Text>
               <Card padding="none">
@@ -273,7 +273,7 @@ export default function ShoppingListScreen() {
       <View style={{ gap: theme.spacing.sm }}>
         <Button
           label={copied ? 'Copied to clipboard' : 'Copy the list'}
-          variant="secondary"
+          variant="tonal"
           onPress={() => void copyToClipboard()}
           disabled={outstanding.length === 0}
           fullWidth

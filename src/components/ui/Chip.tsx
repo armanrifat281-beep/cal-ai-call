@@ -59,7 +59,7 @@ export function Chip({
     >
       {leading}
       <Text
-        variant={selected ? 'bodySmStrong' : 'bodySm'}
+        variant={selected ? 'label' : 'callout'}
         color={selected ? 'primaryOnSoft' : 'text'}
       >
         {label}

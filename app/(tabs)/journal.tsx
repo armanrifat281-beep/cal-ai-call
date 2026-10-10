@@ -3,19 +3,21 @@ import { useState } from 'react';
 import { View } from 'react-native';
 
 import { Icon } from '@/components/Icon';
-import { DailySummaryCard, EntryRow } from '@/components/nutrition';
+import { DaySummary, MealRow } from '@/components/nutrition';
 import {
   Button,
-  Card,
   EmptyState,
   ErrorState,
   IconButton,
+  Metric,
   Screen,
+  Section,
   Skeleton,
+  Surface,
   Text,
 } from '@/components/ui';
 import { useDayJournal } from '@/features/journal';
-import { formatDayLabel, addDaysToKey, todayKey } from '@/lib/date';
+import { addDaysToKey, formatDayLabel, todayKey } from '@/lib/date';
 import { usePreferencesStore } from '@/store/preferencesStore';
 import { useTheme } from '@/theme';
 import { MEAL_TYPES, type MealType } from '@/types/domain';
@@ -27,6 +29,14 @@ const MEAL_LABELS: Record<MealType, string> = {
   snack: 'Snacks',
 };
 
+/**
+ * The food journal, one day at a time.
+ *
+ * The day stepper sits directly under the title rather than in a boxed
+ * control, and each meal type is a section heading with its energy total
+ * right-aligned against it - so the page scans as a day's eating rather than
+ * as four identical panels.
+ */
 export default function JournalScreen() {
   const theme = useTheme();
   const router = useRouter();
@@ -40,55 +50,50 @@ export default function JournalScreen() {
 
   return (
     <Screen
+      title="Journal"
       edges={{ top: true }}
       refreshing={loading}
       onRefresh={reload}
-      contentStyle={{ gap: theme.spacing.lg }}
+      titleAction={
+        !isToday ? (
+          <Button label="Today" variant="tonal" size="sm" onPress={() => setDateKey(today)} />
+        ) : undefined
+      }
     >
-      <View style={{ gap: theme.spacing.md }}>
-        <Text variant="title">Food journal</Text>
+      {/* Day stepper. A row of controls, not a panel. */}
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}
+      >
+        <IconButton
+          accessibilityLabel="Previous day"
+          onPress={() => setDateKey((key) => addDaysToKey(key, -1))}
+          variant="soft"
+        >
+          <Icon name="chevronLeft" size={19} color="text" />
+        </IconButton>
 
-        <Card variant="soft" padding="sm">
-          <View
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-            }}
-          >
-            <IconButton
-              accessibilityLabel="Previous day"
-              onPress={() => setDateKey((key) => addDaysToKey(key, -1))}
-            >
-              <Icon name="chevronLeft" size={20} color="text" />
-            </IconButton>
+        <View style={{ alignItems: 'center', gap: 2 }}>
+          <Text variant="headline">{formatDayLabel(dateKey)}</Text>
+          <Text variant="caption" color="textMuted">
+            {entries.length === 0
+              ? 'Nothing logged'
+              : `${entries.length} meal${entries.length === 1 ? '' : 's'}`}
+          </Text>
+        </View>
 
-            <View style={{ alignItems: 'center', gap: theme.spacing.xxs }}>
-              <Text variant="bodyStrong">{formatDayLabel(dateKey)}</Text>
-              <Text variant="caption" color="textMuted">
-                {entries.length} meal{entries.length === 1 ? '' : 's'} logged
-              </Text>
-            </View>
-
-            <IconButton
-              accessibilityLabel="Next day"
-              onPress={() => setDateKey((key) => addDaysToKey(key, 1))}
-              // A journal of the future would be empty by definition.
-              disabled={isToday}
-            >
-              <Icon name="chevronRight" size={20} color={isToday ? 'textMuted' : 'text'} />
-            </IconButton>
-          </View>
-        </Card>
-
-        {!isToday ? (
-          <Button
-            label="Back to today"
-            variant="ghost"
-            size="sm"
-            onPress={() => setDateKey(today)}
-          />
-        ) : null}
+        <IconButton
+          accessibilityLabel="Next day"
+          onPress={() => setDateKey((key) => addDaysToKey(key, 1))}
+          // A journal of the future would be empty by definition.
+          disabled={isToday}
+          variant="soft"
+        >
+          <Icon name="chevronRight" size={19} color={isToday ? 'textSubtle' : 'text'} />
+        </IconButton>
       </View>
 
       {error ? (
@@ -98,9 +103,13 @@ export default function JournalScreen() {
           onRetry={error.retryable ? reload : undefined}
         />
       ) : loading && entries.length === 0 ? (
-        <Skeleton height={180} radius={theme.radius.lg} />
+        <Surface variant="raised" padding="lg" style={{ gap: theme.spacing.base }}>
+          <Skeleton width="30%" height={13} />
+          <Skeleton width="55%" height={42} />
+          <Skeleton height={6} radius={3} />
+        </Surface>
       ) : (
-        <DailySummaryCard
+        <DaySummary
           totals={summary.totals}
           targets={targets}
           containsEstimates={summary.containsEstimates}
@@ -109,70 +118,53 @@ export default function JournalScreen() {
       )}
 
       {entries.length === 0 && !loading ? (
-        <Card variant="soft" padding="none">
-          <EmptyState
-            title={isToday ? 'Nothing logged today' : `Nothing logged on ${formatDayLabel(dateKey)}`}
-            body="Add a meal by hand, or scan one from the Home tab."
-            illustration={<Icon name="journal" size={44} color="primary" />}
-            actionLabel="Add a meal"
-            onAction={() => router.push('/entry/new')}
-          />
-        </Card>
+        <EmptyState
+          title={isToday ? 'Nothing logged today' : `Nothing on ${formatDayLabel(dateKey)}`}
+          body="Add a meal by hand, or photograph one from the Scan tab."
+          illustration={<Icon name="journal" size={38} color="primary" strokeWidth={1.5} />}
+          actionLabel="Add a meal"
+          onAction={() => router.push('/entry/new')}
+        />
       ) : (
-        <View style={{ gap: theme.spacing.lg }}>
-          {MEAL_TYPES.map((mealType) => {
-            const forMeal = entries.filter((entry) => entry.mealType === mealType);
-            const mealTotals = summary.byMealType[mealType];
+        MEAL_TYPES.map((mealType) => {
+          const forMeal = entries.filter((entry) => entry.mealType === mealType);
+          const mealTotals = summary.byMealType[mealType];
 
-            return (
-              <View key={mealType} style={{ gap: theme.spacing.sm }}>
-                <View
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                  }}
-                >
-                  <Text variant="heading">{MEAL_LABELS[mealType]}</Text>
-                  <View
-                    style={{
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      gap: theme.spacing.sm,
-                    }}
-                  >
-                    {forMeal.length > 0 ? (
-                      <Text variant="bodySmStrong" color="textMuted">
-                        {Math.round(mealTotals.nutrients.caloriesKcal)} kcal
-                      </Text>
-                    ) : null}
-                    <IconButton
-                      accessibilityLabel={`Add a ${MEAL_LABELS[mealType].toLowerCase()} entry`}
-                      onPress={() => router.push(`/entry/new?mealType=${mealType}`)}
-                      variant="soft"
-                    >
-                      <Icon name="plus" size={18} color="text" />
-                    </IconButton>
-                  </View>
-                </View>
-
-                {forMeal.length === 0 ? (
-                  <Text variant="bodySm" color="textMuted">
-                    Nothing here yet.
-                  </Text>
-                ) : (
-                  forMeal.map((entry) => (
-                    <EntryRow
+          return (
+            <Section
+              key={mealType}
+              title={MEAL_LABELS[mealType]}
+              dense
+              action={{
+                label: 'Add',
+                onPress: () => router.push(`/entry/new?mealType=${mealType}`),
+              }}
+            >
+              {forMeal.length === 0 ? (
+                <Text variant="footnote" color="textSubtle">
+                  Nothing here yet.
+                </Text>
+              ) : (
+                <View>
+                  <Metric
+                    value={String(Math.round(mealTotals.nutrients.caloriesKcal))}
+                    unit="kcal"
+                    size="s"
+                    style={{ marginBottom: theme.spacing.xs }}
+                  />
+                  {forMeal.map((entry, index) => (
+                    <MealRow
                       key={entry.id}
                       entry={entry}
+                      divided={index > 0}
                       onPress={() => router.push(`/entry/${entry.id}`)}
                     />
-                  ))
-                )}
-              </View>
-            );
-          })}
-        </View>
+                  ))}
+                </View>
+              )}
+            </Section>
+          );
+        })
       )}
     </Screen>
   );

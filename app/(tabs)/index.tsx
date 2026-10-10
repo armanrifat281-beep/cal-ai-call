@@ -1,17 +1,18 @@
 import { useRouter } from 'expo-router';
 import { useCallback } from 'react';
-import { Pressable, View } from 'react-native';
+import { View } from 'react-native';
 
 import { Icon } from '@/components/Icon';
-import { DailySummaryCard, EntryRow } from '@/components/nutrition';
+import { DaySummary, MealRow } from '@/components/nutrition';
 import {
-  Card,
+  Disclosure,
   EmptyState,
   ErrorState,
-  InfoNote,
+  Row,
   Screen,
+  Section,
   Skeleton,
-  Text,
+  Surface,
 } from '@/components/ui';
 import { useDayJournal, useRecentEntries } from '@/features/journal';
 import { formatDayLabel, todayKey } from '@/lib/date';
@@ -19,6 +20,14 @@ import { env } from '@/lib/env';
 import { usePreferencesStore } from '@/store/preferencesStore';
 import { useTheme } from '@/theme';
 
+/**
+ * Home.
+ *
+ * One hero figure, then the day as a timeline, then two quiet ways out.
+ * Scanning is a tab now, so this screen no longer repeats a giant scan
+ * block - it offers the two things you cannot reach in one tap from the tab
+ * bar: adding a meal by hand, and re-logging something from earlier.
+ */
 export default function HomeScreen() {
   const theme = useTheme();
   const router = useRouter();
@@ -33,36 +42,26 @@ export default function HomeScreen() {
     recent.reload();
   }, [reload, recent]);
 
-  // Yesterday and earlier, so "recent" is a genuine re-entry shortcut rather
-  // than a duplicate of the list already on screen.
-  const earlierEntries = recent.entries.filter(
+  // Yesterday and earlier, so "log again" is a genuine shortcut rather than a
+  // second copy of the list already on screen.
+  const earlier = recent.entries.filter(
     (entry) => !entries.some((today) => today.id === entry.id),
   );
 
+  const dayLabel = formatDayLabel(dateKey);
+
   return (
     <Screen
+      title={dayLabel}
+      subtitle={new Date().toLocaleDateString(undefined, {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+      })}
       edges={{ top: true }}
       refreshing={loading}
       onRefresh={refreshAll}
-      contentStyle={{ gap: theme.spacing.lg }}
     >
-      <View style={{ gap: theme.spacing.xxs }}>
-        <Text variant="caption" color="textMuted">
-          {formatDayLabel(dateKey).toUpperCase()}
-        </Text>
-        <Text variant="title">Your plate today</Text>
-      </View>
-
-      {!env.isSupabaseConfigured ? (
-        <InfoNote
-          title="Saved on this device only"
-          body="No account backend is configured in this build, so your meals are stored locally and are not backed up. Nothing here is fake: these are your real saved entries."
-          tone="neutral"
-        />
-      ) : null}
-
-      <ScanAction onPress={() => router.push('/(tabs)/scan')} />
-
       {error ? (
         <ErrorState
           message={error.message}
@@ -70,151 +69,94 @@ export default function HomeScreen() {
           onRetry={error.retryable ? reload : undefined}
         />
       ) : loading && entries.length === 0 ? (
-        <SummarySkeleton />
+        <Surface variant="raised" padding="lg" style={{ gap: theme.spacing.base }}>
+          <Skeleton width="30%" height={13} />
+          <Skeleton width="55%" height={42} />
+          <Skeleton height={6} radius={3} />
+          <Skeleton width="80%" height={13} />
+        </Surface>
       ) : (
-        <DailySummaryCard
+        <DaySummary
           totals={summary.totals}
           targets={targets}
           containsEstimates={summary.containsEstimates}
-          dayLabel={formatDayLabel(dateKey)}
+          dayLabel={dayLabel}
         />
       )}
 
-      <View style={{ gap: theme.spacing.md }}>
-        <Text variant="heading">Today&apos;s meals</Text>
-
+      <Section
+        title="Meals"
+        action={
+          entries.length > 0
+            ? { label: 'Add', onPress: () => router.push('/entry/new') }
+            : undefined
+        }
+      >
         {loading && entries.length === 0 ? (
-          <View style={{ gap: theme.spacing.sm }}>
-            <Skeleton height={96} radius={theme.radius.lg} />
-            <Skeleton height={96} radius={theme.radius.lg} />
+          <View style={{ gap: theme.spacing.base }}>
+            <Skeleton height={44} />
+            <Skeleton height={44} />
           </View>
         ) : entries.length === 0 ? (
-          <Card variant="soft" padding="none">
-            <EmptyState
-              title="Nothing logged yet"
-              body="Take a photo of your next meal, or add one by hand. Everything you save stays editable."
-              illustration={<Icon name="leaf" size={44} color="primary" />}
-              actionLabel="Scan your first meal"
-              onAction={() => router.push('/(tabs)/scan')}
-              secondaryActionLabel="Add a meal manually"
-              onSecondaryAction={() => router.push('/entry/new')}
-            />
-          </Card>
+          <EmptyState
+            title="Nothing logged yet"
+            body="Photograph your next meal from the Scan tab, or add one by hand. Everything you save stays editable."
+            illustration={<Icon name="leaf" size={38} color="primary" strokeWidth={1.5} />}
+            actionLabel="Add a meal"
+            onAction={() => router.push('/entry/new')}
+          />
         ) : (
-          <View style={{ gap: theme.spacing.sm }}>
-            {entries.map((entry) => (
-              <EntryRow
+          <View>
+            {entries.map((entry, index) => (
+              <MealRow
                 key={entry.id}
                 entry={entry}
+                divided={index > 0}
                 onPress={() => router.push(`/entry/${entry.id}`)}
               />
             ))}
           </View>
         )}
-      </View>
+      </Section>
 
-      <Pressable
-        onPress={() => router.push('/(tabs)/insights')}
-        accessibilityRole="button"
-        accessibilityLabel="Insights"
-        accessibilityHint="Opens patterns counted from the meals you have saved"
-        style={({ pressed }) => ({
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: theme.spacing.md,
-          padding: theme.spacing.base,
-          borderRadius: theme.radius.lg,
-          borderWidth: 1,
-          borderColor: theme.colors.border,
-          backgroundColor: pressed ? theme.colors.surfacePressed : theme.colors.surface,
-        })}
-      >
-        <Icon name="insights" size={22} color="primary" />
-        <View style={{ flex: 1, gap: theme.spacing.xxs }}>
-          <Text variant="subheading">Insights</Text>
-          <Text variant="bodySm" color="textMuted">
-            Patterns counted from your saved meals, with the working shown.
-          </Text>
-        </View>
-        <Icon name="chevronRight" size={20} color="textMuted" />
-      </Pressable>
-
-      {earlierEntries.length > 0 ? (
-        <View style={{ gap: theme.spacing.md }}>
-          <View style={{ gap: theme.spacing.xxs }}>
-            <Text variant="heading">Log again</Text>
-            <Text variant="bodySm" color="textMuted">
-              Meals you saved earlier. Tap one to open it and log it to today.
-            </Text>
-          </View>
-          <View style={{ gap: theme.spacing.sm }}>
-            {earlierEntries.map((entry) => (
-              <EntryRow
+      {earlier.length > 0 ? (
+        <Section
+          title="Log again"
+          subtitle="Meals you saved earlier. Open one to add it to today."
+        >
+          <Surface variant="grouped">
+            {earlier.map((entry, index) => (
+              <Row
                 key={entry.id}
-                entry={entry}
-                compact
+                title={entry.title}
+                subtitle={formatDayLabel(
+                  new Date(entry.consumedAt).toISOString().slice(0, 10),
+                )}
+                divided={index > 0}
+                trailing={<Icon name="chevronRight" size={16} color="textSubtle" />}
                 onPress={() => router.push(`/entry/${entry.id}`)}
               />
             ))}
-          </View>
-        </View>
+          </Surface>
+        </Section>
+      ) : null}
+
+      <Surface variant="grouped">
+        <Row
+          title="Insights"
+          subtitle="Patterns counted from your saved meals"
+          leading={<Icon name="insights" size={19} color="primary" />}
+          trailing={<Icon name="chevronRight" size={16} color="textSubtle" />}
+          onPress={() => router.push('/(tabs)/insights')}
+        />
+      </Surface>
+
+      {!env.isSupabaseConfigured ? (
+        <Disclosure
+          summary="Saved on this device only"
+          detail="No account backend is configured in this build, so your meals are stored locally and are not backed up. These are your real saved entries, not sample data."
+        />
       ) : null}
     </Screen>
-  );
-}
-
-/** The dashboard's primary action. Large, high contrast, impossible to miss. */
-function ScanAction({ onPress }: { onPress: () => void }) {
-  const theme = useTheme();
-
-  return (
-    <Pressable
-      onPress={onPress}
-      accessibilityRole="button"
-      accessibilityLabel="Scan a meal"
-      accessibilityHint="Opens the camera to photograph your food"
-      style={({ pressed }) => ({
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: theme.spacing.base,
-        padding: theme.spacing.lg,
-        borderRadius: theme.radius.xl,
-        backgroundColor: pressed ? theme.colors.accentPressed : theme.colors.accent,
-      })}
-    >
-      <View
-        style={{
-          width: 48,
-          height: 48,
-          borderRadius: theme.radius.pill,
-          alignItems: 'center',
-          justifyContent: 'center',
-          backgroundColor: 'rgba(255, 255, 255, 0.18)',
-        }}
-      >
-        <Icon name="scan" size={26} color={theme.colors.textOnAccent} strokeWidth={2} />
-      </View>
-      <View style={{ flex: 1, gap: theme.spacing.xxs }}>
-        <Text variant="subheading" color="textOnAccent">
-          Scan a meal
-        </Text>
-        <Text variant="bodySm" color={theme.colors.textOnAccent} style={{ opacity: 0.85 }}>
-          Photo in, estimate out. Edit anything before saving.
-        </Text>
-      </View>
-      <Icon name="chevronRight" size={22} color={theme.colors.textOnAccent} />
-    </Pressable>
-  );
-}
-
-function SummarySkeleton() {
-  const theme = useTheme();
-  return (
-    <Card padding="lg" style={{ gap: theme.spacing.base }}>
-      <Skeleton width="40%" height={14} />
-      <Skeleton width="55%" height={34} />
-      <Skeleton height={10} radius={5} />
-      <Skeleton width="70%" height={12} />
-    </Card>
   );
 }

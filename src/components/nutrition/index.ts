@@ -1,4 +1,4 @@
-export { DailySummaryCard, type DailySummaryCardProps } from './DailySummaryCard';
-export { EntryRow, type EntryRowProps } from './EntryRow';
+export { DaySummary, type DaySummaryProps } from './DaySummary';
+export { MealRow, type MealRowProps } from './MealRow';
 export { MacroBar, type MacroBarProps } from './MacroBar';
 export { SourceBadge, aggregateSource, type SourceBadgeProps } from './SourceBadge';

@@ -41,7 +41,7 @@ export default function BasicsScreen() {
       onSkip={() => router.push('/(onboarding)/food')}
     >
       <View style={{ gap: theme.spacing.sm }}>
-        <Text variant="bodySmStrong" color="textMuted">
+        <Text variant="label" color="textMuted">
           LANGUAGE
         </Text>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.sm }}>
@@ -61,7 +61,7 @@ export default function BasicsScreen() {
       </View>
 
       <View style={{ gap: theme.spacing.sm }}>
-        <Text variant="bodySmStrong" color="textMuted">
+        <Text variant="label" color="textMuted">
           FOOD REGION
         </Text>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.sm }}>
@@ -79,7 +79,7 @@ export default function BasicsScreen() {
       </View>
 
       <View style={{ gap: theme.spacing.sm }}>
-        <Text variant="bodySmStrong" color="textMuted">
+        <Text variant="label" color="textMuted">
           PORTION UNITS
         </Text>
         <SegmentedControl

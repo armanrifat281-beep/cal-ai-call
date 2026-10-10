@@ -90,9 +90,9 @@ export default function SavedRecipesScreen() {
         />
       ) : loading && shown.length === 0 ? (
         <View style={{ gap: theme.spacing.sm }}>
-          <Skeleton height={84} radius={theme.radius.lg} />
-          <Skeleton height={84} radius={theme.radius.lg} />
-          <Skeleton height={84} radius={theme.radius.lg} />
+          <Skeleton height={84} radius={theme.radius.surface} />
+          <Skeleton height={84} radius={theme.radius.surface} />
+          <Skeleton height={84} radius={theme.radius.surface} />
         </View>
       ) : shown.length === 0 ? (
         <Card variant="soft" padding="none">
@@ -127,7 +127,7 @@ export default function SavedRecipesScreen() {
       ) : (
         <View style={{ gap: theme.spacing.sm }}>
           {isSearching ? (
-            <Text variant="bodySm" color="textMuted">
+            <Text variant="callout" color="textMuted">
               {shown.length} match{shown.length === 1 ? '' : 'es'}
             </Text>
           ) : null}

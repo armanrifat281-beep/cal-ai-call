@@ -82,8 +82,8 @@ export default function ShoppingListsScreen() {
         />
       ) : loading && lists.length === 0 ? (
         <View style={{ gap: theme.spacing.sm }}>
-          <Skeleton height={76} radius={theme.radius.lg} />
-          <Skeleton height={76} radius={theme.radius.lg} />
+          <Skeleton height={76} radius={theme.radius.surface} />
+          <Skeleton height={76} radius={theme.radius.surface} />
         </View>
       ) : lists.length === 0 ? (
         <Card variant="soft" padding="none">
@@ -128,7 +128,7 @@ function ListRowCard({ list, onPress }: { list: ShoppingList; onPress: () => voi
         alignItems: 'center',
         gap: theme.spacing.md,
         padding: theme.spacing.base,
-        borderRadius: theme.radius.lg,
+        borderRadius: theme.radius.surface,
         borderWidth: 1,
         borderColor: theme.colors.border,
         backgroundColor: pressed ? theme.colors.surfacePressed : theme.colors.surface,
@@ -136,8 +136,8 @@ function ListRowCard({ list, onPress }: { list: ShoppingList; onPress: () => voi
     >
       <Icon name="basket" size={22} color="textMuted" />
       <View style={{ flex: 1, gap: theme.spacing.xxs }}>
-        <Text variant="bodyStrong">{list.name}</Text>
-        <Text variant="bodySm" color="textMuted">
+        <Text variant="headline">{list.name}</Text>
+        <Text variant="callout" color="textMuted">
           {list.items.length === 0
             ? 'Empty'
             : outstanding === 0

@@ -22,6 +22,8 @@ export type IconName =
   | 'plus'
   | 'chevronRight'
   | 'chevronLeft'
+  | 'chevronUp'
+  | 'chevronDown'
   | 'close'
   | 'trash'
   | 'pencil'
@@ -36,7 +38,9 @@ export type IconName =
   | 'recipes'
   | 'basket'
   | 'timer'
-  | 'flame';
+  | 'flame'
+  | 'star'
+  | 'more';
 
 export interface IconProps {
   name: IconName;
@@ -180,6 +184,12 @@ function renderGlyph(
     case 'chevronLeft':
       return <Path d="M14.5 5.5 8 12l6.5 6.5" {...common} />;
 
+    case 'chevronUp':
+      return <Path d="M5.5 14.5 12 8l6.5 6.5" {...common} />;
+
+    case 'chevronDown':
+      return <Path d="M5.5 9.5 12 16l6.5-6.5" {...common} />;
+
     case 'close':
       return (
         <>
@@ -306,6 +316,24 @@ function renderGlyph(
             fill={fill}
           />
           <Path d="M12 20.8a2.6 2.6 0 0 1-2.6-2.6c0-1.1.7-1.9 1.4-2.6.3.6.7 1 1.2 1.1-.2-1.1.1-2.1.9-3 1 .9 1.7 1.9 1.7 3.1A2.6 2.6 0 0 1 12 20.8Z" {...common} stroke="none" fill={fill === 'none' ? stroke : fill} />
+        </>
+      );
+
+    case 'star':
+      return (
+        <Path
+          d="M12 3.6l2.5 5.3 5.8.8-4.2 4.1 1 5.8-5.1-2.8-5.1 2.8 1-5.8-4.2-4.1 5.8-.8L12 3.6Z"
+          {...common}
+          fill={fill === 'none' ? 'none' : stroke}
+        />
+      );
+
+    case 'more':
+      return (
+        <>
+          <Circle cx={5.5} cy={12} r={1.6} fill={stroke} stroke="none" />
+          <Circle cx={12} cy={12} r={1.6} fill={stroke} stroke="none" />
+          <Circle cx={18.5} cy={12} r={1.6} fill={stroke} stroke="none" />
         </>
       );
 

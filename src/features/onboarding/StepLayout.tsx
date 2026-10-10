@@ -77,7 +77,7 @@ export function StepLayout({
         <Text variant="caption" color="textMuted">
           STEP {step} OF {totalSteps}
         </Text>
-        <Text variant="title">{title}</Text>
+        <Text variant="title1">{title}</Text>
         {subtitle ? (
           <Text variant="body" color="textMuted">
             {subtitle}

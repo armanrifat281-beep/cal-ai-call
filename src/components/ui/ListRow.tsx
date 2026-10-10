@@ -39,7 +39,7 @@ export function ListRow({
           {title}
         </Text>
         {subtitle ? (
-          <Text variant="bodySm" color="textMuted">
+          <Text variant="callout" color="textMuted">
             {subtitle}
           </Text>
         ) : null}

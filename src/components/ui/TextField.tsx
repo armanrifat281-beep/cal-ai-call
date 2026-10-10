@@ -43,7 +43,7 @@ export function TextField({
 
   return (
     <View style={[{ gap: theme.spacing.xs }, containerStyle]}>
-      <Text variant="bodySmStrong" color="textMuted">
+      <Text variant="label" color="textMuted">
         {label}
         {required ? ' *' : ''}
       </Text>
@@ -64,7 +64,7 @@ export function TextField({
           minHeight: 48,
           paddingHorizontal: theme.spacing.md,
           paddingVertical: theme.spacing.sm,
-          borderRadius: theme.radius.md,
+          borderRadius: theme.radius.control,
           borderWidth: focused || hasError ? 2 : 1,
           borderColor,
           backgroundColor: theme.colors.surface,

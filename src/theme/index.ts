@@ -1,10 +1,16 @@
-export { palettes, type ColorScheme, type Palette } from './palette';
+export { palettes, ramps, type ColorScheme, type Palette } from './palette';
 export {
+  blockGap,
   duration,
+  elevation,
+  gutter,
+  hairline,
   minTouchTarget,
+  pressScale,
   radius,
   spacing,
   typography,
+  type ElevationLevel,
   type RadiusKey,
   type SpacingKey,
   type TypographyVariant,

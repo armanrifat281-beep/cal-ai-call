@@ -33,16 +33,16 @@ export function ErrorState({
       style={{
         gap: theme.spacing.sm,
         padding: theme.spacing.base,
-        borderRadius: theme.radius.lg,
+        borderRadius: theme.radius.surface,
         backgroundColor: theme.colors.dangerSoft,
         borderWidth: 1,
         borderColor: theme.colors.danger,
       }}
     >
-      <Text variant="subheading" color="dangerOnSoft">
+      <Text variant="headline" color="dangerOnSoft">
         {title}
       </Text>
-      <Text variant="bodySm" color="dangerOnSoft">
+      <Text variant="callout" color="dangerOnSoft">
         {message}
       </Text>
 
@@ -55,7 +55,7 @@ export function ErrorState({
       {onRetry ? (
         <Button
           label={retryLabel}
-          variant="secondary"
+          variant="tonal"
           size="sm"
           onPress={onRetry}
           style={{ marginTop: theme.spacing.xs }}

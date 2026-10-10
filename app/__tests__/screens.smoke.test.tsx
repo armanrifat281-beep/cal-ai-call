@@ -186,18 +186,20 @@ describe('onboarding screens', () => {
 });
 
 describe('tab screens with an empty journal', () => {
-  it('home shows the scan action and an empty state', async () => {
+  it('shows an empty state and a way to add a meal by hand', async () => {
     await renderWithProviders(<HomeScreen />);
 
-    expect(screen.getByRole('button', { name: 'Scan a meal' })).toBeTruthy();
+    // Scanning is its own tab now, so Home does not repeat a scan block. It
+    // offers the thing the tab bar cannot reach in one tap.
     expect(await screen.findByText('Nothing logged yet')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Add a meal' })).toBeTruthy();
     // And it is honest about where data lives in an unconfigured build.
     expect(screen.getByText('Saved on this device only')).toBeTruthy();
   });
 
   it('journal shows an empty day', async () => {
     await renderWithProviders(<JournalScreen />);
-    expect(screen.getByText('Food journal')).toBeTruthy();
+    expect(screen.getByText('Journal')).toBeTruthy();
     expect(await screen.findByText('Nothing logged today')).toBeTruthy();
   });
 
@@ -228,7 +230,10 @@ describe('tab screens with a logged meal', () => {
   it('home shows the meal and its calories', async () => {
     await renderWithProviders(<HomeScreen />);
     expect(await screen.findByText('Morning porridge')).toBeTruthy();
-    expect(screen.getAllByText('180 kcal').length).toBeGreaterThan(0);
+    // The number and its unit are separate text nodes: the unit is set a
+    // step down from the figure rather than at the same size.
+    expect(screen.getAllByText('180').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('kcal').length).toBeGreaterThan(0);
   });
 
   it('journal groups the meal under its meal type', async () => {
@@ -252,11 +257,13 @@ describe('scan screen', () => {
   it('states that analysis is unavailable and offers real routes forward', async () => {
     await renderWithProviders(<ScanScreen />);
 
-    expect(screen.getByText('Nutrition analysis is not set up yet')).toBeTruthy();
+    expect(
+      screen.getByText('Nutrition analysis is not set up in this build'),
+    ).toBeTruthy();
     // No button that would do nothing.
     expect(screen.queryByRole('button', { name: 'Analyse this photo' })).toBeNull();
     // Manual entry works with no backend at all, so it is offered up front.
-    expect(screen.getByRole('button', { name: 'Add a meal by hand' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /^Add a meal by hand/ })).toBeTruthy();
   });
 
   it('offers both capture routes', async () => {

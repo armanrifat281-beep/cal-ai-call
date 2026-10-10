@@ -35,7 +35,7 @@ export function Skeleton({ width = '100%', height = 16, radius, style }: Skeleto
         {
           width,
           height,
-          borderRadius: radius ?? theme.radius.sm,
+          borderRadius: radius ?? theme.radius.xs,
           backgroundColor: theme.colors.skeleton,
         },
         animatedStyle,

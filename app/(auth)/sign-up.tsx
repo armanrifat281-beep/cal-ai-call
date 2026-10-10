@@ -62,14 +62,14 @@ export default function SignUpScreen() {
     return (
       <Screen contentStyle={{ gap: theme.spacing.lg }}>
         <View style={{ gap: theme.spacing.sm }}>
-          <Text variant="title">Check your email</Text>
+          <Text variant="title1">Check your email</Text>
           <Text variant="body" color="textMuted">
             We sent a confirmation link to {email.trim()}. Open it to finish
             creating your account, then come back and sign in.
           </Text>
         </View>
         <Card variant="soft">
-          <Text variant="bodySm" color="textMuted">
+          <Text variant="callout" color="textMuted">
             Nothing arrived? Check your spam folder. The link can take a minute,
             and it expires after a while.
           </Text>
@@ -106,8 +106,8 @@ export default function SignUpScreen() {
       }
     >
       <View style={{ gap: theme.spacing.sm }}>
-        <Text variant="title">Create an account</Text>
-        <Text variant="bodySm" color="textMuted">
+        <Text variant="title1">Create an account</Text>
+        <Text variant="callout" color="textMuted">
           This backs up your journal and syncs it across devices. Meals you have
           already saved on this device stay on this device.
         </Text>

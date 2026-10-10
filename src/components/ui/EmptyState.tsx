@@ -45,12 +45,12 @@ export function EmptyState({
         <View style={{ marginBottom: theme.spacing.sm }}>{illustration}</View>
       ) : null}
 
-      <Text variant="heading" align="center">
+      <Text variant="title2" align="center">
         {title}
       </Text>
 
       {body ? (
-        <Text variant="bodySm" color="textMuted" align="center">
+        <Text variant="callout" color="textMuted" align="center">
           {body}
         </Text>
       ) : null}

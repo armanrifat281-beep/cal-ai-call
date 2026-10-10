@@ -12,7 +12,7 @@ export interface CardProps extends ViewProps {
 
 export function Card({
   padding = 'base',
-  radiusKey = 'lg',
+  radiusKey = 'surface',
   variant = 'outlined',
   style,
   children,

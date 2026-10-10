@@ -1,18 +1,23 @@
-import * as Haptics from 'expo-haptics';
-import React, { useCallback } from 'react';
-import {
-  ActivityIndicator,
-  Pressable,
-  View,
-  type StyleProp,
-  type ViewStyle,
-} from 'react-native';
+import { ActivityIndicator, View, type StyleProp, type ViewStyle } from 'react-native';
 
-import { useTheme } from '@/theme';
+import { useTheme, type TypographyVariant } from '@/theme';
 
+import { PressableScale } from './PressableScale';
 import { Text } from './Text';
 
-export type ButtonVariant = 'primary' | 'accent' | 'secondary' | 'ghost' | 'danger';
+export type ButtonVariant =
+  /** The one commitment on the screen. Filled brand. */
+  | 'primary'
+  /** The scan action, and nothing else. Filled ember. */
+  | 'accent'
+  /** A secondary commitment. Brand-tinted fill, no outline. */
+  | 'tonal'
+  /** A neutral alternative. Quiet fill, no outline. */
+  | 'secondary'
+  /** A tertiary action. Text only. */
+  | 'ghost'
+  | 'danger';
+
 export type ButtonSize = 'sm' | 'md' | 'lg';
 
 export interface ButtonProps {
@@ -26,19 +31,36 @@ export interface ButtonProps {
   fullWidth?: boolean;
   leading?: React.ReactNode;
   trailing?: React.ReactNode;
-  /** Light haptic tap. Off by default so we do not buzz on every control. */
+  /** Light tap feedback. On by default for filled variants. */
   haptic?: boolean;
   accessibilityHint?: string;
   testID?: string;
   style?: StyleProp<ViewStyle>;
 }
 
-const SIZE_SPEC = {
-  sm: { minHeight: 36, paddingH: 'md', text: 'bodySmStrong' },
-  md: { minHeight: 48, paddingH: 'base', text: 'bodyStrong' },
-  lg: { minHeight: 56, paddingH: 'lg', text: 'subheading' },
-} as const;
+interface SizeSpec {
+  height: number;
+  paddingHorizontal: number;
+  text: TypographyVariant;
+  gap: number;
+}
 
+const SIZES: Record<ButtonSize, SizeSpec> = {
+  sm: { height: 34, paddingHorizontal: 14, text: 'label', gap: 6 },
+  md: { height: 46, paddingHorizontal: 18, text: 'headline', gap: 8 },
+  lg: { height: 52, paddingHorizontal: 22, text: 'headline', gap: 8 },
+};
+
+/**
+ * A button.
+ *
+ * Two changes from the earlier version worth noting. There are no outlined
+ * variants: an outline is a weaker signal than a fill at the same effort, and
+ * a screen of outlined buttons was part of what made this app read as
+ * generated. And `tonal` exists so a secondary action can carry brand colour
+ * without competing with the primary one, which removes the temptation to
+ * stack three identical ghost buttons at the bottom of a screen.
+ */
 export function Button({
   label,
   onPress,
@@ -49,107 +71,66 @@ export function Button({
   fullWidth = false,
   leading,
   trailing,
-  haptic = false,
+  haptic,
   accessibilityHint,
   testID,
   style,
 }: ButtonProps) {
   const theme = useTheme();
-  const spec = SIZE_SPEC[size];
+  const spec = SIZES[size];
   const isBlocked = disabled || loading;
 
-  const handlePress = useCallback(() => {
-    if (isBlocked) return;
-    if (haptic) {
-      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {
-        // Haptics are a nicety; a device without them must not break the tap.
-      });
-    }
-    onPress();
-  }, [haptic, isBlocked, onPress]);
+  const isFilled = variant === 'primary' || variant === 'accent' || variant === 'danger';
+  const wantsHaptic = haptic ?? isFilled;
 
-  const colorsFor = (pressed: boolean) => {
+  const colors = (() => {
     switch (variant) {
       case 'primary':
-        return {
-          bg: pressed ? theme.colors.primaryPressed : theme.colors.primary,
-          fg: theme.colors.textOnPrimary,
-          border: 'transparent',
-        };
+        return { bg: theme.colors.primary, fg: theme.colors.textOnPrimary };
       case 'accent':
-        return {
-          bg: pressed ? theme.colors.accentPressed : theme.colors.accent,
-          fg: theme.colors.textOnAccent,
-          border: 'transparent',
-        };
+        return { bg: theme.colors.accent, fg: theme.colors.textOnAccent };
       case 'danger':
-        return {
-          bg: pressed ? theme.colors.dangerPressed : theme.colors.danger,
-          fg: '#FFFFFF',
-          border: 'transparent',
-        };
+        return { bg: theme.colors.danger, fg: '#FFFFFF' };
+      case 'tonal':
+        return { bg: theme.colors.primarySoft, fg: theme.colors.primaryOnSoft };
       case 'secondary':
-        return {
-          bg: pressed ? theme.colors.surfacePressed : theme.colors.surface,
-          fg: theme.colors.text,
-          border: theme.colors.borderStrong,
-        };
+        return { bg: theme.colors.surfaceAlt, fg: theme.colors.text };
       case 'ghost':
       default:
-        return {
-          bg: pressed ? theme.colors.surfacePressed : 'transparent',
-          fg: theme.colors.primaryOnSoft,
-          border: 'transparent',
-        };
+        return { bg: 'transparent', fg: theme.colors.primaryOnSoft };
     }
-  };
+  })();
 
   return (
-    <Pressable
+    <PressableScale
       testID={testID}
-      onPress={handlePress}
+      onPress={onPress}
       disabled={isBlocked}
+      haptic={wantsHaptic && !isBlocked}
       accessibilityRole="button"
       accessibilityLabel={label}
       accessibilityHint={accessibilityHint}
       accessibilityState={{ disabled: isBlocked, busy: loading }}
-      style={({ pressed }) => {
-        const c = colorsFor(pressed);
-        return [
-          {
-            minHeight: spec.minHeight,
-            paddingHorizontal: theme.spacing[spec.paddingH],
-            borderRadius: theme.radius.md,
-            backgroundColor: c.bg,
-            borderWidth: variant === 'secondary' ? 1 : 0,
-            borderColor: c.border,
-            alignItems: 'center',
-            justifyContent: 'center',
-            flexDirection: 'row',
-            gap: theme.spacing.sm,
-            opacity: isBlocked ? 0.5 : 1,
-            alignSelf: fullWidth ? 'stretch' : 'flex-start',
-          },
-          style,
-        ];
-      }}
+      style={[
+        {
+          height: spec.height,
+          paddingHorizontal: variant === 'ghost' ? spec.paddingHorizontal / 2 : spec.paddingHorizontal,
+          borderRadius: theme.radius.control,
+          backgroundColor: colors.bg,
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexDirection: 'row',
+          gap: spec.gap,
+          alignSelf: fullWidth ? 'stretch' : 'flex-start',
+        },
+        style,
+      ]}
     >
-      {({ pressed }) => {
-        const c = colorsFor(pressed);
-        return (
-          <>
-            {loading ? (
-              <ActivityIndicator size="small" color={c.fg} />
-            ) : (
-              leading
-            )}
-            <Text variant={spec.text} color={c.fg} numberOfLines={1}>
-              {label}
-            </Text>
-            {trailing ? <View>{trailing}</View> : null}
-          </>
-        );
-      }}
-    </Pressable>
+      {loading ? <ActivityIndicator size="small" color={colors.fg} /> : leading}
+      <Text variant={spec.text} color={colors.fg} numberOfLines={1}>
+        {label}
+      </Text>
+      {trailing ? <View>{trailing}</View> : null}
+    </PressableScale>
   );
 }

@@ -1,4 +1,3 @@
-import React from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -10,31 +9,52 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { useTheme, type SpacingKey } from '@/theme';
+import { useTheme } from '@/theme';
+
+import { Text } from './Text';
 
 export interface ScreenProps {
   children: React.ReactNode;
-  /** Wrap content in a ScrollView. Turn off for full-bleed screens (camera). */
+  /**
+   * A large title rendered at the top of the content, iOS-style.
+   *
+   * Preferred over a navigator header for the tab screens: it scrolls away
+   * with the content, which gives the screen its full height back.
+   */
+  title?: string;
+  /** One supporting line under the title. */
+  subtitle?: string;
+  /** A control sitting opposite the title, e.g. an icon button. */
+  titleAction?: React.ReactNode;
+  /** Wrap content in a ScrollView. Off for full-bleed screens. */
   scroll?: boolean;
-  padding?: SpacingKey;
-  /** Adds bottom inset padding. Off inside tab screens, which already inset. */
+  /** Horizontal inset. Set to 'none' to run content to the edges. */
+  inset?: 'gutter' | 'none';
   edges?: { top?: boolean; bottom?: boolean };
   refreshing?: boolean;
   onRefresh?: () => void;
-  /** Sticky footer outside the scroll area, e.g. a primary action. */
+  /** Sticky footer outside the scroll area. */
   footer?: React.ReactNode;
   contentStyle?: StyleProp<ViewStyle>;
   testID?: string;
 }
 
 /**
- * Standard screen shell: themed background, safe-area handling, optional
- * scrolling, pull-to-refresh, keyboard avoidance, and a sticky footer slot.
+ * The standard screen shell.
+ *
+ * Owns the things that must not vary between screens: the page colour, the
+ * safe-area handling, the horizontal inset, the vertical rhythm between
+ * blocks, keyboard avoidance, and the footer treatment. Screens that
+ * hand-rolled these drifted apart, which is a large part of why the app did
+ * not feel like one product.
  */
 export function Screen({
   children,
+  title,
+  subtitle,
+  titleAction,
   scroll = true,
-  padding = 'base',
+  inset = 'gutter',
   edges,
   refreshing,
   onRefresh,
@@ -45,13 +65,44 @@ export function Screen({
   const theme = useTheme();
   const insets = useSafeAreaInsets();
 
+  const horizontal = inset === 'gutter' ? theme.gutter : 0;
   const paddingTop = edges?.top ? insets.top : 0;
   const paddingBottom = edges?.bottom ? insets.bottom : 0;
 
-  const inner = (
+  const header = title ? (
+    <View
+      style={{
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        justifyContent: 'space-between',
+        gap: theme.spacing.md,
+        paddingHorizontal: horizontal,
+        paddingTop: theme.spacing.sm,
+        paddingBottom: theme.spacing.xs,
+      }}
+    >
+      <View style={{ flex: 1, gap: theme.spacing.xs }}>
+        <Text variant="display">{title}</Text>
+        {subtitle ? (
+          <Text variant="callout" color="textMuted">
+            {subtitle}
+          </Text>
+        ) : null}
+      </View>
+      {titleAction}
+    </View>
+  ) : null;
+
+  const body = (
     <View
       style={[
-        { padding: theme.spacing[padding], gap: theme.spacing.base, flexGrow: 1 },
+        {
+          paddingHorizontal: horizontal,
+          paddingTop: title ? theme.spacing.base : theme.spacing.lg,
+          paddingBottom: theme.spacing.xxl,
+          gap: theme.blockGap,
+          flexGrow: 1,
+        },
         contentStyle,
       ]}
     >
@@ -73,6 +124,8 @@ export function Screen({
             style={{ flex: 1 }}
             contentContainerStyle={{ flexGrow: 1 }}
             keyboardShouldPersistTaps="handled"
+            // iOS momentum feels wrong without this on a long content page.
+            showsVerticalScrollIndicator={false}
             refreshControl={
               onRefresh ? (
                 <RefreshControl
@@ -83,22 +136,26 @@ export function Screen({
               ) : undefined
             }
           >
-            {inner}
+            {header}
+            {body}
           </ScrollView>
         ) : (
-          inner
+          <>
+            {header}
+            {body}
+          </>
         )}
 
         {footer ? (
           <View
             style={{
-              paddingHorizontal: theme.spacing[padding],
+              paddingHorizontal: horizontal === 0 ? theme.gutter : horizontal,
               paddingTop: theme.spacing.md,
               paddingBottom: theme.spacing.md + paddingBottom,
-              borderTopWidth: 1,
-              borderTopColor: theme.colors.border,
-              backgroundColor: theme.colors.surface,
               gap: theme.spacing.sm,
+              backgroundColor: theme.colors.surface,
+              borderTopWidth: theme.hairline,
+              borderTopColor: theme.colors.separator,
             }}
           >
             {footer}

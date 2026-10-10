@@ -101,13 +101,13 @@ export default function GoalsScreen() {
               >
                 <View style={{ gap: theme.spacing.xxs }}>
                   <Text
-                    variant={selected ? 'bodyStrong' : 'body'}
+                    variant={selected ? 'headline' : 'body'}
                     color={selected ? 'primaryOnSoft' : 'text'}
                   >
                     {option.label}
                   </Text>
                   {option.description ? (
-                    <Text variant="bodySm" color="textMuted">
+                    <Text variant="callout" color="textMuted">
                       {option.description}
                     </Text>
                   ) : null}
@@ -120,7 +120,7 @@ export default function GoalsScreen() {
 
       {showTargets ? (
         <View style={{ gap: theme.spacing.md }}>
-          <Text variant="bodySmStrong" color="textMuted">
+          <Text variant="label" color="textMuted">
             DAILY TARGETS (OPTIONAL)
           </Text>
           <TextField

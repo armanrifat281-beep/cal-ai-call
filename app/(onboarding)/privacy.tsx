@@ -54,8 +54,8 @@ export default function PrivacyScreen() {
       <View style={{ gap: theme.spacing.md }}>
         {FACTS.map((fact) => (
           <View key={fact.title} style={{ gap: theme.spacing.xxs }}>
-            <Text variant="subheading">{fact.title}</Text>
-            <Text variant="bodySm" color="textMuted">
+            <Text variant="headline">{fact.title}</Text>
+            <Text variant="callout" color="textMuted">
               {fact.body}
             </Text>
           </View>
@@ -115,7 +115,7 @@ function SettingToggle({
       }}
     >
       <View style={{ flex: 1, gap: theme.spacing.xxs }}>
-        <Text variant="bodyStrong">{title}</Text>
+        <Text variant="headline">{title}</Text>
         <Text variant="caption" color="textMuted" style={{ lineHeight: 18 }}>
           {body}
         </Text>

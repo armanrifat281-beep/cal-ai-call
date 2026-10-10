@@ -41,7 +41,7 @@ export function RecipeImage({ image, title, height = 190, style }: RecipeImagePr
   const frame: ViewStyle = {
     width: '100%',
     height,
-    borderRadius: theme.radius.lg,
+    borderRadius: theme.radius.surface,
     overflow: 'hidden',
     backgroundColor: theme.colors.surfaceAlt,
   };
@@ -85,7 +85,7 @@ export function RecipeImage({ image, title, height = 190, style }: RecipeImagePr
             bottom: theme.spacing.sm,
             paddingHorizontal: theme.spacing.xs,
             paddingVertical: 2,
-            borderRadius: theme.radius.sm,
+            borderRadius: theme.radius.xs,
             backgroundColor: theme.colors.scrim,
           }}
         >

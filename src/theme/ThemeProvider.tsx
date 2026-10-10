@@ -11,7 +11,19 @@ import {
 import { useColorScheme } from 'react-native';
 
 import { palettes, type ColorScheme, type Palette } from './palette';
-import { duration, minTouchTarget, radius, spacing, typography } from './tokens';
+import {
+  blockGap,
+  duration,
+  elevation,
+  gutter,
+  hairline,
+  minTouchTarget,
+  pressScale,
+  radius,
+  spacing,
+  typography,
+  type ElevationLevel,
+} from './tokens';
 
 /** What the user picked in Settings. `system` follows the OS. */
 export type ThemePreference = 'system' | 'light' | 'dark';
@@ -25,6 +37,19 @@ export interface Theme {
   typography: typeof typography;
   duration: typeof duration;
   minTouchTarget: number;
+  /** Horizontal screen inset. */
+  gutter: number;
+  /** Vertical rhythm between major blocks. */
+  blockGap: number;
+  /** Platform hairline width. */
+  hairline: number;
+  /** How far a pressable scales on touch. */
+  pressScale: number;
+  /**
+   * Shadow for a level, already resolved against this scheme's shadow
+   * colour. Call it rather than hand-rolling shadow props.
+   */
+  elevation: (level: ElevationLevel) => ReturnType<typeof elevation>;
 }
 
 interface ThemeContextValue {
@@ -40,14 +65,20 @@ const STORAGE_KEY = 'foodlens.theme-preference.v1';
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
 function buildTheme(scheme: ColorScheme): Theme {
+  const colors = palettes[scheme];
   return {
     scheme,
-    colors: palettes[scheme],
+    colors,
     spacing,
     radius,
     typography,
     duration,
     minTouchTarget,
+    gutter,
+    blockGap,
+    hairline,
+    pressScale,
+    elevation: (level) => elevation(level, colors.shadow),
   };
 }
 

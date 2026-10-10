@@ -106,7 +106,7 @@ export default function ProfileScreen() {
   return (
     <Screen edges={{ top: true }} contentStyle={{ gap: theme.spacing.lg }}>
       <View style={{ gap: theme.spacing.sm }}>
-        <Text variant="title">Profile</Text>
+        <Text variant="title1">Profile</Text>
         <View style={{ flexDirection: 'row' }}>
           <Badge
             label={
@@ -133,7 +133,7 @@ export default function ProfileScreen() {
 
       <Section title="Appearance">
         <View style={{ padding: theme.spacing.base, gap: theme.spacing.sm }}>
-          <Text variant="bodySmStrong" color="textMuted">
+          <Text variant="label" color="textMuted">
             THEME
           </Text>
           <SegmentedControl
@@ -147,7 +147,7 @@ export default function ProfileScreen() {
 
       <Section title="Units and region">
         <View style={{ padding: theme.spacing.base, gap: theme.spacing.sm }}>
-          <Text variant="bodySmStrong" color="textMuted">
+          <Text variant="label" color="textMuted">
             PORTION UNITS
           </Text>
           <SegmentedControl
@@ -189,7 +189,7 @@ export default function ProfileScreen() {
           title="Servings"
           subtitle={`The recipe creator starts at ${preferences.preferredServings}. Changing it there updates this.`}
           trailing={
-            <Text variant="bodyStrong">{preferences.preferredServings}</Text>
+            <Text variant="headline">{preferences.preferredServings}</Text>
           }
         />
         <Divider />
@@ -201,7 +201,7 @@ export default function ProfileScreen() {
               : 'Nothing remembered yet. Pick one when you create a recipe.'
           }
           trailing={
-            <Text variant="bodySmStrong" color="textMuted">
+            <Text variant="label" color="textMuted">
               {cuisineLabel(toCuisineId(preferences.favoriteCuisineId)) ?? 'None'}
             </Text>
           }
@@ -348,7 +348,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   const theme = useTheme();
   return (
     <View style={{ gap: theme.spacing.sm }}>
-      <Text variant="bodySmStrong" color="textMuted">
+      <Text variant="label" color="textMuted">
         {title.toUpperCase()}
       </Text>
       <Card padding="none">{children}</Card>
@@ -378,7 +378,7 @@ function ToggleRow({
       }}
     >
       <View style={{ flex: 1, gap: theme.spacing.xxs }}>
-        <Text variant="bodyStrong">{title}</Text>
+        <Text variant="headline">{title}</Text>
         <Text variant="caption" color="textMuted" style={{ lineHeight: 18 }}>
           {body}
         </Text>

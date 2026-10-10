@@ -7,17 +7,20 @@ import type { Nutrients } from '@/types/domain';
 
 export interface MacroBarProps {
   nutrients: Nutrients;
-  /** Show the protein/carbs/fat legend under the bar. */
+  /** Show the protein/carbs/fat readout under the bar. */
   showLegend?: boolean;
   height?: number;
 }
 
 /**
- * A single bar showing how a meal's calories split across protein, carbs and
- * fat. One bar reads faster than a pie chart at this size, and it degrades to
- * an honest empty state when there is nothing to split.
+ * How a meal's energy splits across protein, carbs and fat.
+ *
+ * One bar, because at phone width a bar is read faster than a ring or a pie
+ * and degrades honestly to an empty track when there is nothing to split.
+ * The legend sets the gram figures in tabular digits so they line up down a
+ * list of meals.
  */
-export function MacroBar({ nutrients, showLegend = true, height = 10 }: MacroBarProps) {
+export function MacroBar({ nutrients, showLegend = true, height = 6 }: MacroBarProps) {
   const theme = useTheme();
   const split = macroSplit(nutrients);
 
@@ -27,13 +30,16 @@ export function MacroBar({ nutrients, showLegend = true, height = 10 }: MacroBar
     { key: 'fat', share: split.fatShare, color: theme.colors.fat, label: 'Fat', grams: nutrients.fatG },
   ];
 
+  const formatGrams = (grams: number) =>
+    grams < 10 ? grams.toFixed(1) : String(Math.round(grams));
+
   return (
     <View style={{ gap: theme.spacing.sm }}>
       <View
         accessibilityRole="image"
         accessibilityLabel={
           split.hasData
-            ? `Calorie split: ${segments
+            ? `Energy split: ${segments
                 .map((s) => `${s.label} ${Math.round(s.share * 100)} percent`)
                 .join(', ')}`
             : 'No macro data yet'
@@ -44,6 +50,9 @@ export function MacroBar({ nutrients, showLegend = true, height = 10 }: MacroBar
           borderRadius: height / 2,
           overflow: 'hidden',
           backgroundColor: theme.colors.surfaceAlt,
+          // A 1px gap between segments reads as deliberate rather than as a
+          // rendering artefact where two similar colours meet.
+          gap: split.hasData ? 1.5 : 0,
         }}
       >
         {split.hasData
@@ -59,28 +68,24 @@ export function MacroBar({ nutrients, showLegend = true, height = 10 }: MacroBar
       </View>
 
       {showLegend ? (
-        <View style={{ flexDirection: 'row', gap: theme.spacing.base }}>
+        <View style={{ flexDirection: 'row', gap: theme.spacing.lg }}>
           {segments.map((segment) => (
             <View
               key={segment.key}
-              style={{ flexDirection: 'row', alignItems: 'center', gap: theme.spacing.xs }}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}
             >
               <View
                 style={{
-                  width: 8,
-                  height: 8,
-                  borderRadius: 4,
+                  width: 7,
+                  height: 7,
+                  borderRadius: 2,
                   backgroundColor: segment.color,
                 }}
               />
               <Text variant="caption" color="textMuted">
                 {segment.label}
               </Text>
-              <Text variant="caption">
-                {segment.grams < 10
-                  ? `${segment.grams.toFixed(1)} g`
-                  : `${Math.round(segment.grams)} g`}
-              </Text>
+              <Text variant="metricS">{formatGrams(segment.grams)}g</Text>
             </View>
           ))}
         </View>
