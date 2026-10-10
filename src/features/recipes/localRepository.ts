@@ -10,6 +10,7 @@ import type {
   ShoppingListStatus,
 } from '@/types/recipe';
 
+import { planShoppingMerge } from './mergeItems';
 import type {
   CreateRecipeInput,
   CreateShoppingListInput,
@@ -274,15 +275,6 @@ export function createLocalRecipeRepository(): RecipeRepository {
 // Shopping lists
 // ---------------------------------------------------------------------------
 
-/**
- * Normalizes an item name for merge comparison.
- *
- * "Red Onions" and "red onions" are the same shopping line.
- */
-function mergeKey(name: string, unit: ShoppingListItem['unit']): string {
-  return `${name.trim().toLowerCase()}|${unit ?? ''}`;
-}
-
 export function createLocalShoppingListRepository(): ShoppingListRepository {
   const all = () => readArray<ShoppingList>(LISTS_KEY);
 
@@ -438,37 +430,27 @@ export function createLocalShoppingListRepository(): ShoppingListRepository {
 
     addItems(listId, items) {
       return mutateList(listId, (list) => {
-        const merged = [...list.items];
+        // The merge rule lives in mergeItems.ts, so this store and the
+        // Supabase one cannot drift on something as easy to get subtly
+        // wrong as "do two onions become one line".
+        const plan = planShoppingMerge(list.items, items);
+        const now = new Date().toISOString();
 
-        for (const incoming of items) {
-          const name = incoming.name.trim();
-          if (name.length === 0) continue;
+        const byId = new Map(plan.updates.map((update) => [update.id, update]));
+        const merged = list.items.map((item) => {
+          const update = byId.get(item.id);
+          if (!update) return item;
+          return {
+            ...item,
+            quantity: update.quantity,
+            // A merged line is needed again, so an earlier tick is cleared.
+            isChecked: false,
+            updatedAt: now,
+          };
+        });
 
-          const key = mergeKey(name, incoming.unit ?? null);
-          const existingIndex = merged.findIndex(
-            (item) => mergeKey(item.name, item.unit) === key,
-          );
-          const existing = merged[existingIndex];
-
-          if (existing) {
-            // Same food and same unit: add the amounts together, so a second
-            // recipe needing onions produces one line, not two.
-            const combinedQuantity =
-              existing.quantity === null || incoming.quantity === undefined || incoming.quantity === null
-                ? (existing.quantity ?? incoming.quantity ?? null)
-                : existing.quantity + incoming.quantity;
-
-            merged[existingIndex] = {
-              ...existing,
-              quantity: combinedQuantity,
-              // A merged line is needed again, so an earlier tick is cleared.
-              isChecked: false,
-              updatedAt: new Date().toISOString(),
-            };
-            continue;
-          }
-
-          merged.push(buildItem(list.id, { ...incoming, name }, merged.length));
+        for (const insert of plan.inserts) {
+          merged.push(buildItem(list.id, insert.input, insert.position));
         }
 
         return { ...list, items: merged };

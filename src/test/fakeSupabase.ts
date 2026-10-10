@@ -125,6 +125,12 @@ class FakeQueryBuilder implements PromiseLike<unknown> {
     return this;
   }
 
+  /** `.is('col', null)`, which is how PostgREST asks for SQL NULL. */
+  is(column: string, value: unknown): this {
+    this.record.filters.push(['is', column, value]);
+    return this;
+  }
+
   order(
     column: string,
     options?: { ascending?: boolean; nullsFirst?: boolean },

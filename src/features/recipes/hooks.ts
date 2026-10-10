@@ -1,6 +1,8 @@
 import { useCallback, useState } from 'react';
 
+import { useAuth } from '@/features/auth';
 import type { AppError, Result } from '@/lib/result';
+import { getSupabaseClient } from '@/lib/supabase';
 import { useAsyncResult } from '@/lib/useAsyncResult';
 import type { Recipe, ShoppingList, ShoppingListStatus } from '@/types/recipe';
 
@@ -8,6 +10,10 @@ import {
   createLocalRecipeRepository,
   createLocalShoppingListRepository,
 } from './localRepository';
+import {
+  createSupabaseRecipeRepository,
+  createSupabaseShoppingListRepository,
+} from './supabaseRepository';
 import type {
   ListRecipesOptions,
   RecipeRepository,
@@ -17,12 +23,21 @@ import type {
 /**
  * Recipe and shopping list data access for screens.
  *
- * Device-local for now. A Supabase implementation slots in here exactly as it
- * did for the journal, and no screen changes when it does.
+ * The repository is chosen here and nowhere else, exactly as the journal
+ * does it:
+ *
+ *   signed in  -> Supabase, where the data is backed up and protected by RLS
+ *   otherwise  -> this device
+ *
+ * The non-React getters stay device-local on purpose. They are called from
+ * places with no auth context, and silently reading one store while the
+ * screens read another is worse than being predictable.
  */
 
 let recipeRepository: RecipeRepository | null = null;
 let shoppingListRepository: ShoppingListRepository | null = null;
+let supabaseRecipes: RecipeRepository | null = null;
+let supabaseShoppingLists: ShoppingListRepository | null = null;
 
 export function getRecipeRepository(): RecipeRepository {
   recipeRepository ??= createLocalRecipeRepository();
@@ -46,10 +61,38 @@ export function setRecipeRepositories(repositories: {
 }
 
 export function useRecipeRepository(): RecipeRepository {
+  const { isSignedIn } = useAuth();
+
+  // A test override wins, so a test never reaches for a real client.
+  if (recipeRepository) return recipeRepository;
+
+  if (isSignedIn) {
+    const client = getSupabaseClient();
+    if (client) {
+      // Memoized at module level: the client is a singleton, so the
+      // repository built from it can be too, and a new object every render
+      // would retrigger every data effect that depends on it.
+      supabaseRecipes ??= createSupabaseRecipeRepository(client);
+      return supabaseRecipes;
+    }
+  }
+
   return getRecipeRepository();
 }
 
 export function useShoppingListRepository(): ShoppingListRepository {
+  const { isSignedIn } = useAuth();
+
+  if (shoppingListRepository) return shoppingListRepository;
+
+  if (isSignedIn) {
+    const client = getSupabaseClient();
+    if (client) {
+      supabaseShoppingLists ??= createSupabaseShoppingListRepository(client);
+      return supabaseShoppingLists;
+    }
+  }
+
   return getShoppingListRepository();
 }
 
