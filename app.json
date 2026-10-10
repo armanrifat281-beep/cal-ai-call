@@ -25,7 +25,7 @@
     "android": {
       "package": "com.example.foodlensai",
       "adaptiveIcon": {
-        "backgroundColor": "#E2EFE8",
+        "backgroundColor": "#133F2F",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
@@ -49,11 +49,11 @@
         "expo-splash-screen",
         {
           "image": "./assets/splash-icon.png",
-          "imageWidth": 180,
+          "imageWidth": 160,
           "resizeMode": "contain",
-          "backgroundColor": "#FBFAF6",
+          "backgroundColor": "#FAF8F4",
           "dark": {
-            "backgroundColor": "#121410"
+            "backgroundColor": "#121109"
           }
         }
       ],

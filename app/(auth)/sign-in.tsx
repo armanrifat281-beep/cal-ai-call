@@ -2,7 +2,15 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { View } from 'react-native';
 
-import { Button, ErrorState, InfoNote, Screen, Text, TextField } from '@/components/ui';
+import {
+  Button,
+  Disclosure,
+  ErrorState,
+  Screen,
+  Text,
+  TextField,
+  OfflineNotice,
+} from '@/components/ui';
 import { hasAnyError, useAuth, validateSignIn } from '@/features/auth';
 import type { AppError } from '@/lib/result';
 import { useTheme } from '@/theme';
@@ -41,11 +49,7 @@ export default function SignInScreen() {
   if (status === 'unavailable') {
     return (
       <Screen contentStyle={{ gap: theme.spacing.base }}>
-        <InfoNote
-          title="Accounts are not set up in this build"
-          body="There is no backend configured, so there is nothing to sign in to. Your meals are saved on this device and everything else in the app works normally."
-          tone="neutral"
-        />
+        <Disclosure summary="Accounts are not set up in this build" detail="There is no backend configured, so there is nothing to sign in to. Your meals are saved on this device and everything else in the app works normally." />
         <Button
           label="Back to the app"
           onPress={() => router.replace('/(tabs)')}
@@ -72,7 +76,7 @@ export default function SignInScreen() {
             label="Create an account instead"
             variant="ghost"
             onPress={() => router.replace('/(auth)/sign-up')}
-            fullWidth
+            style={{ alignSelf: 'center' }}
           />
         </>
       }
@@ -83,6 +87,8 @@ export default function SignInScreen() {
           Signing in backs up your journal and syncs it across your devices.
         </Text>
       </View>
+
+      <OfflineNotice message="Signing in needs one." />
 
       {error ? (
         <ErrorState

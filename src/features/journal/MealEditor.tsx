@@ -8,11 +8,11 @@ import { Icon } from '@/components/Icon';
 import { MacroBar } from '@/components/nutrition';
 import {
   Button,
-  Card,
+  Disclosure,
   ErrorState,
-  InfoNote,
   Screen,
   SegmentedControl,
+  Surface,
   Text,
   TextField,
 } from '@/components/ui';
@@ -217,7 +217,7 @@ export function MealEditor({
         />
       ) : null}
 
-      <Card padding="lg" style={{ gap: theme.spacing.md }}>
+      <Surface variant="raised" padding="lg" style={{ gap: theme.spacing.md }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
           <Text variant="caption" color="textMuted">
             MEAL TOTAL
@@ -228,7 +228,7 @@ export function MealEditor({
         </View>
         <Text variant="display">{formatCalories(totals.nutrients.caloriesKcal)}</Text>
         <MacroBar nutrients={totals.nutrients} />
-      </Card>
+      </Surface>
 
       <View style={{ gap: theme.spacing.base }}>
         <TextField
@@ -298,10 +298,7 @@ export function MealEditor({
         <Text variant="title2">Foods in this meal</Text>
 
         {items.length === 0 ? (
-          <InfoNote
-            body="Add each food separately so portions and nutrients stay accurate. You can edit every number."
-            tone="neutral"
-          />
+          <Disclosure summary="Add each food separately so portions and nutrients stay accurate. You can edit every number." />
         ) : (
           <View style={{ gap: theme.spacing.sm }}>
             {items.map((item) => (

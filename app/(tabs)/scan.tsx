@@ -14,6 +14,7 @@ import {
   Section,
   Surface,
   Text,
+  OfflineNotice,
 } from '@/components/ui';
 import {
   discardPreparedImage,
@@ -185,6 +186,8 @@ export default function ScanScreen() {
       edges={{ top: true }}
       contentStyle={{ gap: theme.spacing.xl }}
     >
+      <OfflineNotice message="Taking a photo works, but it cannot be analysed until you are back online." />
+
       {error ? (
         <ErrorState
           message={error.message}

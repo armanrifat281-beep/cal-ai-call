@@ -2,7 +2,7 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Switch, View } from 'react-native';
 
-import { Card, Divider, InfoNote, Text } from '@/components/ui';
+import { Disclosure, Divider, Surface, Text } from '@/components/ui';
 import { StepLayout } from '@/features/onboarding/StepLayout';
 import { env } from '@/lib/env';
 import { usePreferencesStore } from '@/store/preferencesStore';
@@ -62,7 +62,7 @@ export default function PrivacyScreen() {
         ))}
       </View>
 
-      <Card padding="none">
+      <Surface variant="grouped">
         <SettingToggle
           title="Remember my meals"
           body="Lets FoodLens suggest meals you have logged before and show weekly patterns. Turning this off means no history is used for suggestions."
@@ -76,13 +76,9 @@ export default function PrivacyScreen() {
           value={retainPhotos}
           onChange={setRetainPhotos}
         />
-      </Card>
+      </Surface>
 
-      <InfoNote
-        title="What FoodLens is not"
-        body="It does not diagnose, treat or give medical or dietary advice, and its numbers are estimates. Talk to a qualified professional about decisions regarding your health."
-        tone="warning"
-      />
+      <Disclosure summary="What FoodLens is not" detail="It does not diagnose, treat or give medical or dietary advice, and its numbers are estimates. Talk to a qualified professional about decisions regarding your health." tone="caution" />
 
       <Text variant="caption" color="textMuted">
         You can change every one of these later in Profile, and delete your data

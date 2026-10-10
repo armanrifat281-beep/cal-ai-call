@@ -1,7 +1,8 @@
 import { useRouter } from 'expo-router';
 import { View } from 'react-native';
 
-import { Button, Card, InfoNote, Screen, Text } from '@/components/ui';
+import { BrandMark } from '@/components/BrandMark';
+import { Button, Disclosure, Screen, Text } from '@/components/ui';
 import { useTheme } from '@/theme';
 
 /** What the app does, in the user's terms, before asking for anything. */
@@ -15,11 +16,19 @@ const VALUE_POINTS = [
     body: 'Edit anything that looks wrong, then save the meal to your day.',
   },
   {
-    title: 'Build a food memory',
-    body: 'The app learns the meals you log so re-logging them takes one tap.',
+    title: 'Cook what you want',
+    body: 'Name a dish or list what you have, and get a recipe you can follow.',
   },
 ];
 
+/**
+ * The first screen.
+ *
+ * One statement, three lines about what the app does, and the honest caveat.
+ * It previously put each value point in its own outlined card, which made a
+ * first impression of three identical boxes. Here the numbered rail carries
+ * the structure and the mark carries the identity.
+ */
 export default function WelcomeScreen() {
   const theme = useTheme();
   const router = useRouter();
@@ -27,6 +36,7 @@ export default function WelcomeScreen() {
   return (
     <Screen
       edges={{ top: true, bottom: true }}
+      contentStyle={{ gap: theme.spacing.xxl, justifyContent: 'center' }}
       footer={
         <>
           <Button
@@ -34,7 +44,6 @@ export default function WelcomeScreen() {
             onPress={() => router.push('/(onboarding)/basics')}
             size="lg"
             fullWidth
-            haptic
           />
           <Button
             label="Look around first"
@@ -46,51 +55,42 @@ export default function WelcomeScreen() {
         </>
       }
     >
-      <View style={{ gap: theme.spacing.sm, paddingTop: theme.spacing.xl }}>
-        <Text variant="label" color="primaryOnSoft">
-          FOODLENS AI
-        </Text>
-        <Text variant="display">Understand what is on your plate.</Text>
-        <Text variant="body" color="textMuted">
-          A food journal that reads your photos, shows its working, and tells you
-          when it is not sure.
-        </Text>
+      <View style={{ gap: theme.spacing.lg }}>
+        <BrandMark size={52} />
+        <View style={{ gap: theme.spacing.md }}>
+          <Text variant="display" style={{ fontSize: 36, lineHeight: 42 }}>
+            Understand what is on your plate.
+          </Text>
+          <Text variant="body" color="textMuted">
+            A food journal that reads your photos, shows its working, and tells
+            you when it is not sure.
+          </Text>
+        </View>
       </View>
 
-      <View style={{ gap: theme.spacing.md, marginTop: theme.spacing.md }}>
+      <View style={{ gap: theme.spacing.lg }}>
         {VALUE_POINTS.map((point, index) => (
-          <Card key={point.title} variant="soft" padding="base">
-            <View style={{ flexDirection: 'row', gap: theme.spacing.md }}>
-              <View
-                style={{
-                  width: 28,
-                  height: 28,
-                  borderRadius: theme.radius.pill,
-                  backgroundColor: theme.colors.primary,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <Text variant="label" color="textOnPrimary">
-                  {index + 1}
-                </Text>
-              </View>
-              <View style={{ flex: 1, gap: theme.spacing.xxs }}>
-                <Text variant="headline">{point.title}</Text>
-                <Text variant="callout" color="textMuted">
-                  {point.body}
-                </Text>
-              </View>
+          <View
+            key={point.title}
+            style={{ flexDirection: 'row', gap: theme.spacing.md }}
+          >
+            <Text variant="metricS" color="textSubtle" style={{ width: 16, paddingTop: 4 }}>
+              {index + 1}
+            </Text>
+            <View style={{ flex: 1, gap: 2 }}>
+              <Text variant="headline">{point.title}</Text>
+              <Text variant="footnote" color="textMuted">
+                {point.body}
+              </Text>
             </View>
-          </Card>
+          </View>
         ))}
       </View>
 
-      <InfoNote
-        title="Estimates, not measurements"
-        body="A photo cannot show hidden oil, sugar or exact weight. FoodLens gives an estimate, labels where every number came from, and lets you correct it. It is not medical advice."
-        tone="warning"
-        style={{ marginTop: theme.spacing.sm }}
+      <Disclosure
+        summary="Estimates, not measurements"
+        detail="A photo cannot show hidden oil, sugar or exact weight. FoodLens gives an estimate, labels where every number came from, and lets you correct it. It is not medical advice."
+        tone="caution"
       />
     </Screen>
   );

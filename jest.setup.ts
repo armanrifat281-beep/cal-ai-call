@@ -100,3 +100,11 @@ jest.mock('expo-router', () => {
     SplashScreen: { preventAutoHideAsync: jest.fn(), hideAsync: jest.fn() },
   };
 });
+
+// expo-network reaches the platform. Tests run "online" by default; a test
+// that cares can override useNetworkState for itself.
+jest.mock('expo-network', () => ({
+  useNetworkState: () => ({ isConnected: true, isInternetReachable: true }),
+  getNetworkStateAsync: () =>
+    Promise.resolve({ isConnected: true, isInternetReachable: true }),
+}));

@@ -5,12 +5,12 @@ import { Icon } from '@/components/Icon';
 import { SourceBadge } from '@/components/nutrition';
 import {
   Button,
-  Card,
+  Disclosure,
   Divider,
   IconButton,
-  InfoNote,
   NumberField,
   SegmentedControl,
+  Surface,
   Text,
   TextField,
 } from '@/components/ui';
@@ -70,7 +70,7 @@ export function ItemEditor({
   const nameError = item.name.trim().length === 0 ? 'Give this food a name.' : null;
 
   return (
-    <Card padding="none" style={{ overflow: 'hidden' }}>
+    <Surface variant="grouped" style={{ overflow: 'hidden' }}>
       <View
         style={{
           flexDirection: 'row',
@@ -202,14 +202,14 @@ export function ItemEditor({
             </View>
 
             {consistency.isInconsistent ? (
-              <InfoNote
-                title="These numbers do not add up"
-                body={`Protein, carbs and fat come to about ${Math.round(
+              <Disclosure
+                summary="These numbers do not add up"
+                detail={`Protein, carbs and fat come to about ${Math.round(
                   consistency.impliedKcal,
                 )} kcal, but calories say ${Math.round(
                   consistency.statedKcal,
                 )}. One of them is probably wrong.`}
-                tone="warning"
+                tone="caution"
               />
             ) : null}
 
@@ -240,6 +240,6 @@ export function ItemEditor({
           </View>
         </>
       ) : null}
-    </Card>
+    </Surface>
   );
 }

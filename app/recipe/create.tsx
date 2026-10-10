@@ -16,6 +16,7 @@ import {
   Stepper,
   Text,
   TextField,
+  OfflineNotice,
 } from '@/components/ui';
 import { useAuth } from '@/features/auth';
 import {
@@ -284,6 +285,8 @@ export default function CreateRecipeScreen() {
           tone="caution"
         />
       ) : null}
+
+      <OfflineNotice message="Writing a new recipe needs one. Your saved recipes still work." />
 
       {error ? (
         <ErrorState

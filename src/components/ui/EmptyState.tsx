@@ -1,4 +1,3 @@
-import React from 'react';
 import { View } from 'react-native';
 
 import { useTheme } from '@/theme';
@@ -10,7 +9,7 @@ export interface EmptyStateProps {
   title: string;
   /** One or two sentences on what to do next. */
   body?: string;
-  /** A large decorative glyph or illustration. */
+  /** A decorative glyph. Kept small: it is not the point of the screen. */
   illustration?: React.ReactNode;
   actionLabel?: string;
   onAction?: () => void;
@@ -19,6 +18,13 @@ export interface EmptyStateProps {
   testID?: string;
 }
 
+/**
+ * An empty list or screen.
+ *
+ * Left-aligned, not centred. A centred block with a large icon reads as a
+ * marketing slot; aligning it with the rest of the screen's text makes it
+ * read as part of the content, which is what it is.
+ */
 export function EmptyState({
   title,
   body,
@@ -35,41 +41,32 @@ export function EmptyState({
     <View
       testID={testID}
       style={{
-        alignItems: 'center',
-        gap: theme.spacing.sm,
-        paddingVertical: theme.spacing.xxl,
-        paddingHorizontal: theme.spacing.base,
+        gap: theme.spacing.md,
+        paddingVertical: theme.spacing.lg,
       }}
     >
-      {illustration ? (
-        <View style={{ marginBottom: theme.spacing.sm }}>{illustration}</View>
-      ) : null}
+      {illustration ? <View style={{ opacity: 0.75 }}>{illustration}</View> : null}
 
-      <Text variant="title2" align="center">
-        {title}
-      </Text>
-
-      {body ? (
-        <Text variant="callout" color="textMuted" align="center">
-          {body}
-        </Text>
-      ) : null}
+      <View style={{ gap: theme.spacing.xs }}>
+        <Text variant="title2">{title}</Text>
+        {body ? (
+          <Text variant="callout" color="textMuted">
+            {body}
+          </Text>
+        ) : null}
+      </View>
 
       {actionLabel && onAction ? (
-        <Button
-          label={actionLabel}
-          onPress={onAction}
-          style={{ marginTop: theme.spacing.md }}
-        />
-      ) : null}
-
-      {secondaryActionLabel && onSecondaryAction ? (
-        <Button
-          label={secondaryActionLabel}
-          variant="ghost"
-          size="sm"
-          onPress={onSecondaryAction}
-        />
+        <View style={{ flexDirection: 'row', gap: theme.spacing.sm, flexWrap: 'wrap' }}>
+          <Button label={actionLabel} variant="tonal" onPress={onAction} />
+          {secondaryActionLabel && onSecondaryAction ? (
+            <Button
+              label={secondaryActionLabel}
+              variant="ghost"
+              onPress={onSecondaryAction}
+            />
+          ) : null}
+        </View>
       ) : null}
     </View>
   );

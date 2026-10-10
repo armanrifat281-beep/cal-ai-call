@@ -2,7 +2,7 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { View } from 'react-native';
 
-import { Button, Chip, InfoNote, Text, TextField } from '@/components/ui';
+import { Button, Chip, Disclosure, Text, TextField } from '@/components/ui';
 import { ChipGroup } from '@/features/onboarding/ChipGroup';
 import {
   COMMON_ALLERGEN_SUGGESTIONS,
@@ -130,11 +130,7 @@ export default function FoodPreferencesScreen() {
           </View>
         ) : (
           <View style={{ gap: theme.spacing.md }}>
-            <InfoNote
-              title="This is not a safety check"
-              body="Filtering is based on recipe text and AI output, which can be wrong or incomplete. Never rely on FoodLens to decide whether a food is safe for an allergy. Always read the actual label."
-              tone="warning"
-            />
+            <Disclosure summary="This is not a safety check" detail="Filtering is based on recipe text and AI output, which can be wrong or incomplete. Never rely on FoodLens to decide whether a food is safe for an allergy. Always read the actual label." tone="caution" />
 
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.sm }}>
               {COMMON_ALLERGEN_SUGGESTIONS.map((suggestion) => (

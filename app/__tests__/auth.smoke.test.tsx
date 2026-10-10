@@ -78,8 +78,8 @@ describe('profile account section', () => {
   it('states that meals are local only when there is no backend', async () => {
     await renderWithProviders(<ProfileScreen />);
 
-    expect(screen.getByText('Local only - no account')).toBeTruthy();
-    expect(screen.getByText('No account backend in this build')).toBeTruthy();
+    expect(screen.getByText('No account in this build')).toBeTruthy();
+    expect(screen.getByText('Meals are saved on this device only')).toBeTruthy();
   });
 
   it('does not offer sign-in when there is nothing to sign in to', async () => {

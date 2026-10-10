@@ -1,23 +1,23 @@
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, View } from 'react-native';
+import { View } from 'react-native';
 
 import { Icon } from '@/components/Icon';
 import {
-  Badge,
   Button,
-  Card,
   EmptyState,
   ErrorState,
+  Metric,
+  Row,
   Screen,
   SegmentedControl,
   Skeleton,
-  Text,
+  Surface,
 } from '@/components/ui';
 import { getShoppingListRepository, useShoppingLists } from '@/features/recipes';
 import type { AppError } from '@/lib/result';
 import { useTheme } from '@/theme';
-import type { ShoppingList, ShoppingListStatus } from '@/types/recipe';
+import type { ShoppingListStatus } from '@/types/recipe';
 
 const STATUS_OPTIONS = [
   { value: 'active' as const, label: 'Active' },
@@ -51,9 +51,10 @@ export default function ShoppingListsScreen() {
 
   return (
     <Screen
+      title="Shopping"
       refreshing={loading}
       onRefresh={reload}
-      contentStyle={{ gap: theme.spacing.base }}
+      contentStyle={{ gap: theme.spacing.lg }}
       footer={
         <Button
           label="New shopping list"
@@ -86,8 +87,7 @@ export default function ShoppingListsScreen() {
           <Skeleton height={76} radius={theme.radius.surface} />
         </View>
       ) : lists.length === 0 ? (
-        <Card variant="soft" padding="none">
-          <EmptyState
+        <EmptyState
             title={status === 'active' ? 'No shopping lists' : 'Nothing finished yet'}
             body={
               status === 'active'
@@ -98,55 +98,36 @@ export default function ShoppingListsScreen() {
             actionLabel={status === 'active' ? 'Browse recipes' : undefined}
             onAction={status === 'active' ? () => router.push('/(tabs)/recipes') : undefined}
           />
-        </Card>
       ) : (
-        <View style={{ gap: theme.spacing.sm }}>
-          {lists.map((list) => (
-            <ListRowCard
-              key={list.id}
-              list={list}
-              onPress={() => router.push(`/shopping/${list.id}`)}
-            />
-          ))}
-        </View>
+        <Surface variant="grouped">
+          {lists.map((list, index) => {
+            const outstanding = list.items.filter((item) => !item.isChecked).length;
+            return (
+              <Row
+                key={list.id}
+                title={list.name}
+                subtitle={
+                  list.items.length === 0
+                    ? 'Empty'
+                    : outstanding === 0
+                      ? `All ${list.items.length} ticked off`
+                      : `${outstanding} of ${list.items.length} still to buy`
+                }
+                leading={<Icon name="basket" size={19} color="textMuted" />}
+                divided={index > 0}
+                trailing={
+                  outstanding > 0 ? (
+                    <Metric value={String(outstanding)} size="m" color="primaryOnSoft" />
+                  ) : (
+                    <Icon name="check" size={17} color="success" />
+                  )
+                }
+                onPress={() => router.push(`/shopping/${list.id}`)}
+              />
+            );
+          })}
+        </Surface>
       )}
     </Screen>
-  );
-}
-
-function ListRowCard({ list, onPress }: { list: ShoppingList; onPress: () => void }) {
-  const theme = useTheme();
-  const outstanding = list.items.filter((item) => !item.isChecked).length;
-
-  return (
-    <Pressable
-      onPress={onPress}
-      accessibilityRole="button"
-      accessibilityLabel={`${list.name}, ${outstanding} item${outstanding === 1 ? '' : 's'} left`}
-      style={({ pressed }) => ({
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: theme.spacing.md,
-        padding: theme.spacing.base,
-        borderRadius: theme.radius.surface,
-        borderWidth: 1,
-        borderColor: theme.colors.border,
-        backgroundColor: pressed ? theme.colors.surfacePressed : theme.colors.surface,
-      })}
-    >
-      <Icon name="basket" size={22} color="textMuted" />
-      <View style={{ flex: 1, gap: theme.spacing.xxs }}>
-        <Text variant="headline">{list.name}</Text>
-        <Text variant="callout" color="textMuted">
-          {list.items.length === 0
-            ? 'Empty'
-            : outstanding === 0
-              ? `All ${list.items.length} items ticked off`
-              : `${outstanding} of ${list.items.length} still to buy`}
-        </Text>
-      </View>
-      {outstanding > 0 ? <Badge label={String(outstanding)} tone="primary" /> : null}
-      <Icon name="chevronRight" size={18} color="textMuted" />
-    </Pressable>
   );
 }

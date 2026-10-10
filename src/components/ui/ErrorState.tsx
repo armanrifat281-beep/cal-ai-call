@@ -1,5 +1,6 @@
 import { View } from 'react-native';
 
+import { Icon } from '@/components/Icon';
 import { useTheme } from '@/theme';
 
 import { Button } from './Button';
@@ -7,17 +8,24 @@ import { Text } from './Text';
 
 export interface ErrorStateProps {
   title?: string;
-  /** Plain-language explanation. Never show a raw stack trace to the user. */
+  /** Plain language. Never a stack trace. */
   message: string;
   onRetry?: () => void;
   retryLabel?: string;
-  /** Extra technical detail, collapsed by default. Dev builds only. */
+  /** Technical detail, shown in development builds only. */
   detail?: string;
   testID?: string;
 }
 
+/**
+ * An inline failure.
+ *
+ * A tinted surface with no outline, and the icon carrying the signal rather
+ * than a red border. The developer detail is rendered only in a development
+ * build, so a release build never shows a user a SQLSTATE.
+ */
 export function ErrorState({
-  title = 'Something went wrong',
+  title,
   message,
   onRetry,
   retryLabel = 'Try again',
@@ -31,36 +39,41 @@ export function ErrorState({
       testID={testID}
       accessibilityLiveRegion="polite"
       style={{
-        gap: theme.spacing.sm,
+        flexDirection: 'row',
+        gap: theme.spacing.md,
         padding: theme.spacing.base,
-        borderRadius: theme.radius.surface,
+        borderRadius: theme.radius.control,
         backgroundColor: theme.colors.dangerSoft,
-        borderWidth: 1,
-        borderColor: theme.colors.danger,
       }}
     >
-      <Text variant="headline" color="dangerOnSoft">
-        {title}
-      </Text>
-      <Text variant="callout" color="dangerOnSoft">
-        {message}
-      </Text>
+      <Icon name="warning" size={19} color="dangerOnSoft" strokeWidth={1.8} />
 
-      {detail && __DEV__ ? (
-        <Text variant="caption" color="dangerOnSoft" style={{ opacity: 0.8 }}>
-          {detail}
+      <View style={{ flex: 1, gap: theme.spacing.xs }}>
+        {title ? (
+          <Text variant="headline" color="dangerOnSoft">
+            {title}
+          </Text>
+        ) : null}
+        <Text variant="callout" color="dangerOnSoft">
+          {message}
         </Text>
-      ) : null}
 
-      {onRetry ? (
-        <Button
-          label={retryLabel}
-          variant="tonal"
-          size="sm"
-          onPress={onRetry}
-          style={{ marginTop: theme.spacing.xs }}
-        />
-      ) : null}
+        {detail && __DEV__ ? (
+          <Text variant="caption" color="dangerOnSoft" style={{ opacity: 0.75 }}>
+            {detail}
+          </Text>
+        ) : null}
+
+        {onRetry ? (
+          <Button
+            label={retryLabel}
+            variant="ghost"
+            size="sm"
+            onPress={onRetry}
+            style={{ marginTop: theme.spacing.xxs, marginLeft: -theme.spacing.sm }}
+          />
+        ) : null}
+      </View>
     </View>
   );
 }

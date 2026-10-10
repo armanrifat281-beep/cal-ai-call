@@ -2,13 +2,12 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { View } from 'react-native';
 
-import { Card, InfoNote, Text, TextField } from '@/components/ui';
+import { Disclosure, PressableScale, Text, TextField } from '@/components/ui';
 import { GOAL_OPTIONS } from '@/features/onboarding/options';
 import { StepLayout } from '@/features/onboarding/StepLayout';
 import { usePreferencesStore } from '@/store/preferencesStore';
 import { useTheme } from '@/theme';
 import type { NutritionGoalKind } from '@/types/domain';
-import { Pressable } from 'react-native';
 
 /** Goals that make a calorie target meaningful enough to offer. */
 const GOALS_WITH_TARGETS: readonly NutritionGoalKind[] = ['manage_weight', 'more_protein'];
@@ -81,39 +80,46 @@ export default function GoalsScreen() {
         {GOAL_OPTIONS.map((option) => {
           const selected = goal === option.value;
           return (
-            <Pressable
+            <PressableScale
               key={option.value}
               onPress={() => setGoalDraft(option.value)}
               accessibilityRole="radio"
               accessibilityState={{ checked: selected }}
               accessibilityLabel={option.label}
               accessibilityHint={option.description}
+              scaleTo={0.99}
             >
-              <Card
-                variant={selected ? 'soft' : 'outlined'}
+              {/*
+                Selection is a tonal fill, not a border swap. Toggling a
+                1px outline to 2px is a weak signal, and it shifts the layout
+                by a pixel as the options change.
+              */}
+              <View
                 style={{
-                  borderWidth: selected ? 2 : 1,
-                  borderColor: selected ? theme.colors.primary : theme.colors.border,
+                  gap: 3,
+                  padding: theme.spacing.base,
+                  borderRadius: theme.radius.control,
                   backgroundColor: selected
                     ? theme.colors.primarySoft
-                    : theme.colors.surface,
+                    : theme.colors.surfaceAlt,
                 }}
               >
-                <View style={{ gap: theme.spacing.xxs }}>
+                <Text
+                  variant="headline"
+                  color={selected ? 'primaryOnSoft' : 'text'}
+                >
+                  {option.label}
+                </Text>
+                {option.description ? (
                   <Text
-                    variant={selected ? 'headline' : 'body'}
-                    color={selected ? 'primaryOnSoft' : 'text'}
+                    variant="footnote"
+                    color={selected ? 'primaryOnSoft' : 'textMuted'}
                   >
-                    {option.label}
+                    {option.description}
                   </Text>
-                  {option.description ? (
-                    <Text variant="callout" color="textMuted">
-                      {option.description}
-                    </Text>
-                  ) : null}
-                </View>
-              </Card>
-            </Pressable>
+                ) : null}
+              </View>
+            </PressableScale>
           );
         })}
       </View>
@@ -140,11 +146,7 @@ export default function GoalsScreen() {
             placeholder="e.g. 120"
             error={proteinError}
           />
-          <InfoNote
-            title="We do not calculate targets for you"
-            body="FoodLens does not estimate how much you should eat. Enter a number you have decided on yourself or with a professional. This app is not medical advice."
-            tone="warning"
-          />
+          <Disclosure summary="We do not calculate targets for you" detail="FoodLens does not estimate how much you should eat. Enter a number you have decided on yourself or with a professional. This app is not medical advice." tone="caution" />
         </View>
       ) : null}
     </StepLayout>

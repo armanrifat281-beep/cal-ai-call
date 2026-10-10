@@ -1,19 +1,11 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
+import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Icon } from '@/components/Icon';
-import {
-  Badge,
-  Button,
-  Card,
-  Divider,
-  ErrorState,
-  Screen,
-  Skeleton,
-  Text,
-} from '@/components/ui';
+import { Button, ErrorState, Screen, Skeleton, Surface, Text } from '@/components/ui';
 import {
   getRecipeRepository,
   scaleRecipe,
@@ -141,8 +133,8 @@ export default function CookingModeScreen() {
           accessibilityHint="Leaves cooking mode and returns to the full recipe"
         />
         <View style={{ flex: 1, alignItems: 'center' }}>
-          <Text variant="caption" color="textMuted">
-            STEP {step.number} OF {steps.length}
+          <Text variant="metricS" color="textMuted">
+            Step {step.number} of {steps.length}
           </Text>
         </View>
         <Button
@@ -196,49 +188,53 @@ export default function CookingModeScreen() {
         }}
       >
         {showIngredients && scaled ? (
-          <Card padding="none" style={{ overflow: 'hidden' }}>
-            <View style={{ padding: theme.spacing.base, gap: theme.spacing.xxs }}>
-              <Text variant="label" color="textMuted">
-                EVERYTHING IN THIS RECIPE
-              </Text>
-              <Text variant="caption" color="textMuted">
-                For {recipe.servings} servings
-              </Text>
-            </View>
-            {scaled.ingredients.map((ingredient, index) => (
-              <View key={ingredient.id}>
-                {index > 0 ? <Divider inset={theme.spacing.base} /> : null}
+          <Animated.View entering={FadeIn.duration(160)} exiting={FadeOut.duration(120)}>
+            <Surface variant="grouped">
+              <View style={{ padding: theme.spacing.base, gap: 2 }}>
+                <Text variant="label">Everything in this recipe</Text>
+                <Text variant="caption" color="textMuted">
+                  For {recipe.servings} servings
+                </Text>
+              </View>
+              {scaled.ingredients.map((ingredient) => (
                 <View
+                  key={ingredient.id}
                   style={{
                     flexDirection: 'row',
                     justifyContent: 'space-between',
                     gap: theme.spacing.md,
                     paddingHorizontal: theme.spacing.base,
                     paddingVertical: theme.spacing.sm,
+                    borderTopWidth: theme.hairline,
+                    borderTopColor: theme.colors.separator,
                   }}
                 >
                   <Text variant="callout" style={{ flex: 1 }}>
                     {ingredient.name}
                   </Text>
-                  <Text variant="label" color="textMuted">
+                  <Text variant="metricS" color="textMuted">
                     {ingredient.displayAmount}
                   </Text>
                 </View>
-              </View>
-            ))}
-          </Card>
+              ))}
+            </Surface>
+          </Animated.View>
         ) : null}
 
         {/* The ingredients this step needs, so there is no scrolling back. */}
         {stepIngredients.length > 0 ? (
-          <Card variant="soft" style={{ gap: theme.spacing.sm }}>
-            <Text variant="caption" color="textMuted">
-              FOR THIS STEP
+          <Surface variant="sunken" padding="base" style={{ gap: theme.spacing.sm }}>
+            <Text variant="label" color="textMuted">
+              For this step
             </Text>
             {stepIngredients.map((ingredient) => (
               <View
                 key={ingredient.id}
-                style={{ flexDirection: 'row', justifyContent: 'space-between', gap: theme.spacing.md }}
+                style={{
+                  flexDirection: 'row',
+                  justifyContent: 'space-between',
+                  gap: theme.spacing.md,
+                }}
               >
                 <Text variant="body" style={{ flex: 1 }}>
                   {ingredient.name}
@@ -248,28 +244,32 @@ export default function CookingModeScreen() {
                     </Text>
                   ) : null}
                 </Text>
-                <Text variant="headline">{ingredient.displayAmount}</Text>
+                <Text variant="metricM">{ingredient.displayAmount}</Text>
               </View>
             ))}
-          </Card>
+          </Surface>
         ) : null}
 
-        <View style={{ flexDirection: 'row', gap: theme.spacing.sm, flexWrap: 'wrap' }}>
-          {step.durationMinutes ? (
-            <Badge
-              label={`${step.durationMinutes} min`}
-              tone="primary"
-              leading={<Icon name="timer" size={14} color="primaryOnSoft" />}
-            />
-          ) : null}
-          {step.temperatureC ? (
-            <Badge
-              label={`${step.temperatureC} C`}
-              tone="accent"
-              leading={<Icon name="flame" size={14} color="accentOnSoft" />}
-            />
-          ) : null}
-        </View>
+        {step.durationMinutes || step.temperatureC ? (
+          <View style={{ flexDirection: 'row', gap: theme.spacing.lg }}>
+            {step.durationMinutes ? (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Icon name="timer" size={16} color="textMuted" strokeWidth={1.7} />
+                <Text variant="metricM" color="textMuted">
+                  {step.durationMinutes} min
+                </Text>
+              </View>
+            ) : null}
+            {step.temperatureC ? (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Icon name="flame" size={16} color="accent" strokeWidth={1.7} />
+                <Text variant="metricM" color="accentOnSoft">
+                  {step.temperatureC}°C
+                </Text>
+              </View>
+            ) : null}
+          </View>
+        ) : null}
 
         {/* Large type: this is read from across a worktop. */}
         <Pressable
@@ -279,9 +279,15 @@ export default function CookingModeScreen() {
           accessibilityHint={isLastStep ? undefined : 'Marks this step done and moves on'}
           style={{ flex: 1 }}
         >
-          <Text variant="title2" style={{ fontSize: 24, lineHeight: 34 }}>
-            {step.instruction}
-          </Text>
+          {/*
+            Keyed on the step so each instruction cross-fades in. Swapping
+            the text in place gives no sense of having moved forward.
+          */}
+          <Animated.View key={step.number} entering={FadeIn.duration(180)}>
+            <Text variant="title1" style={{ fontSize: 26, lineHeight: 35 }}>
+              {step.instruction}
+            </Text>
+          </Animated.View>
         </Pressable>
 
         <Pressable

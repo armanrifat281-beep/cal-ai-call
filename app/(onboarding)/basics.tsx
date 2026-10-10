@@ -2,7 +2,7 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { View } from 'react-native';
 
-import { Chip, InfoNote, SegmentedControl, Text } from '@/components/ui';
+import { Chip, Disclosure, SegmentedControl, Text } from '@/components/ui';
 import { LANGUAGE_OPTIONS, REGION_OPTIONS } from '@/features/onboarding/options';
 import { StepLayout } from '@/features/onboarding/StepLayout';
 import { usePreferencesStore } from '@/store/preferencesStore';
@@ -90,10 +90,7 @@ export default function BasicsScreen() {
         />
       </View>
 
-      <InfoNote
-        body="None of this is required. You can change all of it later in Profile."
-        tone="neutral"
-      />
+      <Disclosure summary="None of this is required. You can change all of it later in Profile." />
     </StepLayout>
   );
 }

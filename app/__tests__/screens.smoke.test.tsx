@@ -212,7 +212,9 @@ describe('tab screens with an empty journal', () => {
   it('profile reports that no account backend is configured', async () => {
     await renderWithProviders(<ProfileScreen />);
     expect(screen.getByText('Profile')).toBeTruthy();
-    expect(screen.getByText('Accounts are not set up in this build')).toBeTruthy();
+    expect(
+      screen.getByText('Accounts are not configured in this build'),
+    ).toBeTruthy();
     expect(screen.getByText('FoodLens is not medical advice')).toBeTruthy();
   });
 });

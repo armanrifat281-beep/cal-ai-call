@@ -2,7 +2,7 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { View } from 'react-native';
 
-import { Button, Card, ErrorState, Screen, Text, TextField } from '@/components/ui';
+import { Button, ErrorState, Screen, Surface, Text, TextField } from '@/components/ui';
 import { useAuth, validateEmail } from '@/features/auth';
 import type { AppError } from '@/lib/result';
 import { useTheme } from '@/theme';
@@ -51,12 +51,12 @@ export default function ForgotPasswordScreen() {
             way. Open it to choose a new password.
           </Text>
         </View>
-        <Card variant="soft">
+        <Surface variant="sunken" padding="base">
           <Text variant="callout" color="textMuted">
             Nothing arrived within a few minutes? Check your spam folder, and
             make sure the address is the one you signed up with.
           </Text>
-        </Card>
+        </Surface>
         <Button
           label="Back to sign in"
           onPress={() => router.replace('/(auth)/sign-in')}

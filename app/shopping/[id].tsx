@@ -5,15 +5,14 @@ import { Alert, View } from 'react-native';
 
 import { Icon } from '@/components/Icon';
 import {
-  Badge,
   Button,
-  Card,
   Checkbox,
-  Divider,
   ErrorState,
-  InfoNote,
+  Metric,
   Screen,
+  Section,
   Skeleton,
+  Surface,
   Text,
   TextField,
 } from '@/components/ui';
@@ -42,7 +41,6 @@ export default function ShoppingListScreen() {
   const { list, loading, error, notFound, reload, setList } = useShoppingList(id);
 
   const [newItem, setNewItem] = useState('');
-  const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState<AppError | null>(null);
   const [copied, setCopied] = useState(false);
 
@@ -59,10 +57,8 @@ export default function ShoppingListScreen() {
 
   /** Runs a mutation and swaps in the returned list, avoiding a refetch. */
   const run = async (operation: () => Promise<Awaited<ReturnType<typeof repository.addItems>>>) => {
-    setBusy(true);
     setActionError(null);
     const result = await operation();
-    setBusy(false);
 
     if (!result.ok) {
       setActionError(result.error);
@@ -107,6 +103,17 @@ export default function ShoppingListScreen() {
     );
   };
 
+  const showListActions = () => {
+    if (!list) return;
+    Alert.alert(list.name, undefined, [
+      { text: 'Cancel', style: 'cancel' },
+      ...(list.status === 'active'
+        ? [{ text: 'Mark list as done', onPress: () => void markDone() }]
+        : []),
+      { text: 'Delete list', style: 'destructive' as const, onPress: deleteList },
+    ]);
+  };
+
   const markDone = async () => {
     if (!list) return;
     await run(() => repository.setListStatus(list.id, 'archived'));
@@ -122,9 +129,7 @@ export default function ShoppingListScreen() {
         style: 'destructive',
         onPress: () => {
           void (async () => {
-            setBusy(true);
             const result = await repository.deleteList(list.id);
-            setBusy(false);
             if (!result.ok) setActionError(result.error);
             else router.back();
           })();
@@ -201,111 +206,116 @@ export default function ShoppingListScreen() {
         <ErrorState message={actionError.message} detail={actionError.detail} />
       ) : null}
 
-      <View style={{ gap: theme.spacing.sm }}>
-        <Text variant="title1">{list.name}</Text>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.xs }}>
-          <Badge
-            label={
-              list.items.length === 0
-                ? 'Empty'
-                : `${outstanding.length} of ${list.items.length} to buy`
-            }
-            tone={outstanding.length === 0 && list.items.length > 0 ? 'success' : 'primary'}
-          />
-          {list.status === 'archived' ? <Badge label="Done" tone="neutral" /> : null}
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'flex-end',
+          justifyContent: 'space-between',
+          gap: theme.spacing.md,
+        }}
+      >
+        <View style={{ flex: 1, gap: 2 }}>
+          <Text variant="title1">{list.name}</Text>
+          <Text variant="footnote" color="textMuted">
+            {list.items.length === 0
+              ? 'Empty'
+              : outstanding.length === 0
+                ? 'Everything ticked off'
+                : `${list.items.length} items`}
+            {list.status === 'archived' ? '  ·  done' : ''}
+          </Text>
         </View>
+        {list.items.length > 0 ? (
+          <Metric
+            value={String(outstanding.length)}
+            label="to buy"
+            size="l"
+            align="right"
+            color={outstanding.length === 0 ? 'textMuted' : 'text'}
+          />
+        ) : null}
       </View>
 
       {list.items.length === 0 ? (
-        <InfoNote
-          body="Nothing on this list yet. Add items below, or open a recipe and add everything you still need in one go."
-          tone="neutral"
-        />
+        <Text variant="body" color="textMuted">
+          Nothing on this list yet. Add items below, or open a recipe and add
+          everything you still need in one go.
+        </Text>
       ) : (
         <>
           {outstanding.length > 0 ? (
-            <Card padding="none">
+            <Surface variant="grouped">
               {outstanding.map((item, index) => (
-                <View key={item.id}>
-                  {index > 0 ? <Divider inset={theme.spacing.base} /> : null}
-                  <ItemRow
-                    item={item}
-                    onToggle={() =>
-                      void run(() => repository.setItemChecked(item.id, true))
-                    }
-                    onDelete={() => void run(() => repository.deleteItem(item.id))}
-                  />
-                </View>
+                <ItemRow
+                  key={item.id}
+                  item={item}
+                  divided={index > 0}
+                  onToggle={() => void run(() => repository.setItemChecked(item.id, true))}
+                  onDelete={() => void run(() => repository.deleteItem(item.id))}
+                />
               ))}
-            </Card>
+            </Surface>
           ) : (
-            <InfoNote
-              title="Everything ticked off"
-              body="Clear the ticked items when you are done, or mark the whole list as done."
-              tone="info"
-            />
+            <Text variant="body" color="textMuted">
+              Everything is ticked off. Clear them when you are done, or mark
+              the whole list as done.
+            </Text>
           )}
 
           {ticked.length > 0 ? (
-            <View style={{ gap: theme.spacing.sm }}>
-              <Text variant="label" color="textMuted">
-                IN THE BASKET ({ticked.length})
-              </Text>
-              <Card padding="none">
+            <Section title={`In the basket (${ticked.length})`} dense>
+              <Surface variant="grouped">
                 {ticked.map((item, index) => (
-                  <View key={item.id}>
-                    {index > 0 ? <Divider inset={theme.spacing.base} /> : null}
-                    <ItemRow
-                      item={item}
-                      onToggle={() =>
-                        void run(() => repository.setItemChecked(item.id, false))
-                      }
-                      onDelete={() => void run(() => repository.deleteItem(item.id))}
-                    />
-                  </View>
+                  <ItemRow
+                    key={item.id}
+                    item={item}
+                    divided={index > 0}
+                    onToggle={() => void run(() => repository.setItemChecked(item.id, false))}
+                    onDelete={() => void run(() => repository.deleteItem(item.id))}
+                  />
                 ))}
-              </Card>
-            </View>
+              </Surface>
+            </Section>
           ) : null}
         </>
       )}
 
-      <View style={{ gap: theme.spacing.sm }}>
+      {/*
+        One row of real actions rather than a column of four full-width
+        buttons. Destructive and lifecycle actions go in an action sheet,
+        which is where a native app keeps them.
+      */}
+      <View style={{ flexDirection: 'row', gap: theme.spacing.sm }}>
         <Button
-          label={copied ? 'Copied to clipboard' : 'Copy the list'}
+          label={copied ? 'Copied' : 'Copy list'}
           variant="tonal"
           onPress={() => void copyToClipboard()}
           disabled={outstanding.length === 0}
-          fullWidth
-          leading={<Icon name={copied ? 'check' : 'copy'} size={18} color="text" />}
+          leading={
+            <Icon
+              name={copied ? 'check' : 'copy'}
+              size={17}
+              color={theme.colors.primaryOnSoft}
+            />
+          }
+          style={{ flex: 1 }}
         />
         {ticked.length > 0 ? (
           <Button
-            label={`Clear ${ticked.length} ticked item${ticked.length === 1 ? '' : 's'}`}
-            variant="ghost"
-            size="sm"
+            label={`Clear ${ticked.length}`}
+            variant="secondary"
             onPress={clearTicked}
-            fullWidth
-          />
-        ) : null}
-        {list.status === 'active' ? (
-          <Button
-            label="Mark this list as done"
-            variant="ghost"
-            size="sm"
-            onPress={() => void markDone()}
-            loading={busy}
-            fullWidth
+            style={{ flex: 1 }}
           />
         ) : null}
         <Button
-          label="Delete this list"
-          variant="ghost"
-          size="sm"
-          onPress={deleteList}
-          fullWidth
+          label="More"
+          variant="secondary"
+          onPress={showListActions}
+          accessibilityHint="Mark the list as done, or delete it"
         />
       </View>
+
     </Screen>
   );
 }
@@ -320,35 +330,47 @@ function ItemRow({
   item,
   onToggle,
   onDelete,
+  divided,
 }: {
   item: ShoppingListItem;
   onToggle: () => void;
   onDelete: () => void;
+  divided: boolean;
 }) {
   const theme = useTheme();
   const amount = formatIngredientAmount(item.quantity, item.unit);
-
   const detail = [amount, item.note].filter(
     (part): part is string => Boolean(part && part.length > 0),
   );
 
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-      <Checkbox
-        checked={item.isChecked}
-        onChange={onToggle}
-        label={item.name}
-        detail={detail.join(' - ')}
-        style={{ flex: 1 }}
-      />
-      <View style={{ paddingRight: theme.spacing.sm }}>
-        <Button
-          label="Remove"
-          variant="ghost"
-          size="sm"
-          onPress={onDelete}
-          accessibilityHint={`Removes ${item.name} from this list`}
+    <View>
+      {divided ? (
+        <View
+          style={{
+            height: theme.hairline,
+            backgroundColor: theme.colors.separator,
+            marginLeft: theme.spacing.base + 24 + theme.spacing.md,
+          }}
         />
+      ) : null}
+      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+        <Checkbox
+          checked={item.isChecked}
+          onChange={onToggle}
+          label={item.name}
+          detail={detail.join('  ·  ')}
+          style={{ flex: 1 }}
+        />
+        <View style={{ paddingRight: theme.spacing.sm }}>
+          <Button
+            label="Remove"
+            variant="ghost"
+            size="sm"
+            onPress={onDelete}
+            accessibilityHint={`Removes ${item.name} from this list`}
+          />
+        </View>
       </View>
     </View>
   );

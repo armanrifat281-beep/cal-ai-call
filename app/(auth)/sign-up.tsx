@@ -2,7 +2,15 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { View } from 'react-native';
 
-import { Button, Card, ErrorState, InfoNote, Screen, Text, TextField } from '@/components/ui';
+import {
+  Button,
+  Disclosure,
+  ErrorState,
+  Screen,
+  Surface,
+  Text,
+  TextField,
+} from '@/components/ui';
 import { MIN_PASSWORD_LENGTH, hasAnyError, useAuth, validateSignUp } from '@/features/auth';
 import type { AppError } from '@/lib/result';
 import { useTheme } from '@/theme';
@@ -46,11 +54,7 @@ export default function SignUpScreen() {
   if (status === 'unavailable') {
     return (
       <Screen contentStyle={{ gap: theme.spacing.base }}>
-        <InfoNote
-          title="Accounts are not set up in this build"
-          body="There is no backend configured, so an account cannot be created. Your meals are saved on this device and everything else in the app works normally."
-          tone="neutral"
-        />
+        <Disclosure summary="Accounts are not set up in this build" detail="There is no backend configured, so an account cannot be created. Your meals are saved on this device and everything else in the app works normally." />
         <Button label="Back to the app" onPress={() => router.replace('/(tabs)')} fullWidth />
       </Screen>
     );
@@ -68,12 +72,12 @@ export default function SignUpScreen() {
             creating your account, then come back and sign in.
           </Text>
         </View>
-        <Card variant="soft">
+        <Surface variant="sunken" padding="base">
           <Text variant="callout" color="textMuted">
             Nothing arrived? Check your spam folder. The link can take a minute,
             and it expires after a while.
           </Text>
-        </Card>
+        </Surface>
         <Button
           label="Go to sign in"
           onPress={() => router.replace('/(auth)/sign-in')}
@@ -100,7 +104,7 @@ export default function SignUpScreen() {
             label="I already have an account"
             variant="ghost"
             onPress={() => router.replace('/(auth)/sign-in')}
-            fullWidth
+            style={{ alignSelf: 'center' }}
           />
         </>
       }
@@ -157,11 +161,7 @@ export default function SignUpScreen() {
         />
       </View>
 
-      <InfoNote
-        title="What we store"
-        body="Your email, and the meals you choose to log. Photo analysis requests contain the photo and nothing about who you are. You can delete your account and all of its data from Profile at any time."
-        tone="neutral"
-      />
+      <Disclosure summary="What we store" detail="Your email, and the meals you choose to log. Photo analysis requests contain the photo and nothing about who you are. You can delete your account and all of its data from Profile at any time." />
     </Screen>
   );
 }
