@@ -387,12 +387,12 @@ end;
 $$;
 
 select tests.assert(
-  (select allowed from public.check_scan_allowance('55555555-5555-5555-5555-555555555555')),
+  (select allowed from public.check_ai_allowance('55555555-5555-5555-5555-555555555555', 'photo_scan')),
   'a new user is allowed to scan'
 );
 
 select tests.assert(
-  (select allowance from public.check_scan_allowance('55555555-5555-5555-5555-555555555555')) = 5,
+  (select allowance from public.check_ai_allowance('55555555-5555-5555-5555-555555555555', 'photo_scan')) = 5,
   'the free tier allows 5 scans per day'
 );
 
@@ -408,12 +408,12 @@ end;
 $$;
 
 select tests.assert(
-  not (select allowed from public.check_scan_allowance('55555555-5555-5555-5555-555555555555')),
+  not (select allowed from public.check_ai_allowance('55555555-5555-5555-5555-555555555555', 'photo_scan')),
   'the free allowance is refused once it is spent'
 );
 
 select tests.assert(
-  (select used from public.check_scan_allowance('55555555-5555-5555-5555-555555555555')) = 5,
+  (select used from public.check_ai_allowance('55555555-5555-5555-5555-555555555555', 'photo_scan')) = 5,
   'spent scans are counted'
 );
 
@@ -430,7 +430,7 @@ begin
   select frank, 'provider_error' from generate_series(1, 5);
 
   perform tests.assert(
-    not (select allowed from public.check_scan_allowance(frank)),
+    not (select allowed from public.check_ai_allowance(frank, 'photo_scan')),
     'failed attempts count against the allowance too'
   );
 end;
@@ -446,8 +446,8 @@ begin
   where scan_events.user_id = erin;
 
   perform tests.assert(
-    (select allowed from public.check_scan_allowance(erin))
-      and (select used from public.check_scan_allowance(erin)) = 0,
+    (select allowed from public.check_ai_allowance(erin, 'photo_scan'))
+      and (select used from public.check_ai_allowance(erin, 'photo_scan')) = 0,
     'attempts older than 24 hours fall out of the window'
   );
 end;
@@ -463,8 +463,8 @@ begin
   values (erin, 'premium', 'active', 'app_store', 'premium.monthly', now());
 
   perform tests.assert(
-    (select allowance from public.check_scan_allowance(erin)) = 100
-      and (select tier from public.check_scan_allowance(erin)) = 'premium',
+    (select allowance from public.check_ai_allowance(erin, 'photo_scan')) = 100
+      and (select tier from public.check_ai_allowance(erin, 'photo_scan')) = 'premium',
     'a verified premium entitlement raises the scan allowance'
   );
 end;

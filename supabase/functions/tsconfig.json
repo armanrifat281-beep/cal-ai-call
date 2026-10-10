@@ -26,6 +26,8 @@
   "include": [
     "analyze-meal/schema.ts",
     "analyze-meal/helpers.ts",
-    "analyze-meal/__tests__/**/*.ts"
+    "analyze-meal/__tests__/**/*.ts",
+    "generate-recipe/schema.ts",
+    "generate-recipe/__tests__/**/*.ts"
   ]
 }

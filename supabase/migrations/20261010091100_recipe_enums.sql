@@ -8,6 +8,11 @@
 -- 'ai_suggested' is kept for any row already written with it.
 alter type public.recipe_origin add value if not exists 'ai_generated';
 
+-- A recipe from the bundled demo set, shown when no AI provider is
+-- configured. Stored as its own origin so the UI can label it loudly and the
+-- distinction cannot be lost by convention alone.
+alter type public.recipe_origin add value if not exists 'demo_sample';
+
 /**
  * Cuisines the recipe creator can target.
  *

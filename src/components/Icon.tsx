@@ -32,7 +32,11 @@ export type IconName =
   | 'sparkle'
   | 'copy'
   | 'database'
-  | 'leaf';
+  | 'leaf'
+  | 'recipes'
+  | 'basket'
+  | 'timer'
+  | 'flame';
 
 export interface IconProps {
   name: IconName;
@@ -260,6 +264,48 @@ function renderGlyph(
           <Path d="M4.5 6.6c0-1.7 3.4-3.1 7.5-3.1s7.5 1.4 7.5 3.1-3.4 3.1-7.5 3.1-7.5-1.4-7.5-3.1Z" {...common} />
           <Path d="M4.5 6.6v10.8c0 1.7 3.4 3.1 7.5 3.1s7.5-1.4 7.5-3.1V6.6" {...common} />
           <Path d="M4.5 12c0 1.7 3.4 3.1 7.5 3.1s7.5-1.4 7.5-3.1" {...common} />
+        </>
+      );
+
+    case 'recipes':
+      // A pot with a lid and handles: the Recipes tab.
+      return (
+        <>
+          <Path d="M4.2 9.5h15.6v5.1a4.4 4.4 0 0 1-4.4 4.4H8.6a4.4 4.4 0 0 1-4.4-4.4V9.5Z" {...common} fill={fill} />
+          <Path d="M3 9.5h18" {...common} />
+          <Path d="M3.2 11.6H1.9M20.8 11.6h1.3" {...common} />
+          <Path d="M9.4 6.4c0-1 .9-1.6.9-2.6M14.2 6.4c0-1 .9-1.6.9-2.6" {...common} />
+        </>
+      );
+
+    case 'basket':
+      return (
+        <>
+          <Path d="M3.4 9.3h17.2l-1.5 9.1a2.2 2.2 0 0 1-2.2 1.9H7.1a2.2 2.2 0 0 1-2.2-1.9L3.4 9.3Z" {...common} fill={fill} />
+          <Path d="M8.3 9.3 10.6 4M15.7 9.3 13.4 4" {...common} />
+          <Path d="M9.8 13v3.4M14.2 13v3.4" {...common} />
+        </>
+      );
+
+    case 'timer':
+      return (
+        <>
+          <Circle cx={12} cy={13.4} r={7.6} {...common} />
+          <Path d="M12 9.4v4l2.6 1.6" {...common} />
+          <Path d="M9.4 2.8h5.2" {...common} />
+          <Path d="M12 2.8v3" {...common} />
+        </>
+      );
+
+    case 'flame':
+      return (
+        <>
+          <Path
+            d="M12 3.2c3.4 3 5.4 5.4 5.4 8.4a5.4 5.4 0 0 1-10.8 0c0-1.5.6-2.8 1.6-4 .2 1.2.9 2 1.9 2.2-.4-2.4.2-4.6 1.9-6.6Z"
+            {...common}
+            fill={fill}
+          />
+          <Path d="M12 20.8a2.6 2.6 0 0 1-2.6-2.6c0-1.1.7-1.9 1.4-2.6.3.6.7 1 1.2 1.1-.2-1.1.1-2.1.9-3 1 .9 1.7 1.9 1.7 3.1A2.6 2.6 0 0 1 12 20.8Z" {...common} stroke="none" fill={fill === 'none' ? stroke : fill} />
         </>
       );
 

@@ -240,6 +240,17 @@ export interface UserPreferences {
   favoriteCuisines: string[];
   goal: NutritionGoalKind;
   dailyTargets: DailyTargets;
+  /**
+   * Serving count the recipe creator defaults to, remembered from last time.
+   * Part of Food Memory, and editable in Profile.
+   */
+  preferredServings: number;
+  /**
+   * Cuisine the recipe creator defaults to. Remembered, not inferred from
+   * anything the user did not choose.
+   */
+  favoriteCuisineId: string | null;
+
   /** The user let us keep meal history to power Food Memory. */
   foodMemoryEnabled: boolean;
   /** The user let us keep uploaded photos after analysis. */

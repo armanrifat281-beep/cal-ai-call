@@ -15,6 +15,8 @@ import {
 } from '@/components/ui';
 import { useAuth } from '@/features/auth';
 import { clearLocalJournal } from '@/features/journal';
+import { clearLocalRecipes, toCuisineId } from '@/features/recipes';
+import { cuisineLabel } from '@/features/recipes/options';
 import { describeMissingConfig, env } from '@/lib/env';
 import { usePreferencesStore } from '@/store/preferencesStore';
 import { useTheme, useThemeContext, type ThemePreference } from '@/theme';
@@ -60,6 +62,7 @@ export default function ProfileScreen() {
             void (async () => {
               setClearing(true);
               await clearLocalJournal();
+              await clearLocalRecipes();
               resetPreferences();
               setClearing(false);
               // Preferences are gone, so the boot gate sends them to onboarding.
@@ -171,6 +174,48 @@ export default function ProfileScreen() {
         />
       </Section>
 
+      <Section title="Insights">
+        <ListRow
+          title="Food patterns"
+          subtitle="Counted from the meals you saved, with the working shown."
+          leading={<Icon name="insights" size={20} color="primary" />}
+          trailing={<Icon name="chevronRight" size={18} color="textMuted" />}
+          onPress={() => router.push('/(tabs)/insights')}
+        />
+      </Section>
+
+      <Section title="Recipe defaults">
+        <ListRow
+          title="Servings"
+          subtitle={`The recipe creator starts at ${preferences.preferredServings}. Changing it there updates this.`}
+          trailing={
+            <Text variant="bodyStrong">{preferences.preferredServings}</Text>
+          }
+        />
+        <Divider />
+        <ListRow
+          title="Cuisine"
+          subtitle={
+            preferences.favoriteCuisineId
+              ? 'Remembered from the last recipe you created.'
+              : 'Nothing remembered yet. Pick one when you create a recipe.'
+          }
+          trailing={
+            <Text variant="bodySmStrong" color="textMuted">
+              {cuisineLabel(toCuisineId(preferences.favoriteCuisineId)) ?? 'None'}
+            </Text>
+          }
+        />
+        <Divider />
+        <ListRow
+          title="Forget these defaults"
+          subtitle="Clears the remembered servings and cuisine. Your recipes stay."
+          onPress={() =>
+            setPreferences({ preferredServings: 4, favoriteCuisineId: null })
+          }
+        />
+      </Section>
+
       <Section title="Food Memory">
         <ToggleRow
           title="Remember my meals"
@@ -278,7 +323,7 @@ export default function ProfileScreen() {
           subtitle={
             clearing
               ? 'Deleting...'
-              : 'Removes saved meals and preferences stored locally. Cannot be undone.'
+              : 'Removes saved meals, recipes, shopping lists and preferences stored locally. Cannot be undone.'
           }
           destructive
           leading={<Icon name="trash" size={20} color="danger" />}

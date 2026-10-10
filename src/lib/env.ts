@@ -35,10 +35,38 @@ function readPublic(name: string): string | undefined {
   return trimmed.length > 0 ? trimmed : undefined;
 }
 
+/**
+ * Values copied straight from `.env.example` without being filled in.
+ *
+ * `cp .env.example .env` and forgetting to paste the real values is the most
+ * likely first mistake, and the placeholders are shaped like real values:
+ * `sb_publishable_your_key_here` passes a prefix check, and
+ * `https://your-project-ref.supabase.co` is a syntactically valid https URL.
+ * Without this check the app would believe it was configured and fail with
+ * confusing network errors instead of saying it is not set up.
+ */
+const PLACEHOLDER_MARKERS = [
+  'your-project-ref',
+  'your_key_here',
+  'your-key-here',
+  'your-anon-key',
+  'YOUR_KEY',
+  'changeme',
+  'example.com',
+];
+
+function isPlaceholder(value: string | undefined): boolean {
+  if (!value) return false;
+  const lowered = value.toLowerCase();
+  return PLACEHOLDER_MARKERS.some((marker) => lowered.includes(marker.toLowerCase()));
+}
+
 /** What kind of Supabase key a string appears to be. */
 export type SupabaseKeyKind =
   /** `sb_publishable_...` - safe to ship. */
   | 'publishable'
+  /** Still the placeholder from `.env.example`. */
+  | 'placeholder'
   /** Legacy anon JWT - safe to ship. */
   | 'anon_jwt'
   /** `sb_secret_...` - MUST NOT ship. */
@@ -77,6 +105,10 @@ export function classifySupabaseKey(key: string | undefined): SupabaseKeyKind {
   if (!key) return 'unknown';
   const trimmed = key.trim();
 
+  // Checked before the shape checks: a placeholder is shaped like the real
+  // thing, and treating it as real is worse than treating it as absent.
+  if (isPlaceholder(trimmed)) return 'placeholder';
+
   if (trimmed.startsWith('sb_secret_')) return 'secret';
   if (trimmed.startsWith('sb_publishable_')) return 'publishable';
 
@@ -104,6 +136,9 @@ export function isPrivilegedSupabaseKey(key: string | undefined): boolean {
 
 export function looksLikeHttpsUrl(value: string | undefined): value is string {
   if (!value) return false;
+  // An unfilled template URL parses perfectly well, so it is rejected here
+  // rather than being allowed through to fail as a DNS error later.
+  if (isPlaceholder(value)) return false;
   try {
     return new URL(value).protocol === 'https:';
   } catch {
@@ -146,7 +181,12 @@ export const env = {
 export function describeMissingConfig(): string[] {
   const problems: string[] = [];
 
-  if (!looksLikeHttpsUrl(supabaseUrl)) {
+  if (isPlaceholder(supabaseUrl)) {
+    problems.push(
+      'EXPO_PUBLIC_SUPABASE_URL is still the placeholder from .env.example. ' +
+        'Paste your project URL.',
+    );
+  } else if (!looksLikeHttpsUrl(supabaseUrl)) {
     problems.push('EXPO_PUBLIC_SUPABASE_URL (must be an https URL)');
   }
 
@@ -157,6 +197,11 @@ export function describeMissingConfig(): string[] {
       'EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY holds a PRIVILEGED key, which has been ignored. ' +
         'Replace it with the publishable key and rotate the one you pasted: anything in an ' +
         'EXPO_PUBLIC_ variable is readable by anyone who downloads the app.',
+    );
+  } else if (keyKind === 'placeholder') {
+    problems.push(
+      'EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY is still the placeholder from ' +
+        '.env.example. Paste the real publishable key from your project.',
     );
   } else if (keyKind === 'unknown') {
     problems.push(

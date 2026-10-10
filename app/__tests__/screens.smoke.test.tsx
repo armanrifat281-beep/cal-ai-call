@@ -16,7 +16,7 @@ import HomeScreen from '../(tabs)/index';
 import InsightsScreen from '../(tabs)/insights';
 import JournalScreen from '../(tabs)/journal';
 import ProfileScreen from '../(tabs)/profile';
-import ScanScreen from '../scan/index';
+import ScanScreen from '../(tabs)/scan';
 
 /**
  * Smoke tests: every screen must mount without throwing, and show the right
@@ -249,20 +249,28 @@ describe('tab screens with a logged meal', () => {
 });
 
 describe('scan screen', () => {
-  it('states that analysis is unavailable and offers the manual path instead', async () => {
+  it('states that analysis is unavailable and offers real routes forward', async () => {
     await renderWithProviders(<ScanScreen />);
 
-    expect(screen.getByText('Photo analysis is not set up yet')).toBeTruthy();
+    expect(screen.getByText('Nutrition analysis is not set up yet')).toBeTruthy();
     // No button that would do nothing.
     expect(screen.queryByRole('button', { name: 'Analyse this photo' })).toBeNull();
-    expect(screen.getByRole('button', { name: 'Add a meal by hand instead' })).toBeTruthy();
+    // Manual entry works with no backend at all, so it is offered up front.
+    expect(screen.getByRole('button', { name: 'Add a meal by hand' })).toBeTruthy();
   });
 
-  it('offers both capture routes and explains what a photo cannot show', async () => {
+  it('offers both capture routes', async () => {
     await renderWithProviders(<ScanScreen />);
 
     expect(screen.getByRole('button', { name: 'Take a photo' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Choose from library' })).toBeTruthy();
-    expect(screen.getByText('What a photo can and cannot show')).toBeTruthy();
+  });
+
+  it('does not show the post-capture actions before a photo exists', async () => {
+    await renderWithProviders(<ScanScreen />);
+
+    // "Make this at home" and "Log this meal" only make sense with a photo.
+    expect(screen.queryByRole('button', { name: 'Make this at home' })).toBeNull();
+    expect(screen.queryByText('What next?')).toBeNull();
   });
 });

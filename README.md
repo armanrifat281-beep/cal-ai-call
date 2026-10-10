@@ -43,7 +43,10 @@ These are design rules, not aspirations, and they are enforced in code:
 | Supabase journal repository | Written and unit tested, **never run against a live project** |
 | Photo analysis (Claude) | Edge Function written, **never deployed or called** |
 | Account deletion | Edge Function written, **never deployed** |
-| Recipes and shopping lists | Schema and RLS done; **no UI yet** |
+| AI Recipe Creator | Working, with a labelled demo fallback. Generation needs the Edge Function deployed |
+| Cooking mode, ingredient checklist, serving adjustment | Working |
+| Shopping lists | Working |
+| Recipe images | **Not built.** A labelled placeholder is drawn instead |
 | Food database lookup (USDA) | **Not built** |
 | Sign in with Apple / Google | **Not built** |
 | Subscriptions | Schema only, deliberately unused |
@@ -69,11 +72,11 @@ setup, including what needs doing by hand in the dashboard.
 ## Checks
 
 ```bash
-npm test                   # Jest: 386 unit and component tests
+npm test                   # Jest: 578 unit and component tests
 npm run typecheck          # TypeScript, strict, the app
 npm run typecheck:functions # TypeScript, strict, the Edge Functions' pure modules
 npm run check              # all of the above
-./scripts/test-db.sh       # 108 assertions against a throwaway Postgres
+./scripts/test-db.sh       # 133 assertions against a throwaway Postgres
 ```
 
 `scripts/test-db.sh` needs a local `postgres` install but no Docker and no
@@ -86,9 +89,11 @@ another user's data to prove the policies hold.
 ```
 app/                      Expo Router routes (the screens)
   (onboarding)/           Welcome, basics, food preferences, goals, privacy
-  (tabs)/                 Home, Journal, Insights, Profile
+  (auth)/                 Sign in, sign up, password reset
+  (tabs)/                 Home, Scan, Recipes, Journal, Profile (+ Insights)
   entry/                  Create and edit a meal
-  scan/                   Photo capture
+  recipe/                 Create, view, and cook a recipe
+  shopping/               Shopping lists
 src/
   components/ui/          Design system primitives
   components/nutrition/   Nutrition display components
@@ -97,6 +102,7 @@ src/
     journal/              Repository contract, local store, meal editor
     memory/               Food Memory insight generation
     scanner/              Image preparation, response validation, API client
+    recipes/              Generation, scaling, validation, storage
     onboarding/           Onboarding options and step layout
   lib/                    Dates, ids, errors, logging, config
   store/                  Preferences (persisted on device)

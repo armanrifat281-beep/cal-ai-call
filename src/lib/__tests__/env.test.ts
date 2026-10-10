@@ -116,3 +116,25 @@ describe('looksLikeHttpsUrl', () => {
     }
   });
 });
+
+describe('unfilled template values', () => {
+  it('treats a placeholder key as not configured, not as a real key', () => {
+    // `cp .env.example .env` and forgetting to edit it is the likely first
+    // mistake, and these placeholders are shaped like real values.
+    expect(classifySupabaseKey('sb_publishable_your_key_here')).toBe('placeholder');
+    expect(isPublicSupabaseKey('sb_publishable_your_key_here')).toBe(false);
+  });
+
+  it('rejects the template project URL, which parses as a valid https URL', () => {
+    expect(looksLikeHttpsUrl('https://your-project-ref.supabase.co')).toBe(false);
+  });
+
+  it('still accepts a real-looking URL and key', () => {
+    expect(looksLikeHttpsUrl('https://abcdefghijkl.supabase.co')).toBe(true);
+    expect(isPublicSupabaseKey('sb_publishable_AbCdEf123456XyZ')).toBe(true);
+  });
+
+  it('does not flag a placeholder as a leaked privileged key', () => {
+    expect(isPrivilegedSupabaseKey('sb_publishable_your_key_here')).toBe(false);
+  });
+});

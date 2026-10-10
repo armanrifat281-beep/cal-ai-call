@@ -32,6 +32,8 @@ export const DEFAULT_PREFERENCES: LocalPreferences = {
   favoriteCuisines: [],
   goal: 'none',
   dailyTargets: { caloriesKcal: null, proteinG: null, carbsG: null, fatG: null },
+  preferredServings: 4,
+  favoriteCuisineId: null,
   foodMemoryEnabled: true,
   retainPhotos: false,
 };

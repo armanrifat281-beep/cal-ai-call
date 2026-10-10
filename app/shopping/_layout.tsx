@@ -2,7 +2,7 @@ import { Stack } from 'expo-router';
 
 import { useTheme } from '@/theme';
 
-export default function ScanLayout() {
+export default function ShoppingLayout() {
   const theme = useTheme();
 
   return (
@@ -16,7 +16,8 @@ export default function ScanLayout() {
         contentStyle: { backgroundColor: theme.colors.background },
       }}
     >
-      <Stack.Screen name="index" options={{ title: 'Scan a meal' }} />
+      <Stack.Screen name="index" options={{ title: 'Shopping lists' }} />
+      <Stack.Screen name="[id]" options={{ title: 'Shopping list' }} />
     </Stack>
   );
 }

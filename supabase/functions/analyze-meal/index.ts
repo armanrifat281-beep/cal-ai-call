@@ -169,8 +169,8 @@ Deno.serve(async (request: Request): Promise<Response> => {
   // ---- 2. Scan allowance ---------------------------------------------------
 
   const { data: allowanceRows, error: allowanceError } = await admin.rpc(
-    'check_scan_allowance',
-    { target_user_id: user.id },
+    'check_ai_allowance',
+    { target_user_id: user.id, request_kind: 'photo_scan' },
   );
 
   if (allowanceError) {
@@ -436,6 +436,7 @@ async function recordScan(
 ): Promise<void> {
   const { error } = await admin.from('scan_events').insert({
     user_id: userId,
+    kind: 'photo_scan',
     outcome,
     provider_label: details.providerLabel ?? null,
     image_bytes: details.imageBytes ?? null,

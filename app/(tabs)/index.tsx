@@ -61,7 +61,7 @@ export default function HomeScreen() {
         />
       ) : null}
 
-      <ScanAction onPress={() => router.push('/scan')} />
+      <ScanAction onPress={() => router.push('/(tabs)/scan')} />
 
       {error ? (
         <ErrorState
@@ -95,7 +95,7 @@ export default function HomeScreen() {
               body="Take a photo of your next meal, or add one by hand. Everything you save stays editable."
               illustration={<Icon name="leaf" size={44} color="primary" />}
               actionLabel="Scan your first meal"
-              onAction={() => router.push('/scan')}
+              onAction={() => router.push('/(tabs)/scan')}
               secondaryActionLabel="Add a meal manually"
               onSecondaryAction={() => router.push('/entry/new')}
             />
@@ -112,6 +112,32 @@ export default function HomeScreen() {
           </View>
         )}
       </View>
+
+      <Pressable
+        onPress={() => router.push('/(tabs)/insights')}
+        accessibilityRole="button"
+        accessibilityLabel="Insights"
+        accessibilityHint="Opens patterns counted from the meals you have saved"
+        style={({ pressed }) => ({
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: theme.spacing.md,
+          padding: theme.spacing.base,
+          borderRadius: theme.radius.lg,
+          borderWidth: 1,
+          borderColor: theme.colors.border,
+          backgroundColor: pressed ? theme.colors.surfacePressed : theme.colors.surface,
+        })}
+      >
+        <Icon name="insights" size={22} color="primary" />
+        <View style={{ flex: 1, gap: theme.spacing.xxs }}>
+          <Text variant="subheading">Insights</Text>
+          <Text variant="bodySm" color="textMuted">
+            Patterns counted from your saved meals, with the working shown.
+          </Text>
+        </View>
+        <Icon name="chevronRight" size={20} color="textMuted" />
+      </Pressable>
 
       {earlierEntries.length > 0 ? (
         <View style={{ gap: theme.spacing.md }}>

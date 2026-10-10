@@ -276,5 +276,4 @@ grant execute on function public.update_food_entry(
 grant execute on function public.duplicate_food_entry(
   uuid, timestamptz, public.meal_type
 ) to authenticated;
-grant execute on function public.check_scan_allowance(uuid) to authenticated;
 grant execute on function public.current_subscription_tier(uuid) to authenticated;

@@ -184,7 +184,16 @@ export interface RecipeImage {
 // Recipes
 // ---------------------------------------------------------------------------
 
-export type RecipeOrigin = 'user_created' | 'ai_generated' | 'imported';
+export type RecipeOrigin =
+  | 'user_created'
+  | 'ai_generated'
+  | 'imported'
+  /**
+   * From the bundled demo set, shown when no AI provider is configured.
+   * Its own origin rather than a flag, so the label survives into the
+   * database and cannot be lost by convention.
+   */
+  | 'demo_sample';
 
 export interface Recipe {
   id: string;

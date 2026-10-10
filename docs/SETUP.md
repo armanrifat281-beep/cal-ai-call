@@ -155,8 +155,11 @@ reaches the device, and the app never calls Anthropic directly.
 
 ```bash
 npx supabase functions deploy analyze-meal
+npx supabase functions deploy generate-recipe
 npx supabase functions deploy delete-account
 ```
+
+`generate-recipe` uses the same `ANTHROPIC_API_KEY` secret as `analyze-meal`.
 
 `delete-account` needs no secret of its own: Supabase injects the service role
 key into Edge Functions automatically. It exists because a client cannot delete
@@ -176,8 +179,9 @@ integration is not working, whatever the app appears to do.
 ### What the function does
 
 - Authenticates the caller against Supabase auth.
-- Checks the rolling 24-hour scan allowance server-side (free: 5, premium:
-  100). A client cannot write `scan_events`, so it cannot reset its own quota.
+- Checks the rolling 24-hour allowance server-side, counted per request kind
+  (free: 5 photo scans and 10 recipe generations a day; premium: 100 and 150).
+  A client cannot write `scan_events`, so it cannot reset its own quota.
 - Validates the image by reading its **magic bytes**, not the content type the
   client claims. Max 5 MB.
 - Calls Claude Opus 5.5 with the photo, constrained to a JSON schema.
@@ -197,6 +201,33 @@ comes back as an AI estimate, and the app asks the user to confirm every one.
 This is the honest behaviour, not a bug, but it means scanned numbers are
 rougher than they will be once USDA lookup lands.
 
+## 4a. Recipe images
+
+**No image provider is configured, and none is required.** The app draws a
+labelled placeholder for every recipe instead.
+
+This is deliberate. An illustrative image of "a chicken biryani" is not a
+photograph of the dish the user is about to cook, and presenting one as though
+it were is the kind of small dishonesty this app avoids. The placeholder is a
+generated graphic, obviously not a photo.
+
+If you want real images, the shape is already in place: `saved_recipes` stores
+`image_uri` plus an `image_kind` that the database **requires** whenever a URI
+is set, and `RecipeImage` renders the label for each kind:
+
+| `image_kind` | Label shown |
+| --- | --- |
+| `ai_generated` | "Illustration, not a photo of your dish" |
+| `stock_library` | "Stock photo of a similar dish" |
+| `user_photo` | none needed |
+| `placeholder` | none needed |
+
+To wire one up: fetch the image in `generate-recipe` after the recipe
+validates, return `{ uri, kind, attribution }`, and keep the failure path
+non-fatal - an image service being down must never stop a recipe being
+created. Check the provider's licence terms before shipping: most stock APIs
+require the attribution string that `image_attribution` exists to hold.
+
 ## 5. What will cost money
 
 | Thing | Cost |
@@ -215,5 +246,6 @@ rougher than they will be once USDA lookup lands.
 - A real bundle identifier. It is currently `com.example.foodlensai` in
   `app.json` and must be changed before any store submission.
 - Whether to require email confirmation at sign-up.
-- Whether the free tier's 5 scans a day is the right number. It lives in
-  `scan_limit_for_tier()` in the database, so changing it needs no app update.
+- Whether the free tier's 5 scans and 10 recipes a day are the right numbers.
+  They live in `ai_request_limit()` in the database, so changing them needs no
+  app update.

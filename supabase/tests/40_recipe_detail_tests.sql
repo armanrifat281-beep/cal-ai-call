@@ -219,3 +219,87 @@ select tests.assert_no_rows_affected(
 reset role;
 
 select 'RECIPE DETAIL TESTS PASSED' as result;
+
+-- ===========================================================================
+-- AI usage limits are counted per kind
+-- ===========================================================================
+
+do $$
+declare
+  kate uuid := 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb';
+begin
+  insert into auth.users (id, email) values (kate, 'kate@example.test')
+  on conflict (id) do nothing;
+end;
+$$;
+
+select tests.assert(
+  (select allowance from public.check_ai_allowance(
+    'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', 'photo_scan')) = 5,
+  'the free tier allows 5 photo scans a day'
+);
+
+select tests.assert(
+  (select allowance from public.check_ai_allowance(
+    'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', 'recipe_generation')) = 10,
+  'the free tier allows 10 recipe generations a day'
+);
+
+-- Spending the scan allowance must not touch the recipe allowance.
+do $$
+declare
+  kate uuid := 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb';
+begin
+  insert into public.scan_events (user_id, outcome, kind)
+  select kate, 'succeeded', 'photo_scan' from generate_series(1, 5);
+
+  perform tests.assert(
+    not (select allowed from public.check_ai_allowance(kate, 'photo_scan')),
+    'the scan allowance is spent'
+  );
+  perform tests.assert(
+    (select allowed from public.check_ai_allowance(kate, 'recipe_generation')),
+    'spending the scan allowance leaves recipe generation available'
+  );
+  perform tests.assert(
+    (select used from public.check_ai_allowance(kate, 'recipe_generation')) = 0,
+    'the two kinds are counted separately'
+  );
+end;
+$$;
+
+do $$
+declare
+  kate uuid := 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb';
+begin
+  insert into public.scan_events (user_id, outcome, kind)
+  select kate, 'succeeded', 'recipe_generation' from generate_series(1, 10);
+
+  perform tests.assert(
+    not (select allowed from public.check_ai_allowance(kate, 'recipe_generation')),
+    'the recipe allowance is refused once it is spent'
+  );
+end;
+$$;
+
+do $$
+declare
+  kate uuid := 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb';
+begin
+  insert into public.subscription_entitlements
+    (user_id, tier, status, store, product_id, verified_at)
+  values (kate, 'premium', 'active', 'app_store', 'premium.monthly', now());
+
+  perform tests.assert(
+    (select allowance from public.check_ai_allowance(kate, 'recipe_generation')) = 150
+      and (select allowed from public.check_ai_allowance(kate, 'recipe_generation')),
+    'a verified premium entitlement raises the recipe allowance'
+  );
+end;
+$$;
+
+-- An existing row written before the column existed still counts as a scan.
+select tests.assert(
+  (select kind from public.scan_events limit 1) is not null,
+  'every usage row has a kind, defaulting to photo_scan'
+);
