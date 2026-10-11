@@ -1,8 +1,10 @@
-import { screen } from '@testing-library/react-native';
+import { screen, userEvent } from '@testing-library/react-native';
 
 import { renderWithProviders } from '@/test/renderWithProviders';
 import { usePreferencesStore } from '@/store/preferencesStore';
+import { router } from 'expo-router';
 
+import SignInScreen from '../(auth)/sign-in';
 import BootGate from '../index';
 
 /**
@@ -12,7 +14,6 @@ import BootGate from '../index';
  * assertable without a navigator.
  */
 function destination(): string | undefined {
-  const node = screen.toJSON();
   const found: string[] = [];
   const walk = (value: unknown): void => {
     if (!value || typeof value !== 'object') return;
@@ -24,30 +25,45 @@ function destination(): string | undefined {
     }
     if (element.children) walk(element.children);
   };
-  walk(node);
+  walk(screen.toJSON());
   return found[0];
 }
 
 beforeEach(() => {
+  jest.clearAllMocks();
   usePreferencesStore.getState().reset();
 });
 
-describe('the boot gate with no backend configured', () => {
-  it('lets the app open, because there is nothing to sign into', async () => {
-    // Requiring sign-in here would leave no way into the app at all, in the
-    // exact build a developer opens first.
+describe('the boot gate', () => {
+  it('opens on sign-in', async () => {
     await renderWithProviders(<BootGate />);
-    expect(destination()).toBe('/(onboarding)/welcome');
+    expect(destination()).toBe('/(auth)/sign-in');
   });
 
-  it('goes straight to the app once onboarding is done', async () => {
+  it('opens on sign-in even with no backend configured', async () => {
+    // An earlier version skipped straight to onboarding here, which meant
+    // the login screen never appeared in the build anyone actually runs.
     usePreferencesStore.getState().completeOnboarding();
     await renderWithProviders(<BootGate />);
-    expect(destination()).toBe('/(tabs)');
+    expect(destination()).toBe('/(auth)/sign-in');
+  });
+});
+
+describe('getting past a sign-in that cannot work', () => {
+  it('offers a way through only while there is no backend', async () => {
+    await renderWithProviders(<SignInScreen />);
+    expect(
+      screen.getByRole('button', { name: 'Continue without signing in' }),
+    ).toBeTruthy();
   });
 
-  it('never sends anyone to a sign-in that cannot work', async () => {
-    await renderWithProviders(<BootGate />);
-    expect(destination()).not.toBe('/(auth)/sign-in');
+  it('leads to onboarding, so the questions still get asked', async () => {
+    const user = userEvent.setup();
+    await renderWithProviders(<SignInScreen />);
+
+    await user.press(
+      screen.getByRole('button', { name: 'Continue without signing in' }),
+    );
+    expect(router.replace).toHaveBeenCalledWith('/(onboarding)/welcome');
   });
 });

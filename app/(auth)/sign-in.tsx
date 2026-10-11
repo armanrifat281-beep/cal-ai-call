@@ -15,7 +15,12 @@ import type { AppError } from '@/lib/result';
  */
 export default function SignInScreen() {
   const router = useRouter();
-  const { signIn } = useAuth();
+  const { signIn, status } = useAuth();
+
+  // Nothing to sign into. Without a way past this screen the app could not
+  // be opened at all, so the way past exists only in this case - it is not
+  // a general "skip the account" option.
+  const nothingToSignInto = status === 'unavailable';
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -68,6 +73,16 @@ export default function SignInScreen() {
             onPress={() => router.replace('/(auth)/sign-up')}
             style={{ alignSelf: 'center' }}
           />
+          {nothingToSignInto ? (
+            <Button
+              label="Continue without signing in"
+              variant="ghost"
+              size="sm"
+              onPress={() => router.replace('/(onboarding)/welcome')}
+              style={{ alignSelf: 'center' }}
+              accessibilityHint="Only while no account backend is configured"
+            />
+          ) : null}
         </>
       }
     >
