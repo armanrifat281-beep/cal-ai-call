@@ -75,98 +75,61 @@ Haptics are on by default for filled buttons, off for list rows.
 
 ### Two levels, and only two
 
-A **filled** button is a fully rounded pill — the radius is half the
-height — with the rose-to-crimson gradient running top-left to bottom-right,
-bold white text and white icons. Every filled button in the app is
-identical; `primary`, `accent`, `tonal`, `secondary` and `danger` all render
-the same thing.
+A **filled** button is a fully rounded pill — the radius is half the height —
+filled with ink: near-black on a light page, near-white on a dark one, with
+the label reversed out of it. Every filled button in the app is identical.
 
-A **ghost** button is the same red, as text, with no fill. It keeps its full
+A **ghost** button is the same ink as text, with no fill. It keeps its full
 height so the touch target survives having nothing to show for it.
 
-Ghost is a level, not a variation, and the distinction earns its place: two
-filled pills stacked in a footer compete, and the smaller one reads as a
-second call to action rather than as the quiet way out it is. A screen gets
-one filled button and, if it needs one, a line of red text beneath it.
+Ghost is a level, not a variation. Two filled pills stacked in a footer
+compete, and the smaller one reads as a second call to action rather than as
+the quiet way out it is. A screen gets one filled button and, if it needs
+one, a line of text beneath it. Three actions in a footer means one of them
+is not a button.
 
-Three actions in a footer means one of them is not a button. On Welcome the
-escape moved to a quiet "Skip" in the top corner and sign-in became a line
-of text, leaving one pill.
+Buttons are tall on purpose — roughly three and a half times the height of
+their own text — which is what makes them read as soft, confident shapes
+rather than tags. The smallest size is 44 points, so even an inline button
+clears the minimum touch target. The button paints its own contents: a
+`leading` or `trailing` icon is cloned with the button's foreground, so a
+call site cannot leave a dark icon on a dark fill.
 
-The history is worth knowing so nobody "fixes" it back. The gradient was
-once scarce - `primary` and `accent` only - on the standard argument that a
-call to action means nothing if everything looks like one. That produced
-buttons that varied for no visible reason, so everything filled became
-identical. Keeping `ghost` as text is what stops that consistency from
-flattening every screen into a stack of equal red bars.
+**Why ink and not a brand colour.** The buttons were a red gradient taken
+from a supplied reference, and in isolation it looked right. On a real
+screen it was a fourth red arguing with the terracotta in the charts, and
+because every button wore it, the loudest thing on a page about food was the
+furniture. Ink cannot clash with anything, and that is what buys the rule
+below.
 
-Because colour no longer carries emphasis, three other things do:
+### Colour means something, or it is not used
 
-- **Size.** The primary action on a screen is `lg`; alternatives are `md`
-  or `sm`.
-- **Width.** The primary action is `fullWidth`; alternatives are not, or
-  are narrower.
-- **Order.** The primary action comes first in a footer, with alternatives
-  under it.
+The interface is ink and neutral grey. Colour appears in exactly three
+places, and each one carries information:
 
-`variant` is still accepted and still worth setting, because it says what
-an action is *for* to the next person reading the code. It simply has no
-effect on rendering.
+- **The food.** Forest, wheat and terracotta on the charts, `chart` for a
+  bar or a ring, and the photographs. This is the app's colour, and leaving
+  the furniture neutral is what lets it be seen.
+- **Status.** `warning` for going over a target, `danger` for destroying
+  something, `success` for a thing that worked.
+- **The mark.** The one decorative colour left, and it is the identity
+  rather than the interface.
 
-**The cost, named plainly:** a destructive button now looks exactly like a
-confirming one. What guards destructive actions is that every one of them
-is behind a separate confirmation dialog — not the colour of the button.
-If that ever stops being true, this rule needs revisiting.
-
-Buttons are tall on purpose: roughly three and a half times the height of
-their own text, which is the proportion in the reference and what makes
-them read as soft, confident shapes rather than tags. The smallest size is
-44 points, so even an inline button clears the minimum touch target.
-
-The button paints its own contents. A `leading` or `trailing` icon is
-cloned with the button's foreground colour, so a call site cannot leave a
-dark icon on the gradient — which is exactly what happened to a dozen of
-them when the treatment changed.
-
-`src/components/ui/__tests__/ButtonAppearance.test.tsx` pins all of this:
-the gradient on every variant, the pill geometry, the height-to-text ratio,
-the touch target and the icon tinting.
-
-Three stacked full-width buttons still means the screen has no primary
-action. Destructive and lifecycle actions still belong in the navigation
-bar or an action sheet.
-
-### One accent, and a separate colour for data
-
-**Crimson** is the interface accent. The buttons wear it, and so does
-anything selected, active or in progress: a chosen chip, a picked goal
-card, the onboarding progress bar, the ring that says which day you are
-looking at. A selected control and the button you press next are the same
-idea, so they are the same colour. The launcher icon is the darkest step
-of the same red.
-
-**Forest** is no longer the interface accent. It is a data colour now —
-`chart` for a bar or a ring, `protein` on a macro breakdown — and that
-separation is deliberate rather than tidy-minded. The accent means "you can
-press this"; a chart is neither pressable nor selected. More concretely,
-`warning` marks going over a target, and a chart drawn in the same red as
-a warning says the ordinary case is a problem.
+Anything selected, active or in progress is filled with ink — a chosen chip,
+a finished onboarding step, the day you are looking at. That was briefly
+forest green and then briefly red: the green made a chosen chip look like a
+chart, and the red made every screen shout.
 
 **Neutral** is the interface grey, from paper to ink, and it is genuinely
 neutral — no channel in a step differs from another by more than a few
-points. It was a warm clay on the theory that food photography sits badly
-on cold grey; at phone brightness that read as beige in light mode and
-brown in dark, which is not what either mode is understood to look like.
-The warmth that argument was about lives in the food colours and in the
-photographs, where it belongs. **Ember** is reserved for the scan action.
+points. It was a warm clay on the theory that food photography sits badly on
+cold grey; at phone brightness that read as beige in light mode and brown in
+dark. **Ember** is reserved for the scan action.
 
-A fresh install opens **dark**. FoodLens is a dark product — the dial, the
-photographs and the red accent were all designed against a black page —
-and most people never open Appearance. System and Light are both a tap
-away in Settings, and the choice is remembered.
-
-Dark mode is not an inversion: surfaces step *up* in lightness, and the
-accent is lifted so it stays legible without glowing.
+A fresh install opens **dark**. The dial, the photographs and the mark were
+all designed against a black page, and most people never open Appearance.
+System and Light are both a tap away in Settings, and the choice is
+remembered.
 
 ## The mark
 
