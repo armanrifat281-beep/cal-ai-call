@@ -2,23 +2,17 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { View } from 'react-native';
 
-import {
-  Button,
-  Disclosure,
-  ErrorState,
-  Screen,
-  Surface,
-  Text,
-  TextField,
-} from '@/components/ui';
-import { MIN_PASSWORD_LENGTH, hasAnyError, useAuth, validateSignUp } from '@/features/auth';
+import { Icon } from '@/components/Icon';
+import { Button, Disclosure, Screen, Text, TextField } from '@/components/ui';
+import { AuthLayout } from '@/features/auth/AuthLayout';
+import { hasAnyError, useAuth, validateSignUp } from '@/features/auth';
 import type { AppError } from '@/lib/result';
 import { useTheme } from '@/theme';
 
 export default function SignUpScreen() {
   const theme = useTheme();
   const router = useRouter();
-  const { signUp, status } = useAuth();
+  const { signUp } = useAuth();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -51,36 +45,27 @@ export default function SignUpScreen() {
     router.replace('/(tabs)');
   };
 
-  if (status === 'unavailable') {
-    return (
-      <Screen contentStyle={{ gap: theme.spacing.base }}>
-        <Disclosure summary="Accounts are not set up in this build" detail="There is no backend configured, so an account cannot be created. Your meals are saved on this device and everything else in the app works normally." />
-        <Button label="Back to the app" onPress={() => router.replace('/(tabs)')} fullWidth />
-      </Screen>
-    );
-  }
-
   // Shown only after the server confirmed the sign-up. Nothing here is
   // asserted before the request actually succeeded.
   if (awaitingConfirmation) {
     return (
-      <Screen contentStyle={{ gap: theme.spacing.lg }}>
+      <Screen edges={{ bottom: true }} contentStyle={{ gap: theme.spacing.lg }}>
+        <Icon name="check" size={34} color="primary" strokeWidth={2} />
         <View style={{ gap: theme.spacing.sm }}>
           <Text variant="title1">Check your email</Text>
           <Text variant="body" color="textMuted">
             We sent a confirmation link to {email.trim()}. Open it to finish
-            creating your account, then come back and sign in.
+            creating your account.
           </Text>
         </View>
-        <Surface variant="sunken" padding="base">
-          <Text variant="callout" color="textMuted">
-            Nothing arrived? Check your spam folder. The link can take a minute,
-            and it expires after a while.
-          </Text>
-        </Surface>
+        <Disclosure
+          summary="Nothing arrived?"
+          detail="Check your spam folder. The link can take a minute to arrive, and it expires after a while - ask for a new one from the sign-in screen if it does."
+        />
         <Button
           label="Go to sign in"
           onPress={() => router.replace('/(auth)/sign-in')}
+          size="lg"
           fullWidth
         />
       </Screen>
@@ -88,8 +73,13 @@ export default function SignUpScreen() {
   }
 
   return (
-    <Screen
-      contentStyle={{ gap: theme.spacing.lg }}
+    <AuthLayout
+      title="Create an account"
+      subtitle="Backs up your meals, recipes and shopping lists, and syncs them across devices."
+      error={error}
+      onRetry={error?.retryable ? () => void submit() : undefined}
+      offlineMessage="Creating an account needs a connection."
+      unavailableDetail="There is no backend configured in this build, so an account cannot be created yet. The form is real and so is its checking; only the request at the end has nowhere to go. Everything in the app works without one."
       footer={
         <>
           <Button
@@ -103,66 +93,58 @@ export default function SignUpScreen() {
           <Button
             label="I already have an account"
             variant="ghost"
+            size="sm"
             onPress={() => router.replace('/(auth)/sign-in')}
             style={{ alignSelf: 'center' }}
+          />
+          <Button
+            label="Continue without an account"
+            variant="ghost"
+            size="sm"
+            onPress={() => router.replace('/(tabs)')}
+            style={{ alignSelf: 'center' }}
+            accessibilityHint="Everything works on this device without an account"
           />
         </>
       }
     >
-      <View style={{ gap: theme.spacing.sm }}>
-        <Text variant="title1">Create an account</Text>
-        <Text variant="callout" color="textMuted">
-          This backs up your meals, recipes and shopping lists, and syncs them
-          across devices. Anything already saved on this device stays on this
-          device.
-        </Text>
-      </View>
-
-      {error ? (
-        <ErrorState
-          message={error.message}
-          detail={error.detail}
-          onRetry={error.retryable ? () => void submit() : undefined}
-        />
-      ) : null}
-
-      <View style={{ gap: theme.spacing.base }}>
-        <TextField
-          label="Email"
-          value={email}
-          onChangeText={setEmail}
-          error={submitted ? errors.email : null}
-          keyboardType="email-address"
-          autoCapitalize="none"
-          autoComplete="email"
-          textContentType="emailAddress"
-          autoCorrect={false}
-        />
-        <TextField
-          label="Password"
-          value={password}
-          onChangeText={setPassword}
-          error={submitted ? errors.password : null}
-          help={`At least ${MIN_PASSWORD_LENGTH} characters. A short phrase works well.`}
-          secureTextEntry
-          autoCapitalize="none"
-          autoComplete="new-password"
-          textContentType="newPassword"
-        />
-        <TextField
-          label="Confirm password"
-          value={confirmation}
-          onChangeText={setConfirmation}
-          error={submitted ? errors.confirmation : null}
-          secureTextEntry
-          autoCapitalize="none"
-          autoComplete="new-password"
-          onSubmitEditing={() => void submit()}
-          returnKeyType="go"
-        />
-      </View>
-
-      <Disclosure summary="What we store" detail="Your email, and the meals you choose to log. Photo analysis requests contain the photo and nothing about who you are. You can delete your account and all of its data from Profile at any time." />
-    </Screen>
+      <TextField
+        label="Email"
+        value={email}
+        onChangeText={setEmail}
+        error={submitted ? errors.email : null}
+        placeholder="you@example.com"
+        keyboardType="email-address"
+        autoCapitalize="none"
+        autoComplete="email"
+        textContentType="emailAddress"
+        autoCorrect={false}
+      />
+      <TextField
+        label="Password"
+        value={password}
+        onChangeText={setPassword}
+        error={submitted ? errors.password : null}
+        secureTextEntry
+        autoCapitalize="none"
+        autoComplete="new-password"
+        textContentType="newPassword"
+      />
+      <TextField
+        label="Confirm password"
+        value={confirmation}
+        onChangeText={setConfirmation}
+        error={submitted ? (errors.confirmation ?? null) : null}
+        secureTextEntry
+        autoCapitalize="none"
+        autoComplete="new-password"
+        textContentType="newPassword"
+        onSubmitEditing={() => void submit()}
+        returnKeyType="go"
+      />
+      <Text variant="footnote" color="textSubtle">
+        Anything already saved on this device stays on this device.
+      </Text>
+    </AuthLayout>
   );
 }

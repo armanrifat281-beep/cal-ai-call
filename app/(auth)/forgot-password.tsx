@@ -2,7 +2,9 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { View } from 'react-native';
 
-import { Button, ErrorState, Screen, Surface, Text, TextField } from '@/components/ui';
+import { Icon } from '@/components/Icon';
+import { Button, Disclosure, Screen, Text, TextField } from '@/components/ui';
+import { AuthLayout } from '@/features/auth/AuthLayout';
 import { useAuth, validateEmail } from '@/features/auth';
 import type { AppError } from '@/lib/result';
 import { useTheme } from '@/theme';
@@ -38,28 +40,28 @@ export default function ForgotPasswordScreen() {
 
   if (sent) {
     return (
-      <Screen contentStyle={{ gap: theme.spacing.lg }}>
+      <Screen edges={{ bottom: true }} contentStyle={{ gap: theme.spacing.lg }}>
+        <Icon name="check" size={34} color="primary" strokeWidth={2} />
         <View style={{ gap: theme.spacing.sm }}>
           <Text variant="title1">Check your email</Text>
           {/*
             Worded so it does not reveal whether an account exists for this
-            address. Saying "no account found" would turn this form into a way
-            to discover who has signed up.
+            address. Saying "no account found" would turn this form into a
+            way to discover who has signed up.
           */}
           <Text variant="body" color="textMuted">
             If there is an account for {email.trim()}, a reset link is on its
             way. Open it to choose a new password.
           </Text>
         </View>
-        <Surface variant="sunken" padding="base">
-          <Text variant="callout" color="textMuted">
-            Nothing arrived within a few minutes? Check your spam folder, and
-            make sure the address is the one you signed up with.
-          </Text>
-        </Surface>
+        <Disclosure
+          summary="Nothing arrived?"
+          detail="Check your spam folder, and make sure the address is the one you signed up with. The link expires after a while; ask for another from here if it does."
+        />
         <Button
           label="Back to sign in"
           onPress={() => router.replace('/(auth)/sign-in')}
+          size="lg"
           fullWidth
         />
       </Screen>
@@ -67,40 +69,39 @@ export default function ForgotPasswordScreen() {
   }
 
   return (
-    <Screen
-      contentStyle={{ gap: theme.spacing.lg }}
+    <AuthLayout
+      title="Reset your password"
+      subtitle="Tell us the address you signed up with and we will send a link to choose a new password."
+      error={error}
+      onRetry={error?.retryable ? () => void submit() : undefined}
+      offlineMessage="Sending a reset link needs a connection."
+      unavailableDetail="There is no backend configured in this build, so no email can be sent yet. The form is real and so is its checking; only the request at the end has nowhere to go."
       footer={
-        <Button
-          label="Send reset link"
-          onPress={() => void submit()}
-          loading={busy}
-          size="lg"
-          fullWidth
-          haptic
-        />
+        <>
+          <Button
+            label="Send a reset link"
+            onPress={() => void submit()}
+            loading={busy}
+            size="lg"
+            fullWidth
+            haptic
+          />
+          <Button
+            label="Back to sign in"
+            variant="ghost"
+            size="sm"
+            onPress={() => router.replace('/(auth)/sign-in')}
+            style={{ alignSelf: 'center' }}
+          />
+        </>
       }
     >
-      <View style={{ gap: theme.spacing.sm }}>
-        <Text variant="title1">Reset your password</Text>
-        <Text variant="callout" color="textMuted">
-          Enter the email you signed up with and we will send a link to set a
-          new password.
-        </Text>
-      </View>
-
-      {error ? (
-        <ErrorState
-          message={error.message}
-          detail={error.detail}
-          onRetry={error.retryable ? () => void submit() : undefined}
-        />
-      ) : null}
-
       <TextField
         label="Email"
         value={email}
         onChangeText={setEmail}
         error={submitted ? emailError : null}
+        placeholder="you@example.com"
         keyboardType="email-address"
         autoCapitalize="none"
         autoComplete="email"
@@ -109,6 +110,6 @@ export default function ForgotPasswordScreen() {
         onSubmitEditing={() => void submit()}
         returnKeyType="go"
       />
-    </Screen>
+    </AuthLayout>
   );
 }

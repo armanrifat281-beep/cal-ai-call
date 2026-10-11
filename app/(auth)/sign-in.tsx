@@ -1,24 +1,20 @@
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { View } from 'react-native';
 
-import {
-  Button,
-  Disclosure,
-  ErrorState,
-  Screen,
-  Text,
-  TextField,
-  OfflineNotice,
-} from '@/components/ui';
+import { Button, TextField } from '@/components/ui';
+import { AuthLayout } from '@/features/auth/AuthLayout';
 import { hasAnyError, useAuth, validateSignIn } from '@/features/auth';
 import type { AppError } from '@/lib/result';
-import { useTheme } from '@/theme';
 
+/**
+ * Sign in.
+ *
+ * The form is here whether or not a backend is configured; what changes is
+ * the notice above it and what pressing the button returns.
+ */
 export default function SignInScreen() {
-  const theme = useTheme();
   const router = useRouter();
-  const { signIn, status } = useAuth();
+  const { signIn } = useAuth();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -27,7 +23,6 @@ export default function SignInScreen() {
   const [error, setError] = useState<AppError | null>(null);
 
   const errors = validateSignIn(email, password);
-  const showErrors = submitted;
 
   const submit = async () => {
     setSubmitted(true);
@@ -46,22 +41,14 @@ export default function SignInScreen() {
     router.replace('/(tabs)');
   };
 
-  if (status === 'unavailable') {
-    return (
-      <Screen contentStyle={{ gap: theme.spacing.base }}>
-        <Disclosure summary="Accounts are not set up in this build" detail="There is no backend configured, so there is nothing to sign in to. Your meals are saved on this device and everything else in the app works normally." />
-        <Button
-          label="Back to the app"
-          onPress={() => router.replace('/(tabs)')}
-          fullWidth
-        />
-      </Screen>
-    );
-  }
-
   return (
-    <Screen
-      contentStyle={{ gap: theme.spacing.lg }}
+    <AuthLayout
+      title="Welcome back"
+      subtitle="Sign in to pick up your meals, recipes and lists on this device."
+      error={error}
+      onRetry={error?.retryable ? () => void submit() : undefined}
+      offlineMessage="Signing in needs a connection."
+      unavailableDetail="There is no backend configured in this build, so signing in cannot work yet. The form is real and so is its checking; only the request at the end has nowhere to go. Everything else in the app works, and your meals are saved on this device."
       footer={
         <>
           <Button
@@ -75,61 +62,52 @@ export default function SignInScreen() {
           <Button
             label="Create an account instead"
             variant="ghost"
+            size="sm"
             onPress={() => router.replace('/(auth)/sign-up')}
             style={{ alignSelf: 'center' }}
+          />
+          <Button
+            label="Continue without an account"
+            variant="ghost"
+            size="sm"
+            onPress={() => router.replace('/(tabs)')}
+            style={{ alignSelf: 'center' }}
+            accessibilityHint="Everything works on this device without signing in"
           />
         </>
       }
     >
-      <View style={{ gap: theme.spacing.sm }}>
-        <Text variant="title1">Welcome back</Text>
-        <Text variant="callout" color="textMuted">
-          Signing in backs up your meals, recipes and shopping lists, and syncs
-          them across your devices.
-        </Text>
-      </View>
-
-      <OfflineNotice message="Signing in needs one." />
-
-      {error ? (
-        <ErrorState
-          message={error.message}
-          detail={error.detail}
-          onRetry={error.retryable ? () => void submit() : undefined}
-        />
-      ) : null}
-
-      <View style={{ gap: theme.spacing.base }}>
-        <TextField
-          label="Email"
-          value={email}
-          onChangeText={setEmail}
-          error={showErrors ? errors.email : null}
-          keyboardType="email-address"
-          autoCapitalize="none"
-          autoComplete="email"
-          textContentType="emailAddress"
-          autoCorrect={false}
-        />
-        <TextField
-          label="Password"
-          value={password}
-          onChangeText={setPassword}
-          error={showErrors ? errors.password : null}
-          secureTextEntry
-          autoCapitalize="none"
-          autoComplete="current-password"
-          textContentType="password"
-          onSubmitEditing={() => void submit()}
-          returnKeyType="go"
-        />
-        <Button
-          label="I forgot my password"
-          variant="ghost"
-          size="sm"
-          onPress={() => router.push('/(auth)/forgot-password')}
-        />
-      </View>
-    </Screen>
+      <TextField
+        label="Email"
+        value={email}
+        onChangeText={setEmail}
+        error={submitted ? errors.email : null}
+        placeholder="you@example.com"
+        keyboardType="email-address"
+        autoCapitalize="none"
+        autoComplete="email"
+        textContentType="emailAddress"
+        autoCorrect={false}
+      />
+      <TextField
+        label="Password"
+        value={password}
+        onChangeText={setPassword}
+        error={submitted ? errors.password : null}
+        secureTextEntry
+        autoCapitalize="none"
+        autoComplete="current-password"
+        textContentType="password"
+        onSubmitEditing={() => void submit()}
+        returnKeyType="go"
+      />
+      <Button
+        label="I forgot my password"
+        variant="ghost"
+        size="sm"
+        onPress={() => router.push('/(auth)/forgot-password')}
+        style={{ alignSelf: 'flex-start' }}
+      />
+    </AuthLayout>
   );
 }

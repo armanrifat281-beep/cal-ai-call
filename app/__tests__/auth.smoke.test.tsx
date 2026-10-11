@@ -11,9 +11,12 @@ import ProfileScreen from '../(tabs)/profile';
 /**
  * Auth screens with no Supabase configured.
  *
- * This is the state of a fresh checkout, and the screens must say so plainly
- * rather than presenting a form that cannot work. The signed-in paths need a
- * live project and are not asserted here.
+ * This is the state of a fresh checkout. The screens show the real form -
+ * the app has to have a login page you can look at and set up - and say
+ * plainly, above it, that the request at the end has nowhere to go. What
+ * they must never do is behave as though it worked.
+ *
+ * The signed-in paths need a live project and are not asserted here.
  */
 
 beforeEach(() => {
@@ -21,30 +24,102 @@ beforeEach(() => {
 });
 
 describe('sign in, with no backend configured', () => {
-  it('explains there is nothing to sign in to, instead of showing a dead form', async () => {
+  it('shows the real form, because the app needs a login page', async () => {
     await renderWithProviders(<SignInScreen />);
 
-    expect(screen.getByText('Accounts are not set up in this build')).toBeTruthy();
-    // No form that would fail on submit.
-    expect(screen.queryByLabelText('Password')).toBeNull();
-    expect(screen.getByRole('button', { name: 'Back to the app' })).toBeTruthy();
+    expect(screen.getByText('Welcome back')).toBeTruthy();
+    expect(screen.getByLabelText('Email')).toBeTruthy();
+    expect(screen.getByLabelText('Password')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Sign in' })).toBeTruthy();
   });
 
-  it('offers a way back into the app', async () => {
+  it('says above the form that it cannot work yet', async () => {
+    await renderWithProviders(<SignInScreen />);
+    expect(screen.getByText('Accounts are not set up in this build')).toBeTruthy();
+  });
+
+  it('checks the form before it tries anything', async () => {
     const user = userEvent.setup();
     await renderWithProviders(<SignInScreen />);
 
-    await user.press(screen.getByRole('button', { name: 'Back to the app' }));
+    await user.type(screen.getByLabelText('Email'), 'not-an-email');
+    await user.press(screen.getByRole('button', { name: 'Sign in' }));
+
+    expect(screen.getByText('That does not look like an email address.')).toBeTruthy();
+  });
+
+  it('reports the real reason on submit rather than appearing to sign in', async () => {
+    const user = userEvent.setup();
+    await renderWithProviders(<SignInScreen />);
+
+    await user.type(screen.getByLabelText('Email'), 'alice@example.com');
+    await user.type(screen.getByLabelText('Password'), 'correct horse battery');
+    await user.press(screen.getByRole('button', { name: 'Sign in' }));
+
+    expect(
+      await screen.findByText(/meals are saved on this device/),
+    ).toBeTruthy();
+    expect(router.replace).not.toHaveBeenCalledWith('/(tabs)');
+  });
+
+  it('offers a way on without an account', async () => {
+    const user = userEvent.setup();
+    await renderWithProviders(<SignInScreen />);
+
+    await user.press(
+      screen.getByRole('button', { name: 'Continue without an account' }),
+    );
     expect(router.replace).toHaveBeenCalledWith('/(tabs)');
+  });
+
+  it('reaches the other two auth screens', async () => {
+    const user = userEvent.setup();
+    await renderWithProviders(<SignInScreen />);
+
+    await user.press(screen.getByRole('button', { name: 'I forgot my password' }));
+    expect(router.push).toHaveBeenCalledWith('/(auth)/forgot-password');
+
+    await user.press(
+      screen.getByRole('button', { name: 'Create an account instead' }),
+    );
+    expect(router.replace).toHaveBeenCalledWith('/(auth)/sign-up');
   });
 });
 
 describe('sign up, with no backend configured', () => {
-  it('says an account cannot be created and does not pretend otherwise', async () => {
+  it('shows the real form and says it cannot work yet', async () => {
     await renderWithProviders(<SignUpScreen />);
 
+    expect(screen.getByRole('button', { name: 'Create account' })).toBeTruthy();
+    expect(screen.getByLabelText('Confirm password')).toBeTruthy();
     expect(screen.getByText('Accounts are not set up in this build')).toBeTruthy();
-    expect(screen.queryByRole('button', { name: 'Create account' })).toBeNull();
+  });
+
+  it('refuses a password that does not match its confirmation', async () => {
+    const user = userEvent.setup();
+    await renderWithProviders(<SignUpScreen />);
+
+    await user.type(screen.getByLabelText('Email'), 'alice@example.com');
+    await user.type(screen.getByLabelText('Password'), 'correct horse battery');
+    await user.type(screen.getByLabelText('Confirm password'), 'something else');
+    await user.press(screen.getByRole('button', { name: 'Create account' }));
+
+    expect(screen.getByText('Those passwords do not match.')).toBeTruthy();
+  });
+
+  it('never claims an account was made', async () => {
+    const user = userEvent.setup();
+    await renderWithProviders(<SignUpScreen />);
+
+    await user.type(screen.getByLabelText('Email'), 'alice@example.com');
+    await user.type(screen.getByLabelText('Password'), 'correct horse battery');
+    await user.type(screen.getByLabelText('Confirm password'), 'correct horse battery');
+    await user.press(screen.getByRole('button', { name: 'Create account' }));
+
+    expect(screen.queryByText('Check your email')).toBeNull();
+    expect(
+      await screen.findByText(/meals are saved on this device/),
+    ).toBeTruthy();
   });
 });
 
@@ -54,7 +129,7 @@ describe('forgot password', () => {
     await renderWithProviders(<ForgotPasswordScreen />);
 
     await user.type(screen.getByLabelText('Email'), 'not-an-email');
-    await user.press(screen.getByRole('button', { name: 'Send reset link' }));
+    await user.press(screen.getByRole('button', { name: 'Send a reset link' }));
 
     expect(screen.getByText('That does not look like an email address.')).toBeTruthy();
     // Still on the form, not on the confirmation screen.
@@ -66,11 +141,13 @@ describe('forgot password', () => {
     await renderWithProviders(<ForgotPasswordScreen />);
 
     await user.type(screen.getByLabelText('Email'), 'alice@example.com');
-    await user.press(screen.getByRole('button', { name: 'Send reset link' }));
+    await user.press(screen.getByRole('button', { name: 'Send a reset link' }));
 
     // With no backend there is no email, so it must not say one is on its way.
     expect(screen.queryByText(/reset link is on its way/)).toBeNull();
-    expect(screen.getByText(/not set up in this build/)).toBeTruthy();
+    expect(
+      await screen.findByText(/meals are saved on this device/),
+    ).toBeTruthy();
   });
 });
 
