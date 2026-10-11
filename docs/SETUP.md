@@ -2,7 +2,7 @@
 
 What you can run today, and what needs an account somewhere.
 
-## 1. Run the app (no accounts needed)
+## 1. Run the app
 
 ```bash
 npm install
@@ -12,10 +12,20 @@ npm start
 Then press `i` for an iOS simulator, `a` for Android, or scan the QR code with
 the Expo Go app on a real phone.
 
-In this mode the app is fully usable: onboarding, manual meal logging, editing,
-duplicating, the journal, daily summaries, and Food Memory insights all work.
-Meals are stored on the device and the UI says so. Photo capture works too; only
-the analysis step is unavailable.
+### You will stop at the sign-in screen
+
+**The app opens on sign-in and requires an account.** Until Supabase is
+configured there is nothing to sign into, so that is as far as you get: the
+screen renders, the form validates what you type, and pressing any button
+says the backend is missing.
+
+Everything behind it — the journal, the dial, the scanner, recipes, shopping
+lists, settings — is built and tested but unreachable until step 3 is done.
+This is deliberate; an earlier version let you past, and that meant the login
+screen never appeared at all.
+
+To get in, do [section 3](#3-supabase-needed-for-accounts-sync-and-photo-analysis).
+It takes about ten minutes.
 
 ### If you want a native build
 
@@ -240,12 +250,34 @@ require the attribution string that `image_attribution` exists to hold.
 | Google Play Console | USD 25 one-off |
 | EAS Build | Free tier available, paid for faster builds |
 
-## 6. Decisions still needed
+## 6. Before you publish
 
-- The product name, and whether the trademark is free.
-- A real bundle identifier. It is currently `com.example.foodlensai` in
-  `app.json` and must be changed before any store submission.
-- Whether to require email confirmation at sign-up.
+Ordered by what blocks a submission.
+
+### Must be done
+
+1. **Bundle identifier.** `app.json` now says `com.foodlensai.app`, which is
+   valid but is a placeholder I chose. It is permanent once an app is
+   submitted, so change it first if you own a domain that should own the
+   name. Both `ios.bundleIdentifier` and `android.package` must match, and so
+   must the Google OAuth client ids if you set those up.
+2. **Supabase configured**, or the app cannot be opened at all. Section 3.
+3. **The privacy page and the terms page reviewed.** Both are in Settings and
+   both say on the page that they are drafts written from the code rather
+   than by a lawyer. The privacy one is accurate; neither has been checked
+   against the law where you ship or against either store's own rules. Both
+   stores require a privacy policy URL as well as the in-app page.
+4. **An Apple Developer account and a Google Play account**, and a build:
+   `eas.json` is set up, so `eas build --profile production --platform all`.
+
+### Worth deciding
+
+- **Sign in with Apple's button.** Apple's guidelines expect their own button
+  style - black, white, or white with an outline. Ours is the app's ink pill
+  with the Apple mark, which matches the rest of the interface and is a
+  review risk. `expo-apple-authentication` ships `AppleAuthenticationButton`
+  if you would rather be certain.
+- **Email confirmation at sign-up**, on or off.
 - Whether the free tier's 5 scans and 10 recipes a day are the right numbers.
   They live in `ai_request_limit()` in the database, so changing them needs no
   app update.

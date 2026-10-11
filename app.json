@@ -14,16 +14,17 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.example.foodlensai",
+      "bundleIdentifier": "com.foodlensai.app",
       "usesAppleSignIn": true,
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSCameraUsageDescription": "FoodLens AI uses your camera so you can take a photo of a meal and get an estimated nutrition breakdown.",
         "NSPhotoLibraryUsageDescription": "FoodLens AI needs access to your photos so you can pick an existing meal photo to analyze."
-      }
+      },
+      "buildNumber": "1"
     },
     "android": {
-      "package": "com.example.foodlensai",
+      "package": "com.foodlensai.app",
       "adaptiveIcon": {
         "backgroundColor": "#9E1A28",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -34,7 +35,8 @@
       "predictiveBackGestureEnabled": false,
       "permissions": [
         "android.permission.CAMERA"
-      ]
+      ],
+      "versionCode": 1
     },
     "web": {
       "bundler": "metro",
