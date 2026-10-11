@@ -60,16 +60,6 @@ function cacheKey(collection: PhotoCollection, id: string): string {
   return `${collection}:${id}`;
 }
 
-/** Where this photo would live, whether or not one is there. */
-export function photoPath(collection: PhotoCollection, id: string): string | null {
-  if (!SAFE_ID.test(id)) return null;
-  try {
-    return fileFor(collection, id).uri;
-  } catch {
-    return null;
-  }
-}
-
 /** The stored photo, or null when there is none. */
 export function photoUri(collection: PhotoCollection, id: string): string | null {
   if (!SAFE_ID.test(id)) return null;
@@ -178,7 +168,6 @@ export function deleteAllPhotos(collection?: PhotoCollection): void {
 
 /** A photo of a logged meal. Governed by "Keep my meal photos". */
 export const mealPhotoUri = (entryId: string) => photoUri('meal', entryId);
-export const mealPhotoPath = (entryId: string) => photoPath('meal', entryId);
 export const saveMealPhoto = (entryId: string, sourceUri: string) =>
   savePhoto('meal', entryId, sourceUri);
 export const deleteMealPhoto = (entryId: string) => deletePhoto('meal', entryId);

@@ -86,23 +86,18 @@ const SIZES: Record<ButtonSize, SizeSpec> = {
 /**
  * A button.
  *
- * One look, used by every button in the app: a fully rounded pill with a
- * rose-to-crimson gradient running top-left to bottom-right, and bold white
- * text, matching the supplied reference.
+ * A filled one is a pill of ink: near-black on a light page, near-white on
+ * a dark one, with the label reversed out of it. Every filled button in the
+ * app is identical, so nothing varies at random.
  *
- * This is a deliberate change from scarcity to consistency. An earlier
- * version gave the gradient only to the two hero variants and left the rest
- * flat, on the usual argument that a call to action means nothing if
- * everything looks like one. The brief here is the opposite and explicit:
- * every button is to look like the reference, with none left out. So
- * emphasis is no longer carried by colour. It is carried by size, by order,
- * and by which button is full width - the primary action on a screen is the
- * large, full-width one, and the alternatives sit below it, smaller.
+ * Emphasis is carried by size, by width and by order rather than by colour -
+ * the primary action is the large full-width one, with alternatives smaller
+ * beneath it, and `ghost` for the quietest of them.
  *
- * The cost is worth naming where it lands hardest: a destructive button is
- * now the same colour as a confirming one. Every destructive action in the
- * app is behind a separate confirmation dialog, which is what actually
- * guards it, but the button itself no longer warns on sight.
+ * Worth naming because it is a real cost: a destructive button looks like a
+ * confirming one. Every destructive action in the app sits behind its own
+ * confirmation dialog, and that is what guards it; the button does not warn
+ * on sight.
  */
 export function Button({
   label,

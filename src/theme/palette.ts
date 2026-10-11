@@ -302,8 +302,9 @@ export const palettes: Record<ColorScheme, Palette> = { light, dark };
 /**
  * Palette keys whose value is a single colour.
  *
- * `ctaGradient` and `ctaGradientPressed` hold a pair of stops, so a component
- * that sets one colour should accept this rather than every key.
+ * Every key is one today, but a component that takes a colour name should
+ * still say so through this rather than through `keyof Palette`, so adding
+ * a gradient or a tuple back cannot silently break the callers.
  */
 export type ColorKey = {
   [K in keyof Palette]: Palette[K] extends string ? K : never;

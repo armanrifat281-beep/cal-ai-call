@@ -196,7 +196,7 @@ export async function signInWithGoogleToken(
 }
 
 /** A cancelled provider sheet, which the user did on purpose. */
-export function isCancellation(cause: unknown): boolean {
+function isCancellation(cause: unknown): boolean {
   const code = (cause as { code?: string } | null)?.code;
   if (code === 'ERR_REQUEST_CANCELED' || code === 'ERR_CANCELED') return true;
   return /cancel/i.test(cause instanceof Error ? cause.message : String(cause));

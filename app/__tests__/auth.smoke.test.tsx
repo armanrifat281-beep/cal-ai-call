@@ -4,6 +4,7 @@ import { screen, userEvent } from '@testing-library/react-native';
 import { renderWithProviders } from '@/test/renderWithProviders';
 
 import ForgotPasswordScreen from '../(auth)/forgot-password';
+import ResetPasswordScreen from '../(auth)/reset-password';
 import SignInScreen from '../(auth)/sign-in';
 import SignUpScreen from '../(auth)/sign-up';
 import ProfileScreen from '../(tabs)/profile';
@@ -200,5 +201,39 @@ describe('profile account section', () => {
   it('still offers local data deletion', async () => {
     await renderWithProviders(<ProfileScreen />);
     expect(screen.getByText('Delete everything on this device')).toBeTruthy();
+  });
+});
+
+describe('choosing a new password after a reset link', () => {
+  it('renders, and asks for the new password twice', async () => {
+    await renderWithProviders(<ResetPasswordScreen />);
+
+    expect(screen.getByText('Choose a new password')).toBeTruthy();
+    expect(screen.getByLabelText('New password')).toBeTruthy();
+    expect(screen.getByLabelText('Confirm new password')).toBeTruthy();
+  });
+
+  it('asks for no current password, because the link was the proof', async () => {
+    await renderWithProviders(<ResetPasswordScreen />);
+    expect(screen.queryByLabelText('Current password')).toBeNull();
+  });
+
+  it('refuses a confirmation that does not match', async () => {
+    const user = userEvent.setup();
+    await renderWithProviders(<ResetPasswordScreen />);
+
+    await user.type(screen.getByLabelText('New password'), 'correct horse battery');
+    await user.type(screen.getByLabelText('Confirm new password'), 'something else');
+    await user.press(screen.getByRole('button', { name: 'Save new password' }));
+
+    expect(screen.getByText('Those passwords do not match.')).toBeTruthy();
+  });
+
+  it('lets someone back out without changing anything', async () => {
+    const user = userEvent.setup();
+    await renderWithProviders(<ResetPasswordScreen />);
+
+    await user.press(screen.getByRole('button', { name: 'Not now' }));
+    expect(router.replace).toHaveBeenCalledWith('/(tabs)');
   });
 });

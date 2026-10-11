@@ -9,9 +9,9 @@ import { Icon } from '@/components/Icon';
 import { Button } from '../Button';
 
 /**
- * Pins the button treatment from the supplied reference: a tall, fully
- * rounded pill with the rose-to-crimson gradient, white text and white
- * icons - on every variant, with none left out.
+ * Pins the button treatment: a tall, fully rounded pill filled with ink,
+ * with the label and any icon reversed out of it, on every variant but
+ * `ghost`.
  *
  * These walk the rendered tree, so they catch the treatment being dropped
  * from a variant. They cannot tell you it LOOKS right on a device; that

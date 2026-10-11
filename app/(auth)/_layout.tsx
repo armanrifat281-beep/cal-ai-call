@@ -2,32 +2,28 @@ import { Stack } from 'expo-router';
 
 import { useTheme } from '@/theme';
 
+/**
+ * The auth stack.
+ *
+ * No navigation header on any of these. Sign-in is the app's entry screen
+ * now, so a bar above it has nothing to go back to, and every screen here
+ * already opens with its own heading - a header would have printed "Sign
+ * in" directly above "Welcome back".
+ *
+ * Each screen carries its own way out instead, which is checked: sign-up
+ * offers "I already have an account", reset offers "Back to sign in", the
+ * new-password screen offers "Not now", and the email callback redirects on
+ * its own.
+ */
 export default function AuthLayout() {
   const theme = useTheme();
 
   return (
     <Stack
       screenOptions={{
-        headerShown: true,
-        headerStyle: { backgroundColor: theme.colors.surface },
-        headerTintColor: theme.colors.text,
-        headerTitleStyle: { fontWeight: '600' },
-        headerShadowVisible: false,
+        headerShown: false,
         contentStyle: { backgroundColor: theme.colors.background },
       }}
-    >
-      <Stack.Screen name="sign-in" options={{ title: 'Sign in' }} />
-      <Stack.Screen name="sign-up" options={{ title: 'Create an account' }} />
-      <Stack.Screen name="forgot-password" options={{ title: 'Reset password' }} />
-      <Stack.Screen
-        name="reset-password"
-        options={{ title: 'New password', headerBackVisible: false }}
-      />
-      {/*
-        Where the confirmation and reset emails land. It only exchanges the
-        code and redirects, so a header would flash and disappear.
-      */}
-      <Stack.Screen name="auth-callback" options={{ headerShown: false }} />
-    </Stack>
+    />
   );
 }

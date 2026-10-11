@@ -74,7 +74,6 @@ import {
   deleteDishPhoto,
   deleteMealPhoto,
   dishPhotoUri,
-  mealPhotoPath,
   mealPhotoUri,
   saveDishPhoto,
   saveMealPhoto,
@@ -158,16 +157,6 @@ describe('mealPhotoUri', () => {
 
     expect(mealPhotoUri(ENTRY)).toBeNull();
     spy.mockRestore();
-  });
-});
-
-describe('mealPhotoPath', () => {
-  it('gives the path a photo would take, whether or not it is there', () => {
-    expect(mealPhotoPath(ENTRY)).toBe(`file:///documents/meal-photos/${ENTRY}.jpg`);
-  });
-
-  it('is null for an unsafe id', () => {
-    expect(mealPhotoPath('../x')).toBeNull();
   });
 });
 

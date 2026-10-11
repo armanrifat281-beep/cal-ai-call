@@ -26,10 +26,9 @@ export interface IconButtonProps {
 /**
  * A round button holding one icon.
  *
- * It wears the same treatment as the pill: the rose-to-crimson gradient
- * running top-left to bottom-right, with the icon painted white. A labelled
- * pill and an icon disc are the same thing at different widths, and until
- * now they looked unrelated.
+ * It wears the same treatment as the pill: filled with ink, with the icon
+ * reversed out of it. A labelled pill and an icon disc are the same control
+ * at different widths.
  *
  * The icon is recoloured here rather than at the call site, for the same
  * reason the pill does it: every existing call chose a colour to suit the
