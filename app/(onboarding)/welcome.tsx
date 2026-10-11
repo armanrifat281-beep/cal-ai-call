@@ -2,7 +2,6 @@ import { useRouter } from 'expo-router';
 import { View } from 'react-native';
 
 import { BrandMark } from '@/components/BrandMark';
-import { Icon } from '@/components/Icon';
 import { Button, Disclosure, Screen, Text } from '@/components/ui';
 import { useTheme } from '@/theme';
 
@@ -104,19 +103,6 @@ export default function WelcomeScreen() {
             </View>
           </View>
         ))}
-      </View>
-
-      {/*
-        Worth saying before the first tap rather than after: the thing most
-        apps of this kind ask for immediately is the thing this one never
-        requires.
-      */}
-      <View style={{ flexDirection: 'row', gap: theme.spacing.md, alignItems: 'center' }}>
-        <Icon name="check" size={17} color="primary" strokeWidth={2} />
-        <Text variant="footnote" color="textMuted" style={{ flex: 1 }}>
-          No account needed. Everything works on this device, and you can sign
-          in later if you want it backed up.
-        </Text>
       </View>
 
       <Disclosure

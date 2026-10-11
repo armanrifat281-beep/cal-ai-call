@@ -42,9 +42,15 @@ function findNode(predicate: (node: JsonNode) => boolean): JsonNode | null {
   return walk(screen.toJSON());
 }
 
-/** expo-linear-gradient renders through this native view manager. */
-const gradient = () =>
-  findNode((node) => node.type === 'ViewManagerAdapter_ExpoLinearGradient');
+/** The filled pill: a view carrying the ink background. */
+const filled = () =>
+  findNode((node) => {
+    const style = flatStyle(node.props?.style);
+    return (
+      style.backgroundColor === palettes.dark.primary ||
+      style.backgroundColor === palettes.dark.primaryPressed
+    );
+  });
 
 /** Flattens a style prop, which may be an array. */
 function flatStyle(style: unknown): Record<string, unknown> {
@@ -60,32 +66,31 @@ const FILLED = ['primary', 'accent', 'tonal', 'secondary', 'danger'] as const;
 describe('every button wears the reference treatment', () => {
   // One render per case: unmounting inside a loop detaches `screen`, so
   // every later assertion in the file sees an empty tree.
-  it.each(FILLED)('gives %s the gradient', async (variant) => {
+  it.each(FILLED)('fills %s with ink', async (variant) => {
     await renderWithProviders(
       <Button label="Get All Access" variant={variant} onPress={jest.fn()} />,
     );
-    expect(gradient()).not.toBeNull();
+    expect(filled()).not.toBeNull();
   });
 
-  it.each(FILLED)('writes %s in white', async (variant) => {
+  it.each(FILLED)('reverses %s out of the fill', async (variant) => {
     await renderWithProviders(
       <Button label="Get All Access" variant={variant} onPress={jest.fn()} />,
     );
     const style = flatStyle(screen.getByText('Get All Access').props.style);
-    expect(style.color).toBe(palettes.light.textOnCta);
+    // The providers open in the app's default scheme, which is dark.
+    expect(style.color).toBe(palettes.dark.textOnPrimary);
   });
 
-  it('uses the reference colours, running top-left to bottom-right', async () => {
-    await renderWithProviders(<Button label="Get All Access" onPress={jest.fn()} />);
+  it('carries no colour of its own, so nothing competes with the food', async () => {
+    await renderWithProviders(<Button label="Save meal" onPress={jest.fn()} />);
+    const background = flatStyle(filled()?.props?.style).backgroundColor as string;
 
-    const props = gradient()?.props ?? {};
-    // The native view manager receives colours already processed to ARGB
-    // integers, so the expectation goes through the same conversion.
-    expect(props.colors).toEqual(
-      palettes.light.ctaGradient.map((stop) => processColor(stop)),
+    const channels = [1, 3, 5].map((index) =>
+      parseInt(background.slice(index, index + 2), 16),
     );
-    expect(props.startPoint).toEqual([0, 0]);
-    expect(props.endPoint).toEqual([1, 1]);
+    const spread = Math.max(...channels) - Math.min(...channels);
+    expect(spread).toBeLessThanOrEqual(6);
   });
 
   it('leaves a ghost action as text, so two pills never stack', async () => {
@@ -94,10 +99,10 @@ describe('every button wears the reference treatment', () => {
     await renderWithProviders(
       <Button label="Skip for now" variant="ghost" onPress={jest.fn()} />,
     );
-    expect(gradient()).toBeNull();
+    expect(filled()).toBeNull();
   });
 
-  it('writes a ghost action in the same red, so it still belongs', async () => {
+  it('writes a ghost action in the same ink, so it still belongs', async () => {
     await renderWithProviders(
       <Button label="Skip for now" variant="ghost" onPress={jest.fn()} />,
     );
@@ -134,7 +139,7 @@ describe('the shape', () => {
     await renderWithProviders(
       <Button label="Get All Access" onPress={jest.fn()} size={size} />,
     );
-    const style = flatStyle(gradient()?.props?.style);
+    const style = flatStyle(filled()?.props?.style);
     expect(style.height).toBe(height);
     expect(style.borderRadius).toBe(height / 2);
   });
@@ -157,12 +162,12 @@ describe('the shape', () => {
     await renderWithProviders(
       <Button label="Remove" onPress={jest.fn()} size="sm" />,
     );
-    expect(Number(flatStyle(gradient()?.props?.style).height)).toBeGreaterThanOrEqual(44);
+    expect(Number(flatStyle(filled()?.props?.style).height)).toBeGreaterThanOrEqual(44);
   });
 
   it('pads generously, so it does not read as a tag', async () => {
     await renderWithProviders(<Button label="Get All Access" onPress={jest.fn()} />);
-    const style = flatStyle(gradient()?.props?.style);
+    const style = flatStyle(filled()?.props?.style);
     expect(Number(style.paddingHorizontal)).toBeGreaterThanOrEqual(24);
   });
 });
@@ -181,7 +186,7 @@ describe('icons inside a button', () => {
     );
     const path = findNode((node) => node.type === 'RNSVGPath');
     const stroke = path?.props?.stroke as { payload?: number } | undefined;
-    expect(stroke?.payload).toBe(processColor(palettes.light.textOnCta));
+    expect(stroke?.payload).toBe(processColor(palettes.dark.textOnPrimary));
   });
 
   it('paints a trailing icon the same way', async () => {
@@ -195,7 +200,7 @@ describe('icons inside a button', () => {
     );
     const path = findNode((node) => node.type === 'RNSVGPath');
     const stroke = path?.props?.stroke as { payload?: number } | undefined;
-    expect(stroke?.payload).toBe(processColor(palettes.light.textOnCta));
+    expect(stroke?.payload).toBe(processColor(palettes.dark.textOnPrimary));
   });
 
   it('shows a spinner instead of the icon while loading', async () => {

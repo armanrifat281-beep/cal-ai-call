@@ -1,8 +1,7 @@
-import { screen, userEvent } from '@testing-library/react-native';
+import { screen } from '@testing-library/react-native';
 
 import { renderWithProviders } from '@/test/renderWithProviders';
 import { usePreferencesStore } from '@/store/preferencesStore';
-import { router } from 'expo-router';
 
 import SignInScreen from '../(auth)/sign-in';
 import BootGate from '../index';
@@ -49,21 +48,20 @@ describe('the boot gate', () => {
   });
 });
 
-describe('getting past a sign-in that cannot work', () => {
-  it('offers a way through only while there is no backend', async () => {
+describe('the sign-in screen has no way around it', () => {
+  it('offers no skip, even with no backend configured', async () => {
     await renderWithProviders(<SignInScreen />);
+
     expect(
-      screen.getByRole('button', { name: 'Continue without signing in' }),
-    ).toBeTruthy();
+      screen.queryByRole('button', { name: 'Continue without signing in' }),
+    ).toBeNull();
+    expect(
+      screen.queryByRole('button', { name: /without an account/ }),
+    ).toBeNull();
   });
 
-  it('leads to onboarding, so the questions still get asked', async () => {
-    const user = userEvent.setup();
+  it('still says plainly why it cannot work yet', async () => {
     await renderWithProviders(<SignInScreen />);
-
-    await user.press(
-      screen.getByRole('button', { name: 'Continue without signing in' }),
-    );
-    expect(router.replace).toHaveBeenCalledWith('/(onboarding)/welcome');
+    expect(screen.getByText('Accounts are not set up in this build')).toBeTruthy();
   });
 });

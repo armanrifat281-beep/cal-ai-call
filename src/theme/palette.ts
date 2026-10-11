@@ -58,12 +58,6 @@ export interface Palette {
   accentSoft: string;
   accentOnSoft: string;
 
-  /** Primary call-to-action gradient, from top-left to bottom-right. */
-  ctaGradient: readonly [string, string];
-  ctaGradientPressed: readonly [string, string];
-  /** Flat equivalent, where a gradient is not possible. */
-  ctaFlat: string;
-  textOnCta: string;
 
   success: string;
   successSoft: string;
@@ -171,36 +165,19 @@ const ember = {
 } as const;
 
 /**
- * The call-to-action red.
+ * The one coloured thing left in the interface, and it is the mark.
  *
- * A two-stop gradient rather than a flat fill, matching the reference the
- * client supplied: a rose-leaning red at the top left easing into a deeper
- * crimson at the bottom right. Used only for the primary action, which is
- * what keeps it from becoming decoration.
+ * Buttons were this red until it met the rest of the app on a phone. The
+ * food colours - forest, wheat, terracotta - are what give these screens
+ * their warmth, and a saturated pink-red is a fourth red arguing with the
+ * terracotta. With every button wearing it, the loudest thing on a page
+ * about food was the furniture.
  */
-const crimson = {
-  gradientFrom: '#EF4B5E',
-  gradientTo: '#DC2B3C',
-  pressedFrom: '#DA3F51',
-  pressedTo: '#C42233',
-  /** Flat equivalent, for places a gradient cannot go. */
-  flat: '#E43B4D',
-  soft: '#FDEAEC',
-  softDark: '#2E1418',
-  /**
-   * The accent, for everything that is selected, active or in progress.
-   *
-   * Deeper than the gradient so white body text on it clears 4.5:1, which
-   * the gradient's lightest end does not.
-   */
-  accent: '#D62A3E',
-  accentPressed: '#B51E2E',
-  accentDark: '#F07C8A',
-  accentDarkPressed: '#E85B6C',
-  onSoftDark: '#FACDD2',
-  inkOnAccentDark: '#2A0A0F',
-  onSoft: '#B3222F',
+const brand = {
+  mark: '#C42233',
+  markDark: '#F07C8A',
 } as const;
+
 
 const light: Palette = {
   background: neutral[25],
@@ -224,20 +201,17 @@ const light: Palette = {
   // the button you press next are visibly the same idea. Forest is still the
   // app's green, but as a data colour now - protein on a chart - rather than
   // as the thing that marks a choice.
-  primary: crimson.accent,
-  primaryPressed: crimson.accentPressed,
-  primarySoft: crimson.soft,
-  primaryOnSoft: crimson.onSoft,
+  // Ink. A filled button, a chosen chip and a finished step are all this,
+  // and none of them competes with the food.
+  primary: neutral[800],
+  primaryPressed: neutral[700],
+  primarySoft: neutral[100],
+  primaryOnSoft: neutral[800],
 
   accent: ember[500],
   accentPressed: ember[600],
   accentSoft: ember[50],
   accentOnSoft: ember[600],
-
-  ctaGradient: [crimson.gradientFrom, crimson.gradientTo],
-  ctaGradientPressed: [crimson.pressedFrom, crimson.pressedTo],
-  ctaFlat: crimson.flat,
-  textOnCta: '#FFFFFF',
 
   success: forest[500],
   successSoft: forest[50],
@@ -284,13 +258,13 @@ const dark: Palette = {
   text: '#F2F2F4',
   textMuted: '#A0A0A8',
   textSubtle: '#76767E',
-  textOnPrimary: crimson.inkOnAccentDark,
+  textOnPrimary: neutral[900],
   textOnAccent: '#190A03',
 
-  primary: crimson.accentDark,
-  primaryPressed: crimson.accentDarkPressed,
-  primarySoft: crimson.softDark,
-  primaryOnSoft: crimson.onSoftDark,
+  primary: neutral[25],
+  primaryPressed: neutral[200],
+  primarySoft: neutral[800],
+  primaryOnSoft: neutral[25],
 
   accent: ember[300],
   accentPressed: '#C47A4E',
@@ -299,11 +273,6 @@ const dark: Palette = {
 
   // The CTA keeps its colour in dark mode: it is the one element that should
   // read identically in both, and the red already has the contrast for it.
-  ctaGradient: [crimson.gradientFrom, crimson.gradientTo],
-  ctaGradientPressed: [crimson.pressedFrom, crimson.pressedTo],
-  ctaFlat: crimson.flat,
-  textOnCta: '#FFFFFF',
-
   success: forest[300],
   successSoft: '#16281F',
   successOnSoft: forest[200],
@@ -341,4 +310,4 @@ export type ColorKey = {
 }[keyof Palette];
 
 /** The ramps, for the rare case a component needs a specific step. */
-export const ramps = { neutral, forest, ember, crimson } as const;
+export const ramps = { neutral, forest, ember, brand } as const;

@@ -58,7 +58,7 @@ export default function RecipesScreen() {
         onPress={() => router.push('/recipe/create')}
         size="lg"
         fullWidth
-        leading={<Icon name="sparkle" size={20} color={theme.colors.textOnCta} />}
+        leading={<Icon name="sparkle" size={20} color={theme.colors.textOnPrimary} />}
         accessibilityHint="Name a dish, describe one, or use a photo"
       />
 

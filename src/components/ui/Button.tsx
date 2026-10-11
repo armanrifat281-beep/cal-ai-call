@@ -1,4 +1,3 @@
-import { LinearGradient } from 'expo-linear-gradient';
 import { cloneElement, isValidElement, useState } from 'react';
 import { ActivityIndicator, View, type StyleProp, type ViewStyle } from 'react-native';
 
@@ -10,14 +9,20 @@ import { Text } from './Text';
 /**
  * Two levels, and only two.
  *
- * Every filled button is identical - the same pill, the same gradient - so
- * nothing varies at random, which was the original complaint. `ghost` is
- * the one exception, and it is a level rather than a variation: the same
- * red, as text, with no fill.
+ * Every filled button is identical: a pill filled with ink - near-black on
+ * a light page, near-white on a dark one. `ghost` is the other level, the
+ * same ink as text with no fill.
  *
- * Two filled pills stacked in a footer is what makes a screen look
- * unprofessional. They compete, and the smaller one reads as a second
- * call to action rather than as the quiet way out that it is.
+ * Buttons used to be a red gradient, taken from a reference image, and in
+ * isolation it looked right. On a real screen it was a fourth red arguing
+ * with the terracotta in the charts, and since every button wore it the
+ * loudest thing on a page about food was the furniture. Ink cannot clash
+ * with anything, which leaves the food as the only colour on the screen -
+ * and that is the app's colour, not the buttons'.
+ *
+ * Two filled pills stacked in a footer still looks wrong. They compete,
+ * and the smaller one reads as a second call to action rather than as the
+ * quiet way out that it is.
  */
 export type ButtonVariant =
   /** The main commitment on a screen. */
@@ -126,7 +131,7 @@ export function Button({
   // A filled button commits something, so it gets the tap feedback. A text
   // one is usually the way out of a screen.
   const wantsHaptic = haptic ?? !isGhost;
-  const foreground = isGhost ? theme.colors.primary : theme.colors.textOnCta;
+  const foreground = isGhost ? theme.colors.primary : theme.colors.textOnPrimary;
 
   const shape: ViewStyle = {
     // Keeps the touch target even with no fill to show for it.
@@ -194,23 +199,20 @@ export function Button({
       accessibilityState={{ disabled: isBlocked, busy: loading }}
       style={[{ alignSelf: fullWidth ? 'stretch' : 'flex-start' }, style]}
     >
-      {isGhost ? (
-        <View style={[shape, { opacity: pressed ? 0.6 : 1 }]}>{content}</View>
-      ) : (
-        <LinearGradient
-          colors={
-            pressed
-              ? [...theme.colors.ctaGradientPressed]
-              : [...theme.colors.ctaGradient]
-          }
-          // Top-left to bottom-right, as in the reference.
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={shape}
-        >
-          {content}
-        </LinearGradient>
-      )}
+      <View
+        style={[
+          shape,
+          isGhost
+            ? { opacity: pressed ? 0.6 : 1 }
+            : {
+                backgroundColor: pressed
+                  ? theme.colors.primaryPressed
+                  : theme.colors.primary,
+              },
+        ]}
+      >
+        {content}
+      </View>
     </PressableScale>
   );
 }

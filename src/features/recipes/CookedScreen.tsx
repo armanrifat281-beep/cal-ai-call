@@ -250,7 +250,7 @@ export function CookedScreen({ recipe, onDone }: CookedScreenProps) {
               label="Take a photo"
               onPress={() => void capture('camera')}
               loading={busy}
-              leading={<Icon name="camera" size={18} color={theme.colors.textOnCta} />}
+              leading={<Icon name="camera" size={18} color={theme.colors.textOnPrimary} />}
               style={{ flex: 1 }}
             />
             <Button

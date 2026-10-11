@@ -139,10 +139,9 @@ describe('the welcome screen', () => {
     ).toBeNull();
   });
 
-  it('says an account is not required, before asking for anything', async () => {
+  it('no longer claims an account is optional, now that it is not', async () => {
     await renderWithProviders(<WelcomeScreen />);
-
-    expect(screen.getByText(/No account needed/)).toBeTruthy();
+    expect(screen.queryByText(/No account needed/)).toBeNull();
   });
 
   it('offers a way past the questions', async () => {

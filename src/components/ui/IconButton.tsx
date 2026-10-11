@@ -1,4 +1,3 @@
-import { LinearGradient } from 'expo-linear-gradient';
 import React, { cloneElement, isValidElement, useState } from 'react';
 import { Pressable, View, type StyleProp, type ViewStyle } from 'react-native';
 
@@ -61,7 +60,7 @@ export function IconButton({
 
   const content =
     !isInput && isValidElement<{ color?: string }>(children)
-      ? cloneElement(children, { color: theme.colors.textOnCta })
+      ? cloneElement(children, { color: theme.colors.textOnPrimary })
       : children;
 
   return (
@@ -91,18 +90,18 @@ export function IconButton({
           {content}
         </View>
       ) : (
-        <LinearGradient
-          colors={
-            pressed
-              ? [...theme.colors.ctaGradientPressed]
-              : [...theme.colors.ctaGradient]
-          }
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={shape}
+        <View
+          style={[
+            shape,
+            {
+              backgroundColor: pressed
+                ? theme.colors.primaryPressed
+                : theme.colors.primary,
+            },
+          ]}
         >
           {content}
-        </LinearGradient>
+        </View>
       )}
     </Pressable>
   );

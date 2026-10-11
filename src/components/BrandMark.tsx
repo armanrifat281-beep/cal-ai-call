@@ -36,7 +36,12 @@ const OFFSET = RADIUS - HALF_WIDTH;
 export function BrandMark({ size = 48, tile = false }: BrandMarkProps) {
   const theme = useTheme();
 
-  const ink = tile ? ramps.forest[700] : theme.colors.primary;
+  // The mark keeps its colour while the interface around it does not.
+  const ink = tile
+    ? ramps.brand.mark
+    : theme.scheme === 'dark'
+      ? ramps.brand.markDark
+      : ramps.brand.mark;
   const light = tile ? ramps.neutral[25] : theme.colors.background;
   // Inside a tile the mark sits in the safe area; standalone it fills the box.
   const scale = tile ? 0.8 : 1;
