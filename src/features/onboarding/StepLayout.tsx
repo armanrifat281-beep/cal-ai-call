@@ -47,8 +47,20 @@ export function StepLayout({
             fullWidth
             haptic
           />
+          {/*
+            Same colour as the primary action, because every button in the
+            app is, but smaller and not full width. With both stretched to
+            the edges they read as two equal choices, and skipping is not
+            equal to continuing.
+          */}
           {skipLabel && onSkip ? (
-            <Button label={skipLabel} variant="ghost" onPress={onSkip} fullWidth />
+            <Button
+              label={skipLabel}
+              variant="ghost"
+              size="sm"
+              onPress={onSkip}
+              style={{ alignSelf: 'center' }}
+            />
           ) : null}
         </>
       }

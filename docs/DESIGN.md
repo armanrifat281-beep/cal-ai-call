@@ -124,14 +124,28 @@ Three stacked full-width buttons still means the screen has no primary
 action. Destructive and lifecycle actions still belong in the navigation
 bar or an action sheet.
 
-### Colour is scarce
+### One accent, and a separate colour for data
 
-Two ramps: **clay** (warm neutral — food photography sits badly on cold grey)
-and **forest** (the one brand colour). **Ember** is reserved for a single job,
-the scan action. Keeping the accent scarce is what makes it mean anything.
+**Crimson** is the interface accent. The buttons wear it, and so does
+anything selected, active or in progress: a chosen chip, a picked goal
+card, the onboarding progress bar, the ring that says which day you are
+looking at. A selected control and the button you press next are the same
+idea, so they are the same colour. The launcher icon is the darkest step
+of the same red.
 
-Dark mode is not an inversion: surfaces step *up* in lightness, and the brand
-green is lifted so it stays legible without glowing.
+**Forest** is no longer the interface accent. It is a data colour now —
+`chart` for a bar or a ring, `protein` on a macro breakdown — and that
+separation is deliberate rather than tidy-minded. The accent means "you can
+press this"; a chart is neither pressable nor selected. More concretely,
+`warning` marks going over a target, and a chart drawn in the same red as
+a warning says the ordinary case is a problem.
+
+**Clay** remains the warm neutral: paper, not grey, because food
+photography sits badly on cold grey. **Ember** is reserved for the scan
+action.
+
+Dark mode is not an inversion: surfaces step *up* in lightness, and the
+accent is lifted so it stays legible without glowing.
 
 ## The mark
 

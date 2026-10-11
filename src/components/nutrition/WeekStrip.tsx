@@ -122,7 +122,7 @@ export function WeekStrip({ days, selectedKey, onSelect, targetKcal }: WeekStrip
                   fill="none"
                 />
                 {arc ? (
-                  <Path d={arc} fill={isOver ? theme.colors.warning : theme.colors.primary} />
+                  <Path d={arc} fill={isOver ? theme.colors.warning : theme.colors.chart} />
                 ) : null}
               </Svg>
 

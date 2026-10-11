@@ -62,7 +62,13 @@ function untilt(x, y) {
 }
 
 const COLORS = {
-  forest: [0x13, 0x3f, 0x2f],
+  /**
+   * The brand tile. A deep crimson, the darkest step of the same red the
+   * buttons and every selected control use, so the launcher icon belongs to
+   * the app it opens. It was forest green while green was the interface
+   * accent; green is now a data colour and lives inside the charts.
+   */
+  brand: [0x9e, 0x1a, 0x28],
   paper: [0xfa, 0xf8, 0xf4],
   white: [0xff, 0xff, 0xff],
 };
@@ -220,9 +226,9 @@ const OUTPUTS = [
     options: {
       size: 1024,
       tile: true,
-      tileColor: COLORS.forest,
+      tileColor: COLORS.brand,
       markColor: COLORS.paper,
-      veinColor: COLORS.forest,
+      veinColor: COLORS.brand,
       scale: 0.80,
     },
   },
@@ -235,7 +241,7 @@ const OUTPUTS = [
       tile: false,
       tileColor: null,
       markColor: COLORS.paper,
-      veinColor: COLORS.forest,
+      veinColor: COLORS.brand,
       scale: 0.52,
     },
   },
@@ -244,8 +250,8 @@ const OUTPUTS = [
     options: {
       size: 1024,
       tile: true,
-      tileColor: COLORS.forest,
-      markColor: COLORS.forest,
+      tileColor: COLORS.brand,
+      markColor: COLORS.brand,
       veinColor: null,
       scale: 0.0001,
     },
@@ -269,7 +275,7 @@ const OUTPUTS = [
       size: 512,
       tile: false,
       tileColor: null,
-      markColor: COLORS.forest,
+      markColor: COLORS.brand,
       veinColor: COLORS.paper,
       scale: 0.88,
     },
@@ -279,9 +285,9 @@ const OUTPUTS = [
     options: {
       size: 64,
       tile: true,
-      tileColor: COLORS.forest,
+      tileColor: COLORS.brand,
       markColor: COLORS.paper,
-      veinColor: COLORS.forest,
+      veinColor: COLORS.brand,
       scale: 0.80,
     },
   },

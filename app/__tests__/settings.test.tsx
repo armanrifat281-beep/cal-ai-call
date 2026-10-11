@@ -11,6 +11,7 @@ import TermsScreen from '../settings/terms';
 import HomeScreen from '../(tabs)/index';
 import ProfileScreen from '../(tabs)/profile';
 import EditProfileScreen from '../settings/profile';
+import PrivacyStepScreen from '../(onboarding)/privacy';
 import WelcomeScreen from '../(onboarding)/welcome';
 
 beforeEach(() => {
@@ -217,5 +218,32 @@ describe('the home greeting', () => {
   it('still says which day it is', async () => {
     await renderWithProviders(<HomeScreen />);
     expect(screen.getByText(/^Today · /)).toBeTruthy();
+  });
+});
+
+describe('reaching sign-in before the app is set up', () => {
+  it('offers it on the very first screen, for a returning user', async () => {
+    // Someone reinstalling on a new phone lands on Welcome. Until this
+    // existed, the only route to their account was to finish onboarding
+    // and then go looking in Settings.
+    const user = userEvent.setup();
+    await renderWithProviders(<WelcomeScreen />);
+
+    await user.press(screen.getByRole('button', { name: 'I already have an account' }));
+    expect(router.push).toHaveBeenCalledWith('/(auth)/sign-in');
+  });
+
+  it('offers it again on the last step, before the app opens', async () => {
+    const user = userEvent.setup();
+    await renderWithProviders(<PrivacyStepScreen />);
+
+    expect(screen.getByText('Already have a FoodLens account?')).toBeTruthy();
+    await user.press(screen.getByRole('button', { name: 'Sign in' }));
+    expect(router.push).toHaveBeenCalledWith('/(auth)/sign-in');
+  });
+
+  it('never requires an account to finish onboarding', async () => {
+    await renderWithProviders(<PrivacyStepScreen />);
+    expect(screen.getByRole('button', { name: 'Start using FoodLens' })).toBeTruthy();
   });
 });

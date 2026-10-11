@@ -80,6 +80,16 @@ export interface Palette {
   infoOnSoft: string;
 
   /**
+   * The default colour for a data mark: a bar, a ring, a plotted line.
+   *
+   * Separate from `primary` on purpose. The accent means "you can press
+   * this" or "this is selected", and a chart is neither. It also has to sit
+   * beside `warning`, which marks going over a target - and a chart drawn
+   * in the same red as a warning says the ordinary case is a problem.
+   */
+  chart: string;
+
+  /**
    * Macro nutrient identity colours, used consistently app-wide.
    *
    * Drawn from the forest and ember ramps rather than picked as three
@@ -165,6 +175,18 @@ const crimson = {
   flat: '#E43B4D',
   soft: '#FDEAEC',
   softDark: '#2E1418',
+  /**
+   * The accent, for everything that is selected, active or in progress.
+   *
+   * Deeper than the gradient so white body text on it clears 4.5:1, which
+   * the gradient's lightest end does not.
+   */
+  accent: '#D62A3E',
+  accentPressed: '#B51E2E',
+  accentDark: '#F07C8A',
+  accentDarkPressed: '#E85B6C',
+  onSoftDark: '#FACDD2',
+  inkOnAccentDark: '#2A0A0F',
   onSoft: '#B3222F',
 } as const;
 
@@ -185,10 +207,15 @@ const light: Palette = {
   textOnPrimary: '#FFFFFF',
   textOnAccent: '#FFFFFF',
 
-  primary: forest[500],
-  primaryPressed: forest[600],
-  primarySoft: forest[50],
-  primaryOnSoft: forest[600],
+  // One accent for the whole interface: the same red as the buttons.
+  // Anything selected, active or in progress wears it, so a chosen chip and
+  // the button you press next are visibly the same idea. Forest is still the
+  // app's green, but as a data colour now - protein on a chart - rather than
+  // as the thing that marks a choice.
+  primary: crimson.accent,
+  primaryPressed: crimson.accentPressed,
+  primarySoft: crimson.soft,
+  primaryOnSoft: crimson.onSoft,
 
   accent: ember[500],
   accentPressed: ember[600],
@@ -213,6 +240,8 @@ const light: Palette = {
   info: '#1F5A86',
   infoSoft: '#E4EDF5',
   infoOnSoft: '#17456A',
+
+  chart: forest[500],
 
   protein: '#1A543E',
   carbs: '#B5861F',
@@ -243,13 +272,13 @@ const dark: Palette = {
   text: '#F3F0E7',
   textMuted: '#A49D88',
   textSubtle: '#7D765F',
-  textOnPrimary: '#06150E',
+  textOnPrimary: crimson.inkOnAccentDark,
   textOnAccent: '#190A03',
 
-  primary: forest[300],
-  primaryPressed: forest[400],
-  primarySoft: '#16281F',
-  primaryOnSoft: forest[200],
+  primary: crimson.accentDark,
+  primaryPressed: crimson.accentDarkPressed,
+  primarySoft: crimson.softDark,
+  primaryOnSoft: crimson.onSoftDark,
 
   accent: ember[300],
   accentPressed: '#C47A4E',
@@ -276,6 +305,8 @@ const dark: Palette = {
   info: '#79ACD6',
   infoSoft: '#15232E',
   infoOnSoft: '#A6C9E4',
+
+  chart: forest[300],
 
   protein: '#378463',
   carbs: '#EFD293',

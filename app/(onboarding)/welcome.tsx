@@ -54,9 +54,22 @@ export default function WelcomeScreen() {
           <Button
             label="Look around first"
             variant="ghost"
+            size="sm"
             onPress={() => router.push('/(onboarding)/privacy')}
-            fullWidth
+            style={{ alignSelf: 'center' }}
             accessibilityHint="Skips the questions and goes straight to the app"
+          />
+          {/*
+            A returning user on a new phone lands here, and until now the
+            only way to their account was to finish onboarding first and
+            then find Settings.
+          */}
+          <Button
+            label="I already have an account"
+            variant="ghost"
+            size="sm"
+            onPress={() => router.push('/(auth)/sign-in')}
+            style={{ alignSelf: 'center' }}
           />
         </>
       }

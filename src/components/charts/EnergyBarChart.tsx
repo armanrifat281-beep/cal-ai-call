@@ -72,7 +72,7 @@ export function EnergyBarChart({ days, targetKcal, height = 120 }: EnergyBarChar
                   borderRadius: 3,
                   backgroundColor: bar.isOverTarget
                     ? theme.colors.warning
-                    : theme.colors.primary,
+                    : theme.colors.chart,
                 }}
               />
             ) : (
