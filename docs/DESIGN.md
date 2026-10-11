@@ -140,9 +140,18 @@ press this"; a chart is neither pressable nor selected. More concretely,
 `warning` marks going over a target, and a chart drawn in the same red as
 a warning says the ordinary case is a problem.
 
-**Clay** remains the warm neutral: paper, not grey, because food
-photography sits badly on cold grey. **Ember** is reserved for the scan
-action.
+**Neutral** is the interface grey, from paper to ink, and it is genuinely
+neutral — no channel in a step differs from another by more than a few
+points. It was a warm clay on the theory that food photography sits badly
+on cold grey; at phone brightness that read as beige in light mode and
+brown in dark, which is not what either mode is understood to look like.
+The warmth that argument was about lives in the food colours and in the
+photographs, where it belongs. **Ember** is reserved for the scan action.
+
+A fresh install opens **dark**. FoodLens is a dark product — the dial, the
+photographs and the red accent were all designed against a black page —
+and most people never open Appearance. System and Light are both a tap
+away in Settings, and the choice is remembered.
 
 Dark mode is not an inversion: surfaces step *up* in lightness, and the
 accent is lifted so it stays legible without glowing.

@@ -37,7 +37,7 @@ export function BrandMark({ size = 48, tile = false }: BrandMarkProps) {
   const theme = useTheme();
 
   const ink = tile ? ramps.forest[700] : theme.colors.primary;
-  const light = tile ? ramps.clay[25] : theme.colors.background;
+  const light = tile ? ramps.neutral[25] : theme.colors.background;
   // Inside a tile the mark sits in the safe area; standalone it fills the box.
   const scale = tile ? 0.8 : 1;
 

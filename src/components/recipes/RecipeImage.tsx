@@ -133,13 +133,13 @@ function RecipeImageComponent({
 
 /** Flat tints, picked deterministically. No gradients. */
 const LIGHT_TINTS = [
-  ramps.clay[100],
+  ramps.neutral[100],
   ramps.forest[50],
   ramps.ember[50],
-  ramps.clay[50],
+  ramps.neutral[50],
   ramps.forest[100],
 ];
-const DARK_TINTS = ['#20241D', '#1B2A22', '#2A1E16', '#23211A', '#16241D'];
+const DARK_TINTS = ['#1E2420', '#1B2A22', '#2A2118', '#222228', '#16241D'];
 
 /**
  * The stand-in for a missing image.

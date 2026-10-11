@@ -1,11 +1,11 @@
 /**
  * Color for FoodLens AI.
  *
- * Built from two ramps rather than picked ad hoc:
+ * Built from ramps rather than picked ad hoc:
  *
- *   **Clay** - a warm neutral. Paper, not grey. Food photography sits badly
- *   on cold grey, and a warm page makes the greens look like food rather than
- *   like a finance app.
+ *   **Neutral** - the interface greys, from paper to ink. Genuinely
+ *   neutral: these were a warm clay, and at phone brightness the light page
+ *   read as beige and the dark page read as brown.
  *
  *   **Forest** - a deep, slightly blue-leaning green as the single brand
  *   colour, with **Ember**, a burnt orange, reserved for exactly one job: the
@@ -121,20 +121,32 @@ export interface Palette {
 // Ramps
 // ---------------------------------------------------------------------------
 
-/** Warm neutral. 0 is paper, 900 is ink. */
-const clay = {
+/**
+ * The interface greys. 0 is paper, 900 is ink.
+ *
+ * Genuinely neutral: no channel in any step differs from another by more
+ * than a few points. This was a warm neutral ramp, on the theory that food
+ * photography sits badly on cold grey - but at phone brightness the page
+ * read as beige and the dark page read as brown, which is not what either
+ * mode is understood to look like.
+ *
+ * The warmth that argument was about now lives where it belongs: in the
+ * food colours themselves, which are still forest, wheat and terracotta,
+ * and in the photographs.
+ */
+const neutral = {
   0: '#FFFFFF',
-  25: '#FAF8F4',
-  50: '#F4F1EA',
-  100: '#EBE7DE',
-  200: '#DCD7CA',
-  300: '#C3BCAB',
-  400: '#9B9382',
-  500: '#736C5D',
-  600: '#55503F',
-  700: '#3A362A',
-  800: '#26231B',
-  900: '#15130E',
+  25: '#F7F7F8',
+  50: '#F1F1F3',
+  100: '#E7E7EA',
+  200: '#D7D7DB',
+  300: '#BBBBC1',
+  400: '#8E8E96',
+  500: '#6A6A72',
+  600: '#4A4A51',
+  700: '#2F2F34',
+  800: '#1D1D21',
+  900: '#0F0F12',
 } as const;
 
 const forest = {
@@ -191,19 +203,19 @@ const crimson = {
 } as const;
 
 const light: Palette = {
-  background: clay[25],
-  surface: clay[0],
-  surfaceRaised: clay[0],
-  surfaceAlt: clay[50],
-  surfacePressed: clay[100],
-  separator: clay[100],
-  border: clay[200],
-  borderStrong: clay[300],
-  shadow: clay[900],
+  background: neutral[25],
+  surface: neutral[0],
+  surfaceRaised: neutral[0],
+  surfaceAlt: neutral[50],
+  surfacePressed: neutral[100],
+  separator: neutral[100],
+  border: neutral[200],
+  borderStrong: neutral[300],
+  shadow: neutral[900],
 
-  text: clay[900],
-  textMuted: clay[500],
-  textSubtle: clay[400],
+  text: neutral[900],
+  textMuted: neutral[500],
+  textSubtle: neutral[400],
   textOnPrimary: '#FFFFFF',
   textOnAccent: '#FFFFFF',
 
@@ -247,8 +259,8 @@ const light: Palette = {
   carbs: '#B5861F',
   fat: '#A8502C',
 
-  scrim: 'rgba(21, 19, 14, 0.5)',
-  skeleton: clay[100],
+  scrim: 'rgba(10, 10, 13, 0.55)',
+  skeleton: neutral[100],
 };
 
 /**
@@ -259,19 +271,19 @@ const light: Palette = {
  * light-mode value so it stays legible without glowing.
  */
 const dark: Palette = {
-  background: '#121109',
-  surface: '#1C1A12',
-  surfaceRaised: '#242117',
-  surfaceAlt: '#262319',
-  surfacePressed: '#322E21',
-  separator: '#2B2819',
-  border: '#36321F',
-  borderStrong: '#4E4934',
+  background: '#0E0E11',
+  surface: '#17171B',
+  surfaceRaised: '#1E1E23',
+  surfaceAlt: '#232329',
+  surfacePressed: '#2C2C33',
+  separator: '#26262C',
+  border: '#313138',
+  borderStrong: '#4A4A53',
   shadow: '#000000',
 
-  text: '#F3F0E7',
-  textMuted: '#A49D88',
-  textSubtle: '#7D765F',
+  text: '#F2F2F4',
+  textMuted: '#A0A0A8',
+  textSubtle: '#76767E',
   textOnPrimary: crimson.inkOnAccentDark,
   textOnAccent: '#190A03',
 
@@ -313,7 +325,7 @@ const dark: Palette = {
   fat: '#DA8A62',
 
   scrim: 'rgba(0, 0, 0, 0.64)',
-  skeleton: '#242117',
+  skeleton: '#232329',
 };
 
 export const palettes: Record<ColorScheme, Palette> = { light, dark };
@@ -329,4 +341,4 @@ export type ColorKey = {
 }[keyof Palette];
 
 /** The ramps, for the rare case a component needs a specific step. */
-export const ramps = { clay, forest, ember, crimson } as const;
+export const ramps = { neutral, forest, ember, crimson } as const;
