@@ -7,7 +7,7 @@ import { env } from '@/lib/env';
 import type { AppError } from '@/lib/result';
 import { useTheme } from '@/theme';
 
-import { isAppleSignInAvailable, signInWithApple } from './socialService';
+import { signInWithApple } from './socialService';
 import { useGoogleSignIn } from './useGoogleSignIn';
 
 export interface SocialSignInProps {
@@ -20,10 +20,10 @@ export interface SocialSignInProps {
 /**
  * Sign in with Apple, and with Google.
  *
- * Both hand Supabase an identity token it can verify; no provider secret
- * exists anywhere in the app. Apple only appears on an iOS device that
- * supports it, because it cannot work anywhere else and a dead button is
- * worse than no button.
+ * Neither carries a provider secret; the app only ever handles a token or
+ * a one-time code that Supabase verifies. Both buttons appear on every
+ * platform, because both services work on every platform - Apple through
+ * its own sheet on iOS and through its web flow elsewhere.
  *
  * When a provider is not configured the button is still here - the sign-in
  * page has to be a complete page - and pressing it says exactly what is
@@ -31,19 +31,7 @@ export interface SocialSignInProps {
  */
 export function SocialSignIn({ onSignedIn, onError }: SocialSignInProps) {
   const theme = useTheme();
-  const [appleAvailable, setAppleAvailable] = useState(false);
   const [appleBusy, setAppleBusy] = useState(false);
-
-
-  useEffect(() => {
-    let cancelled = false;
-    void isAppleSignInAvailable().then((available) => {
-      if (!cancelled) setAppleAvailable(available);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   const pressApple = async () => {
     setAppleBusy(true);
@@ -62,17 +50,21 @@ export function SocialSignIn({ onSignedIn, onError }: SocialSignInProps) {
     <View style={{ gap: theme.spacing.md }}>
       <Separator />
 
-      {appleAvailable ? (
-        <Button
-          label="Continue with Apple"
-          variant="secondary"
-          size="lg"
-          fullWidth
-          loading={appleBusy}
-          onPress={() => void pressApple()}
-          leading={<Icon name="apple" size={20} />}
-        />
-      ) : null}
+      {/*
+        Offered on every platform. Apple's own sheet where the device has
+        one, Apple's web flow everywhere else - Sign in with Apple is not
+        an iOS-only service, and an Android user with an Apple ID has every
+        reason to expect it here.
+      */}
+      <Button
+        label="Continue with Apple"
+        variant="secondary"
+        size="lg"
+        fullWidth
+        loading={appleBusy}
+        onPress={() => void pressApple()}
+        leading={<Icon name="apple" size={20} />}
+      />
 
       {/*
         Two components rather than one with a branch inside it. The request

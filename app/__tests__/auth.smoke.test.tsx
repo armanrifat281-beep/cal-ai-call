@@ -64,9 +64,26 @@ describe('sign in, with no backend configured', () => {
 
   it('offers Apple and Google as well as a password', async () => {
     await renderWithProviders(<SignInScreen />);
-    // Apple only appears on an iOS device that supports it; Google is
-    // always offered and says what is missing when pressed.
+    // Both on every platform: Apple through its own sheet on iOS and
+    // through its web flow elsewhere.
+    expect(screen.getByRole('button', { name: 'Continue with Apple' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Continue with Google' })).toBeTruthy();
+  });
+
+  it('offers the same two on the sign-up screen', async () => {
+    await renderWithProviders(<SignUpScreen />);
+    expect(screen.getByRole('button', { name: 'Continue with Apple' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Continue with Google' })).toBeTruthy();
+  });
+
+  it('says what Apple needs rather than opening a sheet that fails', async () => {
+    const user = userEvent.setup();
+    await renderWithProviders(<SignInScreen />);
+
+    await user.press(screen.getByRole('button', { name: 'Continue with Apple' }));
+    expect(
+      await screen.findByText(/meals are saved on this device/),
+    ).toBeTruthy();
   });
 
   it('says what Google needs rather than opening a sheet that fails', async () => {
