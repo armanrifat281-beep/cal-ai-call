@@ -17,6 +17,8 @@ export type IconName =
   | 'insights'
   | 'profile'
   | 'settings'
+  | 'apple'
+  | 'google'
   | 'scan'
   | 'camera'
   | 'gallery'
@@ -157,6 +159,51 @@ function renderGlyph(
         <>
           <Circle cx={12} cy={8.5} r={3.8} {...common} fill={fill} />
           <Path d="M4.8 20.2a7.6 7.6 0 0 1 14.4 0" {...common} fill={fill} />
+        </>
+      );
+
+    /**
+     * The Apple mark, drawn as a single filled silhouette.
+     *
+     * Always `currentColor` rather than a brand colour: Apple's guidelines
+     * require the mark to be solid black or solid white depending on the
+     * button it sits on, and here it sits on the app's own red.
+     */
+    case 'apple':
+      return (
+        <Path
+          d="M16.3 12.6c0-2.2 1.8-3.3 1.9-3.3-1-1.5-2.6-1.7-3.2-1.7-1.4-.1-2.7.8-3.3.8-.7 0-1.7-.8-2.8-.8-1.5 0-2.8.8-3.6 2.1-1.5 2.6-.4 6.5 1.1 8.6.7 1 1.6 2.2 2.7 2.2 1.1 0 1.5-.7 2.8-.7 1.3 0 1.6.7 2.8.7 1.2 0 1.9-1.1 2.6-2.1.8-1.2 1.2-2.4 1.2-2.4s-2.2-.9-2.2-3.4zM14.2 6.3c.6-.7 1-1.7.9-2.7-.9 0-1.9.6-2.5 1.3-.6.6-1.1 1.6-.9 2.6 1 .1 2-.5 2.5-1.2z"
+          fill={stroke}
+        />
+      );
+
+    /**
+     * The Google "G".
+     *
+     * Four paths in Google's own four colours, which their branding rules
+     * require: the mark may not be recoloured to match a button. That is
+     * why it ignores the `color` prop, and why it is the one icon in this
+     * set that does.
+     */
+    case 'google':
+      return (
+        <>
+          <Path
+            d="M21.6 12.2c0-.7-.1-1.4-.2-2H12v3.9h5.4a4.6 4.6 0 0 1-2 3v2.5h3.2c1.9-1.7 3-4.3 3-7.4z"
+            fill="#4285F4"
+          />
+          <Path
+            d="M12 22c2.7 0 4.9-.9 6.6-2.4l-3.2-2.5c-.9.6-2 1-3.4 1-2.6 0-4.8-1.7-5.6-4.1H3.1v2.6A10 10 0 0 0 12 22z"
+            fill="#34A853"
+          />
+          <Path
+            d="M6.4 14c-.2-.6-.3-1.3-.3-2s.1-1.4.3-2V7.4H3.1a10 10 0 0 0 0 9.2L6.4 14z"
+            fill="#FBBC05"
+          />
+          <Path
+            d="M12 5.9c1.5 0 2.8.5 3.8 1.5l2.9-2.9C16.9 2.9 14.7 2 12 2a10 10 0 0 0-8.9 5.4L6.4 10c.8-2.4 3-4.1 5.6-4.1z"
+            fill="#EA4335"
+          />
         </>
       );
 

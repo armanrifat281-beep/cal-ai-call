@@ -2,7 +2,7 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Switch, View } from 'react-native';
 
-import { Button, Disclosure, Divider, Surface, Text } from '@/components/ui';
+import { Disclosure, Divider, Surface, Text } from '@/components/ui';
 import { StepLayout } from '@/features/onboarding/StepLayout';
 import { env } from '@/lib/env';
 import { usePreferencesStore } from '@/store/preferencesStore';
@@ -85,22 +85,6 @@ export default function PrivacyScreen() {
         data at any time.
       </Text>
 
-      {/*
-        The last moment before the app opens, and the second place a
-        returning user might look for their account. Offered, never
-        required: everything works without one.
-      */}
-      <View style={{ gap: theme.spacing.sm, alignItems: 'center' }}>
-        <Text variant="footnote" color="textMuted">
-          Already have a FoodLens account?
-        </Text>
-        <Button
-          label="Sign in"
-          variant="ghost"
-          size="sm"
-          onPress={() => router.push('/(auth)/sign-in')}
-        />
-      </View>
     </StepLayout>
   );
 }

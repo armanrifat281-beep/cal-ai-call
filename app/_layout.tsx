@@ -33,8 +33,12 @@ function AppShell() {
   const theme = useTheme();
   const themeReady = useThemeContext().isReady;
   const preferencesHydrated = usePreferencesStore((state) => state.hydrated);
+  // Auth too, now that the first screen depends on it: without this the
+  // gate would send an already signed-in user to sign in and then correct
+  // itself a frame later.
+  const authSettled = useAuth().status !== 'loading';
 
-  const ready = themeReady && preferencesHydrated;
+  const ready = themeReady && preferencesHydrated && authSettled;
 
   useEffect(() => {
     if (!ready) return;

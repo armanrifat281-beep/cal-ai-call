@@ -3,6 +3,7 @@ import { useState } from 'react';
 
 import { Button, TextField } from '@/components/ui';
 import { AuthLayout } from '@/features/auth/AuthLayout';
+import { SocialSignIn } from '@/features/auth/SocialSignIn';
 import { hasAnyError, useAuth, validateSignIn } from '@/features/auth';
 import type { AppError } from '@/lib/result';
 
@@ -37,8 +38,9 @@ export default function SignInScreen() {
       setError(result.error);
       return;
     }
-    // The auth state change propagates on its own; just leave this screen.
-    router.replace('/(tabs)');
+    // Through the gate rather than straight to the tabs, so a new account
+    // still gets onboarding and a returning one does not.
+    router.replace('/');
   };
 
   return (
@@ -65,14 +67,6 @@ export default function SignInScreen() {
             size="sm"
             onPress={() => router.replace('/(auth)/sign-up')}
             style={{ alignSelf: 'center' }}
-          />
-          <Button
-            label="Continue without an account"
-            variant="ghost"
-            size="sm"
-            onPress={() => router.replace('/(tabs)')}
-            style={{ alignSelf: 'center' }}
-            accessibilityHint="Everything works on this device without signing in"
           />
         </>
       }
@@ -107,6 +101,11 @@ export default function SignInScreen() {
         size="sm"
         onPress={() => router.push('/(auth)/forgot-password')}
         style={{ alignSelf: 'flex-start' }}
+      />
+
+      <SocialSignIn
+        onSignedIn={() => router.replace('/')}
+        onError={setError}
       />
     </AuthLayout>
   );

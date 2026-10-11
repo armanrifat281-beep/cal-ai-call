@@ -15,7 +15,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.example.foodlensai",
-      "usesAppleSignIn": false,
+      "usesAppleSignIn": true,
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSCameraUsageDescription": "FoodLens AI uses your camera so you can take a photo of a meal and get an estimated nutrition breakdown.",
@@ -51,9 +51,9 @@
           "image": "./assets/splash-icon.png",
           "imageWidth": 160,
           "resizeMode": "contain",
-          "backgroundColor": "#FAF8F4",
+          "backgroundColor": "#F7F7F8",
           "dark": {
-            "backgroundColor": "#121109"
+            "backgroundColor": "#0E0E11"
           }
         }
       ],

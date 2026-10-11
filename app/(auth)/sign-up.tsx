@@ -5,6 +5,7 @@ import { View } from 'react-native';
 import { Icon } from '@/components/Icon';
 import { Button, Disclosure, Screen, Text, TextField } from '@/components/ui';
 import { AuthLayout } from '@/features/auth/AuthLayout';
+import { SocialSignIn } from '@/features/auth/SocialSignIn';
 import { hasAnyError, useAuth, validateSignUp } from '@/features/auth';
 import type { AppError } from '@/lib/result';
 import { useTheme } from '@/theme';
@@ -42,7 +43,7 @@ export default function SignUpScreen() {
       setAwaitingConfirmation(true);
       return;
     }
-    router.replace('/(tabs)');
+    router.replace('/');
   };
 
   // Shown only after the server confirmed the sign-up. Nothing here is
@@ -97,14 +98,6 @@ export default function SignUpScreen() {
             onPress={() => router.replace('/(auth)/sign-in')}
             style={{ alignSelf: 'center' }}
           />
-          <Button
-            label="Continue without an account"
-            variant="ghost"
-            size="sm"
-            onPress={() => router.replace('/(tabs)')}
-            style={{ alignSelf: 'center' }}
-            accessibilityHint="Everything works on this device without an account"
-          />
         </>
       }
     >
@@ -145,6 +138,11 @@ export default function SignUpScreen() {
       <Text variant="footnote" color="textSubtle">
         Anything already saved on this device stays on this device.
       </Text>
+
+      <SocialSignIn
+        onSignedIn={() => router.replace('/')}
+        onError={setError}
+      />
     </AuthLayout>
   );
 }

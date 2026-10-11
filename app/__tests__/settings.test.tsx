@@ -127,6 +127,18 @@ describe('changing a password', () => {
 });
 
 describe('the welcome screen', () => {
+  it('leads with one action, not three', async () => {
+    // Sign-in comes before onboarding now, so Welcome no longer carries a
+    // link to it, and the escape moved to the corner.
+    await renderWithProviders(<WelcomeScreen />);
+
+    expect(screen.getByRole('button', { name: 'Get started' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Skip' })).toBeTruthy();
+    expect(
+      screen.queryByRole('button', { name: 'I already have an account' }),
+    ).toBeNull();
+  });
+
   it('says an account is not required, before asking for anything', async () => {
     await renderWithProviders(<WelcomeScreen />);
 
@@ -221,28 +233,8 @@ describe('the home greeting', () => {
   });
 });
 
-describe('reaching sign-in before the app is set up', () => {
-  it('offers it on the very first screen, for a returning user', async () => {
-    // Someone reinstalling on a new phone lands on Welcome. Until this
-    // existed, the only route to their account was to finish onboarding
-    // and then go looking in Settings.
-    const user = userEvent.setup();
-    await renderWithProviders(<WelcomeScreen />);
-
-    await user.press(screen.getByRole('button', { name: 'Sign in' }));
-    expect(router.push).toHaveBeenCalledWith('/(auth)/sign-in');
-  });
-
-  it('offers it again on the last step, before the app opens', async () => {
-    const user = userEvent.setup();
-    await renderWithProviders(<PrivacyStepScreen />);
-
-    expect(screen.getByText('Already have a FoodLens account?')).toBeTruthy();
-    await user.press(screen.getByRole('button', { name: 'Sign in' }));
-    expect(router.push).toHaveBeenCalledWith('/(auth)/sign-in');
-  });
-
-  it('never requires an account to finish onboarding', async () => {
+describe('finishing onboarding', () => {
+  it('never requires an account', async () => {
     await renderWithProviders(<PrivacyStepScreen />);
     expect(screen.getByRole('button', { name: 'Start using FoodLens' })).toBeTruthy();
   });

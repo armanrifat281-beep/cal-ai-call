@@ -28,7 +28,13 @@ function readPublic(name: string): string | undefined {
         ? process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY
         : name === 'EXPO_PUBLIC_SUPABASE_ANON_KEY'
           ? process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY
-          : undefined;
+          : name === 'EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID'
+            ? process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID
+            : name === 'EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID'
+              ? process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID
+              : name === 'EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID'
+                ? process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID
+                : undefined;
 
   if (typeof raw !== 'string') return undefined;
   const trimmed = raw.trim();
@@ -164,8 +170,38 @@ const keyKind = classifySupabaseKey(configuredKey);
 export const isSupabaseConfigured: boolean =
   looksLikeHttpsUrl(supabaseUrl) && isPublicSupabaseKey(configuredKey);
 
+/**
+ * Google OAuth client ids.
+ *
+ * These are identifiers rather than secrets - Google publishes them in the
+ * app bundle by design, and on their own they grant nothing. The web one is
+ * the audience Supabase verifies the returned token against, so it is
+ * required even on a phone.
+ */
+const googleIosClientId = readPublic('EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID');
+const googleAndroidClientId = readPublic('EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID');
+const googleWebClientId = readPublic('EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID');
+
+/**
+ * Whether Google sign-in can be attempted at all.
+ *
+ * Needs the web client id, because that is the audience Supabase checks,
+ * plus the platform one for whichever phone is running. Signing in with
+ * Google also needs the provider enabled in the Supabase dashboard, which
+ * no amount of client configuration can tell us about from here.
+ */
+export const isGoogleSignInConfigured: boolean =
+  isSupabaseConfigured &&
+  !isPlaceholder(googleWebClientId) &&
+  googleWebClientId !== undefined &&
+  (googleIosClientId !== undefined || googleAndroidClientId !== undefined);
+
 export const env = {
   supabaseUrl,
+  googleIosClientId,
+  googleAndroidClientId,
+  googleWebClientId,
+  isGoogleSignInConfigured,
   /** The publishable or anon key, only when it is safe to use. */
   supabaseKey: isPublicSupabaseKey(configuredKey) ? configuredKey : undefined,
   supabaseKeyKind: keyKind,

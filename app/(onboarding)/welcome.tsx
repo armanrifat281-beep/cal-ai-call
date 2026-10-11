@@ -44,37 +44,13 @@ export default function WelcomeScreen() {
       edges={{ top: true, bottom: true }}
       contentStyle={{ gap: theme.spacing.xxl, justifyContent: 'center' }}
       footer={
-        <>
-          <Button
-            label="Get started"
-            onPress={() => router.push('/(onboarding)/basics')}
-            size="lg"
-            fullWidth
-            haptic
-          />
-          {/*
-            One line, not a third button. A returning user on a new phone
-            needs this; everyone else should read past it.
-          */}
-          <View
-            style={{
-              flexDirection: 'row',
-              justifyContent: 'center',
-              alignItems: 'center',
-              gap: theme.spacing.xs,
-            }}
-          >
-            <Text variant="footnote" color="textMuted">
-              Already have an account?
-            </Text>
-            <Button
-              label="Sign in"
-              variant="ghost"
-              size="sm"
-              onPress={() => router.push('/(auth)/sign-in')}
-            />
-          </View>
-        </>
+        <Button
+          label="Get started"
+          onPress={() => router.push('/(onboarding)/basics')}
+          size="lg"
+          fullWidth
+          haptic
+        />
       }
     >
       <View

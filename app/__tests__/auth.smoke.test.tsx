@@ -62,14 +62,28 @@ describe('sign in, with no backend configured', () => {
     expect(router.replace).not.toHaveBeenCalledWith('/(tabs)');
   });
 
-  it('offers a way on without an account', async () => {
+  it('offers Apple and Google as well as a password', async () => {
+    await renderWithProviders(<SignInScreen />);
+    // Apple only appears on an iOS device that supports it; Google is
+    // always offered and says what is missing when pressed.
+    expect(screen.getByRole('button', { name: 'Continue with Google' })).toBeTruthy();
+  });
+
+  it('says what Google needs rather than opening a sheet that fails', async () => {
     const user = userEvent.setup();
     await renderWithProviders(<SignInScreen />);
 
-    await user.press(
-      screen.getByRole('button', { name: 'Continue without an account' }),
-    );
-    expect(router.replace).toHaveBeenCalledWith('/(tabs)');
+    await user.press(screen.getByRole('button', { name: 'Continue with Google' }));
+    expect(
+      await screen.findByText(/meals are saved on this device/),
+    ).toBeTruthy();
+  });
+
+  it('no longer offers a way past the account', async () => {
+    await renderWithProviders(<SignInScreen />);
+    expect(
+      screen.queryByRole('button', { name: 'Continue without an account' }),
+    ).toBeNull();
   });
 
   it('reaches the other two auth screens', async () => {
