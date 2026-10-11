@@ -73,20 +73,32 @@ background colour is the cheapest possible feedback and it reads as a web page.
 
 Haptics are on by default for filled buttons, off for list rows.
 
-### One button, everywhere
+### Two levels, and only two
 
-Every button in the app is the same shape and the same colour: a fully
-rounded pill — the radius is half the height — filled with the
-rose-to-crimson gradient running top-left to bottom-right, with bold white
-text and white icons. There are no exceptions, and the `variant` prop no
-longer changes anything visual.
+A **filled** button is a fully rounded pill — the radius is half the
+height — with the rose-to-crimson gradient running top-left to bottom-right,
+bold white text and white icons. Every filled button in the app is
+identical; `primary`, `accent`, `tonal`, `secondary` and `danger` all render
+the same thing.
 
-This is a deliberate reversal, and it is worth knowing why so nobody
-"fixes" it back. An earlier version gave the gradient only to `primary` and
-`accent` on the standard argument that a call to action means nothing if
-everything looks like one. The brief that replaced it was explicit: every
-button is to match the reference, with none left out. Consistency won over
-scarcity.
+A **ghost** button is the same red, as text, with no fill. It keeps its full
+height so the touch target survives having nothing to show for it.
+
+Ghost is a level, not a variation, and the distinction earns its place: two
+filled pills stacked in a footer compete, and the smaller one reads as a
+second call to action rather than as the quiet way out it is. A screen gets
+one filled button and, if it needs one, a line of red text beneath it.
+
+Three actions in a footer means one of them is not a button. On Welcome the
+escape moved to a quiet "Skip" in the top corner and sign-in became a line
+of text, leaving one pill.
+
+The history is worth knowing so nobody "fixes" it back. The gradient was
+once scarce - `primary` and `accent` only - on the standard argument that a
+call to action means nothing if everything looks like one. That produced
+buttons that varied for no visible reason, so everything filled became
+identical. Keeping `ghost` as text is what stops that consistency from
+flattening every screen into a stack of equal red bars.
 
 Because colour no longer carries emphasis, three other things do:
 

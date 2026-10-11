@@ -54,19 +54,20 @@ function flatStyle(style: unknown): Record<string, unknown> {
   return (style as Record<string, unknown>) ?? {};
 }
 
-const VARIANTS = ['primary', 'accent', 'tonal', 'secondary', 'ghost', 'danger'] as const;
+/** Everything that renders as a filled pill. `ghost` is the one level apart. */
+const FILLED = ['primary', 'accent', 'tonal', 'secondary', 'danger'] as const;
 
 describe('every button wears the reference treatment', () => {
   // One render per case: unmounting inside a loop detaches `screen`, so
   // every later assertion in the file sees an empty tree.
-  it.each(VARIANTS)('gives %s the gradient', async (variant) => {
+  it.each(FILLED)('gives %s the gradient', async (variant) => {
     await renderWithProviders(
       <Button label="Get All Access" variant={variant} onPress={jest.fn()} />,
     );
     expect(gradient()).not.toBeNull();
   });
 
-  it.each(VARIANTS)('writes %s in white', async (variant) => {
+  it.each(FILLED)('writes %s in white', async (variant) => {
     await renderWithProviders(
       <Button label="Get All Access" variant={variant} onPress={jest.fn()} />,
     );
@@ -85,6 +86,35 @@ describe('every button wears the reference treatment', () => {
     );
     expect(props.startPoint).toEqual([0, 0]);
     expect(props.endPoint).toEqual([1, 1]);
+  });
+
+  it('leaves a ghost action as text, so two pills never stack', async () => {
+    // Two filled pills in a footer compete, and the smaller one reads as a
+    // second call to action rather than as the quiet way out.
+    await renderWithProviders(
+      <Button label="Skip for now" variant="ghost" onPress={jest.fn()} />,
+    );
+    expect(gradient()).toBeNull();
+  });
+
+  it('writes a ghost action in the same red, so it still belongs', async () => {
+    await renderWithProviders(
+      <Button label="Skip for now" variant="ghost" onPress={jest.fn()} />,
+    );
+    const style = flatStyle(screen.getByText('Skip for now').props.style);
+    // The providers open in the app's default scheme, which is dark.
+    expect(style.color).toBe(palettes.dark.primary);
+  });
+
+  it('keeps a ghost action tappable, with no fill to show for it', async () => {
+    await renderWithProviders(
+      <Button label="Skip" variant="ghost" size="sm" onPress={jest.fn()} />,
+    );
+    const shaped = findNode((node) => {
+      const style = flatStyle(node.props?.style);
+      return style.height === 44 && style.borderRadius === 22;
+    });
+    expect(shaped).not.toBeNull();
   });
 
   it('keeps the label bold and on one line', async () => {

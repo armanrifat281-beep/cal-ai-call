@@ -46,34 +46,53 @@ export default function WelcomeScreen() {
       footer={
         <>
           <Button
-            label="Set up FoodLens"
+            label="Get started"
             onPress={() => router.push('/(onboarding)/basics')}
             size="lg"
             fullWidth
-          />
-          <Button
-            label="Look around first"
-            variant="ghost"
-            size="sm"
-            onPress={() => router.push('/(onboarding)/privacy')}
-            style={{ alignSelf: 'center' }}
-            accessibilityHint="Skips the questions and goes straight to the app"
+            haptic
           />
           {/*
-            A returning user on a new phone lands here, and until now the
-            only way to their account was to finish onboarding first and
-            then find Settings.
+            One line, not a third button. A returning user on a new phone
+            needs this; everyone else should read past it.
           */}
-          <Button
-            label="I already have an account"
-            variant="ghost"
-            size="sm"
-            onPress={() => router.push('/(auth)/sign-in')}
-            style={{ alignSelf: 'center' }}
-          />
+          <View
+            style={{
+              flexDirection: 'row',
+              justifyContent: 'center',
+              alignItems: 'center',
+              gap: theme.spacing.xs,
+            }}
+          >
+            <Text variant="footnote" color="textMuted">
+              Already have an account?
+            </Text>
+            <Button
+              label="Sign in"
+              variant="ghost"
+              size="sm"
+              onPress={() => router.push('/(auth)/sign-in')}
+            />
+          </View>
         </>
       }
     >
+      <View
+        style={{
+          flexDirection: 'row',
+          justifyContent: 'flex-end',
+          marginBottom: -theme.spacing.base,
+        }}
+      >
+        <Button
+          label="Skip"
+          variant="ghost"
+          size="sm"
+          onPress={() => router.push('/(onboarding)/privacy')}
+          accessibilityHint="Skips the questions and goes straight to the app"
+        />
+      </View>
+
       <View style={{ gap: theme.spacing.xl }}>
         <BrandMark size={58} />
         <View style={{ gap: theme.spacing.base }}>

@@ -137,7 +137,7 @@ describe('the welcome screen', () => {
     const user = userEvent.setup();
     await renderWithProviders(<WelcomeScreen />);
 
-    await user.press(screen.getByRole('button', { name: 'Look around first' }));
+    await user.press(screen.getByRole('button', { name: 'Skip' }));
     expect(router.push).toHaveBeenCalledWith('/(onboarding)/privacy');
   });
 
@@ -229,7 +229,7 @@ describe('reaching sign-in before the app is set up', () => {
     const user = userEvent.setup();
     await renderWithProviders(<WelcomeScreen />);
 
-    await user.press(screen.getByRole('button', { name: 'I already have an account' }));
+    await user.press(screen.getByRole('button', { name: 'Sign in' }));
     expect(router.push).toHaveBeenCalledWith('/(auth)/sign-in');
   });
 

@@ -8,11 +8,16 @@ import { PressableScale } from './PressableScale';
 import { Text } from './Text';
 
 /**
- * Every variant now renders the same call-to-action pill.
+ * Two levels, and only two.
  *
- * The names are kept because the call sites use them and because they still
- * say what an action is for, which matters to anyone reading the code. They
- * no longer change how the button looks.
+ * Every filled button is identical - the same pill, the same gradient - so
+ * nothing varies at random, which was the original complaint. `ghost` is
+ * the one exception, and it is a level rather than a variation: the same
+ * red, as text, with no fill.
+ *
+ * Two filled pills stacked in a footer is what makes a screen look
+ * unprofessional. They compete, and the smaller one reads as a second
+ * call to action rather than as the quiet way out that it is.
  */
 export type ButtonVariant =
   /** The main commitment on a screen. */
@@ -23,7 +28,7 @@ export type ButtonVariant =
   | 'tonal'
   /** A neutral alternative: cancel, dismiss, choose another. */
   | 'secondary'
-  /** A tertiary action. */
+  /** A tertiary action: the same red, as text, with no fill. */
   | 'ghost'
   /** Destructive. */
   | 'danger';
@@ -97,8 +102,9 @@ const SIZES: Record<ButtonSize, SizeSpec> = {
 export function Button({
   label,
   onPress,
-  // `variant` is accepted and ignored: it still documents what an action is
-  // for at the call site, but it no longer changes how the button looks.
+  // Every variant but `ghost` renders identically. The names are kept
+  // because they still say what an action is for at the call site.
+  variant = 'primary',
   size = 'md',
   disabled = false,
   loading = false,
@@ -115,13 +121,19 @@ export function Button({
   const spec = SIZES[size];
   const isBlocked = disabled || loading;
 
-  // Every button is filled now, so every button gets the tap feedback.
-  const wantsHaptic = haptic ?? true;
-  const foreground = theme.colors.textOnCta;
+  const isGhost = variant === 'ghost';
+
+  // A filled button commits something, so it gets the tap feedback. A text
+  // one is usually the way out of a screen.
+  const wantsHaptic = haptic ?? !isGhost;
+  const foreground = isGhost ? theme.colors.primary : theme.colors.textOnCta;
 
   const shape: ViewStyle = {
+    // Keeps the touch target even with no fill to show for it.
     height: spec.height,
-    paddingHorizontal: spec.paddingHorizontal,
+    // Tight, so text does not sit in a wide invisible slab that swallows
+    // taps meant for whatever is beside it.
+    paddingHorizontal: isGhost ? spec.gap : spec.paddingHorizontal,
     // Fully rounded: the radius is half the height, so the ends are true
     // semicircles at every size.
     borderRadius: spec.height / 2,
@@ -182,19 +194,23 @@ export function Button({
       accessibilityState={{ disabled: isBlocked, busy: loading }}
       style={[{ alignSelf: fullWidth ? 'stretch' : 'flex-start' }, style]}
     >
-      <LinearGradient
-        colors={
-          pressed
-            ? [...theme.colors.ctaGradientPressed]
-            : [...theme.colors.ctaGradient]
-        }
-        // Top-left to bottom-right, as in the reference.
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={shape}
-      >
-        {content}
-      </LinearGradient>
+      {isGhost ? (
+        <View style={[shape, { opacity: pressed ? 0.6 : 1 }]}>{content}</View>
+      ) : (
+        <LinearGradient
+          colors={
+            pressed
+              ? [...theme.colors.ctaGradientPressed]
+              : [...theme.colors.ctaGradient]
+          }
+          // Top-left to bottom-right, as in the reference.
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={shape}
+        >
+          {content}
+        </LinearGradient>
+      )}
     </PressableScale>
   );
 }

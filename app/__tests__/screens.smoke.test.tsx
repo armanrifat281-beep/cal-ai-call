@@ -57,7 +57,7 @@ describe('onboarding screens', () => {
     await renderWithProviders(<WelcomeScreen />);
     expect(screen.getByText('Understand what is on your plate.')).toBeTruthy();
     expect(screen.getByText('Estimates, not measurements')).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Set up FoodLens' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Get started' })).toBeTruthy();
   });
 
   it('basics saves the chosen language, region and units', async () => {
