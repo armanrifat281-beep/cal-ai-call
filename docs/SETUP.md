@@ -272,11 +272,6 @@ Ordered by what blocks a submission.
 
 ### Worth deciding
 
-- **Sign in with Apple's button.** Apple's guidelines expect their own button
-  style - black, white, or white with an outline. Ours is the app's ink pill
-  with the Apple mark, which matches the rest of the interface and is a
-  review risk. `expo-apple-authentication` ships `AppleAuthenticationButton`
-  if you would rather be certain.
 - **Email confirmation at sign-up**, on or off.
 - Whether the free tier's 5 scans and 10 recipes a day are the right numbers.
   They live in `ai_request_limit()` in the database, so changing them needs no

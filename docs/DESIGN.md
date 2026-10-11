@@ -88,6 +88,13 @@ the quiet way out it is. A screen gets one filled button and, if it needs
 one, a line of text beneath it. Three actions in a footer means one of them
 is not a button.
 
+**One button is exempt**, and it is not a style choice. Apple specifies how
+"Sign in with Apple" may look: black, white, or white with an outline, with
+their mark at their sizing. On iOS the system draws it; elsewhere
+`AppleButton` follows the same rules by hand, in pure black or pure white
+rather than the app's near-black and near-white. Making it match the other
+pills is a rejected submission, not a tidier screen.
+
 Buttons are tall on purpose — roughly three and a half times the height of
 their own text — which is what makes them read as soft, confident shapes
 rather than tags. The smallest size is 44 points, so even an inline button

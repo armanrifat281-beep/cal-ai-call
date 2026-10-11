@@ -7,6 +7,7 @@ import { env } from '@/lib/env';
 import type { AppError } from '@/lib/result';
 import { useTheme } from '@/theme';
 
+import { AppleButton } from './AppleButton';
 import { signInWithApple } from './socialService';
 import { useGoogleSignIn } from './useGoogleSignIn';
 
@@ -51,20 +52,11 @@ export function SocialSignIn({ onSignedIn, onError }: SocialSignInProps) {
       <Separator />
 
       {/*
-        Offered on every platform. Apple's own sheet where the device has
-        one, Apple's web flow everywhere else - Sign in with Apple is not
-        an iOS-only service, and an Android user with an Apple ID has every
-        reason to expect it here.
+        Offered on every platform - Sign in with Apple is not an iOS-only
+        service. Its own component, because Apple specifies how this button
+        may look and the app's pill is not one of the permitted fills.
       */}
-      <Button
-        label="Continue with Apple"
-        variant="secondary"
-        size="lg"
-        fullWidth
-        loading={appleBusy}
-        onPress={() => void pressApple()}
-        leading={<Icon name="apple" size={20} />}
-      />
+      <AppleButton loading={appleBusy} onPress={() => void pressApple()} />
 
       {/*
         Two components rather than one with a branch inside it. The request
