@@ -1,3 +1,4 @@
+export { DayDashboard, type DayDashboardProps } from './DayDashboard';
 export { ConfidenceBar, type ConfidenceBarProps } from './ConfidenceBar';
 export {
   DayOverview,

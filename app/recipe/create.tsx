@@ -99,6 +99,7 @@ export default function CreateRecipeScreen() {
 
   const preferences = usePreferencesStore((state) => state.preferences);
   const setPreferences = usePreferencesStore((state) => state.setPreferences);
+  const setPantryItems = usePreferencesStore((state) => state.setPantryItems);
 
   const availability = getGenerationAvailability();
 
@@ -124,7 +125,14 @@ export default function CreateRecipeScreen() {
   const [cuisineNote, setCuisineNote] = useState('');
   const [equipment, setEquipment] = useState<string[]>([]);
   const [maxMinutes, setMaxMinutes] = useState<number | null>(null);
-  const [pantryText, setPantryText] = useState(seededPantry);
+  /*
+    The foods handed over by a scan win; otherwise the kitchen list the user
+    already keeps, so "cook with what I have" does not start blank every
+    time.
+  */
+  const [pantryText, setPantryText] = useState(
+    seededPantry.length > 0 ? seededPantry : preferences.pantryItems.join(', '),
+  );
 
   const [submitted, setSubmitted] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -185,6 +193,17 @@ export default function CreateRecipeScreen() {
       preferredServings: servings,
       favoriteCuisineId: cuisine,
     });
+
+    /*
+      Keep what they said they have. Typed once and then thrown away, it had
+      to be retyped for every recipe - and every saved recipe could only be
+      read against an empty kitchen, so no recipe screen could say what was
+      missing. Only from a pantry request: the text box is empty in the other
+      modes, and saving that would erase the list.
+    */
+    if (mode === 'from_pantry' && pantryIngredients.length > 0) {
+      setPantryItems(pantryIngredients);
+    }
   };
 
   const saveAndOpen = async (generated: GeneratedRecipe, request: RecipeRequest) => {

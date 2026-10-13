@@ -1,4 +1,5 @@
 export { DEMO_RECIPE_COUNT, pickDemoRecipe } from './demoRecipes';
+export { describePantryMatch, matchPantry, type PantryMatch } from './pantry';
 export {
   getDeviceRecipeRepository,
   getDeviceShoppingListRepository,

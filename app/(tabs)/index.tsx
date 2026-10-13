@@ -5,7 +5,7 @@ import { View } from 'react-native';
 import { Icon } from '@/components/Icon';
 import {
   ConfidenceBar,
-  DayOverview,
+  DayDashboard,
   DayOverviewSkeleton,
   MealRow,
   OtherNutrients,
@@ -91,24 +91,15 @@ export default function HomeScreen() {
       refreshing={loading}
       onRefresh={refreshAll}
     >
-      {/* The shape of the habit, before any number. */}
-      <Appear index={0}>
-        <WeekStrip
-          days={week}
-          selectedKey={dateKey}
-          onSelect={() => router.push('/(tabs)/journal')}
-          targetKcal={targets.caloriesKcal}
-        />
-      </Appear>
+      {/*
+        The day first, then everything that qualifies it.
 
-      <Appear index={1}>
-        <QuickActions
-          onScan={() => router.push('/(tabs)/scan')}
-          onSearch={() => router.push('/foods/search')}
-          onManual={() => router.push('/entry/new')}
-        />
-      </Appear>
-
+        Home used to open with the week strip and a row of buttons, with the
+        day's own figure third - so the first screenful answered "what have
+        you been doing lately" before "am I alright today", which is the
+        question someone opens a calorie app to ask. The strip and the
+        actions still exist; they sit under the answer instead of above it.
+      */}
       {error ? (
         <ErrorState
           message={error.message}
@@ -129,10 +120,28 @@ export default function HomeScreen() {
           as unfinished rather than tactful. An empty ring against a target
           is also simply the truth about the day so far.
         */
-        <Appear index={2}>
-          <DayOverview summary={summary} targets={targets} dayLabel={dayLabel} />
+        <Appear index={0}>
+          <DayDashboard summary={summary} targets={targets} dayLabel={dayLabel} />
         </Appear>
       )}
+
+      <Appear index={1}>
+        <QuickActions
+          onScan={() => router.push('/(tabs)/scan')}
+          onSearch={() => router.push('/foods/search')}
+          onManual={() => router.push('/entry/new')}
+        />
+      </Appear>
+
+      {/* The shape of the habit, under the day it belongs to. */}
+      <Appear index={2}>
+        <WeekStrip
+          days={week}
+          selectedKey={dateKey}
+          onSelect={() => router.push('/(tabs)/journal')}
+          targetKcal={targets.caloriesKcal}
+        />
+      </Appear>
 
       {/* The app's whole argument, in one strip: which of today's calories
           are measured and which are guesses. Directly under the dial, so it

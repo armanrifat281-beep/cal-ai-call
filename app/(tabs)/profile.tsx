@@ -314,6 +314,17 @@ export default function ProfileScreen() {
             onPress={() => router.push('/(onboarding)/goals')}
           />
           <Row
+            title="My kitchen"
+            subtitle={
+              preferences.pantryItems.length === 0
+                ? 'Say what you have, and recipes will show what you need'
+                : `${preferences.pantryItems.length} ingredient${preferences.pantryItems.length === 1 ? '' : 's'} at home`
+            }
+            divided
+            trailing={<Icon name="chevronRight" size={16} color="textSubtle" />}
+            onPress={() => router.push('/settings/kitchen')}
+          />
+          <Row
             title="Ingredients to avoid"
             subtitle={
               preferences.allergens.length === 0

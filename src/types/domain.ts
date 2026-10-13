@@ -257,6 +257,17 @@ export interface UserPreferences {
   /** Whether the user agreed to allergy-aware filtering of suggestions. */
   allergyAwarenessEnabled: boolean;
   dislikedFoods: string[];
+  /**
+   * What the user has at home, in their own words.
+   *
+   * Free text rather than a catalogue of known foods: people keep
+   * "half a cabbage" and "whatever that jar is", and forcing a picker on
+   * that would make the list wrong instead of useful. Matching against a
+   * recipe is deliberately literal as a result - see
+   * `src/features/recipes/pantry.ts` - because a near-miss that claims the
+   * user has an ingredient is worse than one that admits it does not know.
+   */
+  pantryItems: string[];
   favoriteCuisines: string[];
   goal: NutritionGoalKind;
   dailyTargets: DailyTargets;

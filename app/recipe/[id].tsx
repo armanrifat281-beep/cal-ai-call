@@ -25,6 +25,8 @@ import {
   batchNutrition,
   checkRecipeConsistency,
   describeConsistencyIssue,
+  describePantryMatch,
+  matchPantry,
   scaleRecipe,
   useRecipe,
   useRecipeRepository,
@@ -33,6 +35,7 @@ import {
 } from '@/features/recipes';
 import { cuisineLabel } from '@/features/recipes/options';
 import type { AppError } from '@/lib/result';
+import { usePreferencesStore } from '@/store/preferencesStore';
 import { useTheme } from '@/theme';
 
 /**
@@ -78,6 +81,19 @@ export default function RecipeDetailScreen() {
     () => (scaled ? scaled.ingredients.filter((item) => !owned.has(item.id)) : []),
     [scaled, owned],
   );
+
+  /*
+    What the kitchen already covers, from the list the user keeps in their
+    profile. Separate from `owned` above, which is what they have ticked on
+    this screen for the shopping list - this one needs no ticking at all.
+  */
+  const pantryItems = usePreferencesStore(
+    (state) => state.preferences.pantryItems,
+  );
+  const pantrySentence = useMemo(() => {
+    if (!scaled || pantryItems.length === 0) return null;
+    return describePantryMatch(matchPantry(scaled.ingredients, pantryItems));
+  }, [scaled, pantryItems]);
 
   const toggleOwned = useCallback((ingredientId: string) => {
     setOwned((current) => {
@@ -396,6 +412,32 @@ export default function RecipeDetailScreen() {
         subtitle="Tick what you already have."
         dense
       >
+        {/*
+          What is missing, when the user has told us what they keep at home.
+          Drawn above the list rather than as a badge on each row: the useful
+          answer to "can I cook this tonight" is the short list to buy, and
+          reading that off nine rows is work the screen should have done.
+
+          Silent with an empty pantry. "You are missing all nine
+          ingredients" is true and useless.
+        */}
+        {pantrySentence ? (
+          <Surface
+            variant="grouped"
+            padding="base"
+            style={{ marginBottom: theme.spacing.sm, gap: theme.spacing.xs }}
+          >
+            <Text variant="label" color="textMuted">
+              AGAINST YOUR KITCHEN
+            </Text>
+            <Text variant="footnote">{pantrySentence}</Text>
+            <Text variant="caption" color="textSubtle">
+              Matched by name against the list in your profile, so check it
+              before you shop.
+            </Text>
+          </Surface>
+        ) : null}
+
         <Surface variant="grouped">
           {groupIngredients(scaled.ingredients).map((group, groupIndex) => (
             <View key={group.name ?? `g-${groupIndex}`}>

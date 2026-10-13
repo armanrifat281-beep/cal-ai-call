@@ -28,6 +28,7 @@ export const DEFAULT_PREFERENCES: LocalPreferences = {
   measurementSystem: 'metric',
   dietaryPatterns: [],
   allergens: [],
+  pantryItems: [],
   allergyAwarenessEnabled: false,
   dislikedFoods: [],
   favoriteCuisines: [],
@@ -54,6 +55,8 @@ interface PreferencesState {
   setGoal: (goal: NutritionGoalKind) => void;
   setDailyTargets: (targets: Partial<DailyTargets>) => void;
   setAllergens: (allergens: string[]) => void;
+  /** What the user has at home, for "cook with what I have". */
+  setPantryItems: (items: string[]) => void;
   completeOnboarding: () => void;
   markSynced: (at?: string) => void;
   /** Clears everything. Used by sign-out and account deletion. */
@@ -103,6 +106,25 @@ export const usePreferencesStore = create<PreferencesState>()(
           preferences: {
             ...state.preferences,
             dailyTargets: { ...state.preferences.dailyTargets, ...targets },
+          },
+          syncedAt: null,
+        })),
+
+      setPantryItems: (items) =>
+        set((state) => ({
+          preferences: {
+            ...state.preferences,
+            // Trimmed and de-duplicated here rather than at each call site:
+            // the list is typed by hand, so "Rice" and "rice " arrive as two
+            // items and would be matched against a recipe twice.
+            pantryItems: Array.from(
+              new Map(
+                items
+                  .map((item) => item.trim())
+                  .filter((item) => item.length > 0)
+                  .map((item) => [item.toLowerCase(), item]),
+              ).values(),
+            ),
           },
           syncedAt: null,
         })),

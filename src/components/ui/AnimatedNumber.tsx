@@ -6,6 +6,7 @@ import Animated, {
   withSpring,
   withTiming,
 } from 'react-native-reanimated';
+import type { StyleProp, TextStyle } from 'react-native';
 
 import { useMotion, useTheme, type Palette, type TypographyVariant } from '@/theme';
 
@@ -24,6 +25,8 @@ export interface AnimatedNumberProps {
   /** Passed through: a figure inside a dial has to shrink rather than wrap. */
   numberOfLines?: number;
   adjustsFontSizeToFit?: boolean;
+  /** Type overrides, for a figure a screen wants larger than its variant. */
+  style?: StyleProp<TextStyle>;
 }
 
 /**
@@ -52,6 +55,7 @@ export function AnimatedNumber({
   accessibilityLabel,
   numberOfLines,
   adjustsFontSizeToFit,
+  style,
 }: AnimatedNumberProps) {
   const theme = useTheme();
   const motion = useMotion();
@@ -79,6 +83,7 @@ export function AnimatedNumber({
         color={color}
         numberOfLines={numberOfLines}
         adjustsFontSizeToFit={adjustsFontSizeToFit}
+        style={style}
         accessibilityLabel={accessibilityLabel}
       >
         {`${value.toFixed(decimals)}${suffix ?? ''}`}
