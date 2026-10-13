@@ -360,6 +360,7 @@ export default function ScanScreen() {
         onPickFromLibrary={() => void pickFromLibrary()}
         onClose={() => router.push('/(tabs)')}
         onAddByHand={() => router.push('/entry/new')}
+        onScanBarcode={() => router.push('/label/scan')}
         busy={busy}
       />
 

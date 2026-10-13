@@ -16,6 +16,8 @@ export interface CameraCaptureProps {
   onClose: () => void;
   /** Skip the photo and type the meal in. */
   onAddByHand: () => void;
+  /** Read a packet's barcode instead of photographing the food. */
+  onScanBarcode: () => void;
   /** True while the captured frame is being validated and resized. */
   busy?: boolean;
 }
@@ -45,6 +47,7 @@ export function CameraCapture({
   onPickFromLibrary,
   onClose,
   onAddByHand,
+  onScanBarcode,
   busy = false,
 }: CameraCaptureProps) {
   const theme = useTheme();
@@ -167,6 +170,28 @@ export function CameraCapture({
           justifyContent: 'space-between',
         }}
       >
+        <PressableScale
+          onPress={onScanBarcode}
+          accessibilityRole="button"
+          accessibilityLabel="Scan a packet's barcode"
+          style={{
+            width: 50,
+            height: 50,
+            borderRadius: theme.radius.control,
+            borderWidth: 1.5,
+            borderColor: 'rgba(255,255,255,0.3)',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          {/*
+            Packaged food is the case a photograph is worst at: a model
+            guessing at a wrapper is strictly worse than the figures the
+            manufacturer already published against its barcode.
+          */}
+          <Icon name="database" size={21} color="#FFFFFF" strokeWidth={1.7} />
+        </PressableScale>
+
         <PressableScale
           onPress={onPickFromLibrary}
           accessibilityRole="button"
