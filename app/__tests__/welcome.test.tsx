@@ -22,7 +22,9 @@ describe('the welcome screen', () => {
   it('says what the app does before asking for anything', async () => {
     await renderWithProviders(<WelcomeScreen />);
 
-    expect(screen.getByText(/measured and which were estimated/)).toBeTruthy();
+    expect(screen.getByText(/works out the nutrition/)).toBeTruthy();
+    // The claim the app can actually keep, stated before anything is asked.
+    expect(screen.getByText('MEASURED, OR ESTIMATED')).toBeTruthy();
   });
 
   it('offers both doors, so a returning user is not stuck', async () => {

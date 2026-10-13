@@ -1,7 +1,8 @@
-import { Tabs } from 'expo-router';
+import { Redirect, Tabs } from 'expo-router';
 import { Platform } from 'react-native';
 
 import { Icon, type IconName } from '@/components/Icon';
+import { useAuth } from '@/features/auth';
 import { useTheme } from '@/theme';
 
 /**
@@ -17,11 +18,31 @@ const TAB_ICONS: Record<string, IconName> = {
   scan: 'scan',
   recipes: 'recipes',
   journal: 'journal',
-  profile: 'settings',
+  // A person, not a gear. Labelled and drawn as settings, the destination
+  // holding the account, the name and the email read as a utility screen,
+  // and the Profile the app is supposed to have looked missing.
+  profile: 'profile',
 };
 
 export default function TabsLayout() {
   const theme = useTheme();
+  const { status } = useAuth();
+
+  /*
+    Signing out used to leave the user standing in the app.
+
+    The boot gate only runs when the app launches, so a session that ended
+    while someone was inside it - by signing out, or by the session expiring
+    - left them on the Profile tab, still looking at tabs full of an account
+    they no longer had. This sends them back to the welcome screen the moment
+    the session goes, and covers expiry as well as sign-out, because neither
+    should leave a signed-out person inside the app.
+
+    `signed_out` specifically, never `loading`: the stored session is read
+    asynchronously on launch, and treating "not yet known" as "signed out"
+    would throw a signed-in user out of their own app for the first frame.
+  */
+  if (status === 'signed_out') return <Redirect href="/(auth)/welcome" />;
 
   return (
     <Tabs
@@ -61,10 +82,11 @@ export default function TabsLayout() {
       <Tabs.Screen name="recipes" options={{ title: 'Recipes' }} />
       <Tabs.Screen name="journal" options={{ title: 'Journal' }} />
       {/*
-        The route keeps its name so existing links still resolve; the label
-        is what the user reads, and this screen is settings.
+        Named for what it holds - the account, preferences, privacy and the
+        way out - rather than for the word "settings", which described the
+        bottom half of the screen and hid the top half.
       */}
-      <Tabs.Screen name="profile" options={{ title: 'Settings' }} />
+      <Tabs.Screen name="profile" options={{ title: 'Profile' }} />
       {/*
         Insights lives at app/(tabs)/insights.tsx so it keeps the tab bar
         while open, but it is not itself a tab: href null hides the button.

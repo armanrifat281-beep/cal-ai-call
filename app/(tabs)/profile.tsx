@@ -128,7 +128,7 @@ export default function ProfileScreen() {
   };
 
   return (
-    <Screen title="Settings" edges={{ top: true }}>
+    <Screen title="Profile" edges={{ top: true }}>
       {/*
         Who you are, before the settings list.
 

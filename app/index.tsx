@@ -14,7 +14,10 @@ import { usePreferencesStore } from '@/store/preferencesStore';
  *
  * Signed in: onboarding if it has not been done, so the questions are asked
  * of someone whose answers have somewhere to be saved, and the app itself
- * after that.
+ * after that. Straight to the first question, too: onboarding used to open
+ * with a second welcome screen carrying a second "Get started", which said
+ * nothing the real welcome had not already said and stood between the user
+ * and the app.
  *
  * There is no backend-missing shortcut here. An earlier version skipped
  * straight to onboarding when no Supabase project was configured, on the
@@ -30,5 +33,5 @@ export default function BootGate() {
 
   if (!isSignedIn) return <Redirect href="/(auth)/welcome" />;
 
-  return <Redirect href={hasOnboarded ? '/(tabs)' : '/(onboarding)/welcome'} />;
+  return <Redirect href={hasOnboarded ? '/(tabs)' : '/(onboarding)/basics'} />;
 }

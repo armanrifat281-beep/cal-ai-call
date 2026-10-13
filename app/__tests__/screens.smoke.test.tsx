@@ -11,7 +11,6 @@ import BasicsScreen from '../(onboarding)/basics';
 import FoodPreferencesScreen from '../(onboarding)/food';
 import GoalsScreen from '../(onboarding)/goals';
 import PrivacyScreen from '../(onboarding)/privacy';
-import WelcomeScreen from '../(onboarding)/welcome';
 import HomeScreen from '../(tabs)/index';
 import InsightsScreen from '../(tabs)/insights';
 import JournalScreen from '../(tabs)/journal';
@@ -53,16 +52,6 @@ beforeEach(async () => {
 });
 
 describe('onboarding screens', () => {
-  it('welcome explains the value and states the estimation limits up front', async () => {
-    await renderWithProviders(<WelcomeScreen />);
-    expect(screen.getByText('Eat with\nyour eyes\nopen.')).toBeTruthy();
-    // The caveat is on the first screen, not buried in settings.
-    expect(screen.getByText('Estimates, not measurements')).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Get started' })).toBeTruthy();
-    // One button to go forward, plus a way past the questions.
-    expect(screen.getByRole('button', { name: 'Skip' })).toBeTruthy();
-  });
-
   it('basics saves the chosen language, region and units', async () => {
     const user = userEvent.setup();
     await renderWithProviders(<BasicsScreen />);
@@ -227,7 +216,7 @@ describe('tab screens with an empty journal', () => {
 
   it('profile reports that no account backend is configured', async () => {
     await renderWithProviders(<ProfileScreen />);
-    expect(screen.getByText('Settings')).toBeTruthy();
+    expect(screen.getByText('Profile')).toBeTruthy();
     expect(
       screen.getByText('Accounts are not configured in this build'),
     ).toBeTruthy();

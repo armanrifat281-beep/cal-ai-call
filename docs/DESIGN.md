@@ -102,17 +102,23 @@ clears the minimum touch target. The button paints its own contents: a
 `leading` or `trailing` icon is cloned with the button's foreground, so a
 call site cannot leave a dark icon on a dark fill.
 
-**Why ink and not a brand colour.** The buttons were a red gradient taken
-from a supplied reference, and in isolation it looked right. On a real
-screen it was a fourth red arguing with the terracotta in the charts, and
-because every button wore it, the loudest thing on a page about food was the
-furniture. Ink cannot clash with anything, and that is what buys the rule
-below.
+**Why forest and not ink.** The buttons were a red gradient taken from a
+supplied reference, which on a real screen was a fourth red arguing with the
+terracotta in the charts. They became ink, which could not clash with
+anything - and said nothing: a page of grey furniture and black buttons is
+not a food product, it is a settings screen.
+
+They are deep forest now, `forest[700]`. The risk the ink was avoiding is
+real and worth naming: a green chip can read as a chart swatch. The charts
+use `forest[500]` and `[600]` for data while the furniture uses `[700]`,
+dark enough to read as a surface rather than as a value, and the fill is
+measured against the white label it carries - the test is in
+`ButtonAppearance.test.tsx`.
 
 ### Colour means something, or it is not used
 
-The interface is ink and neutral grey. Colour appears in exactly three
-places, and each one carries information:
+The interface is paper, forest and neutral. Beyond the furniture, colour
+appears in exactly three places, and each one carries information:
 
 - **The food.** Forest, wheat and terracotta on the charts, `chart` for a
   bar or a ring, and the photographs. This is the app's colour, and leaving
@@ -122,21 +128,31 @@ places, and each one carries information:
 - **The mark.** The one decorative colour left, and it is the identity
   rather than the interface.
 
-Anything selected, active or in progress is filled with ink — a chosen chip,
-a finished onboarding step, the day you are looking at. That was briefly
-forest green and then briefly red: the green made a chosen chip look like a
-chart, and the red made every screen shout.
+Anything selected, active or in progress is filled with `primary` — a chosen
+chip, a finished onboarding step, the day you are looking at.
 
-**Neutral** is the interface grey, from paper to ink, and it is genuinely
-neutral — no channel in a step differs from another by more than a few
-points. It was a warm clay on the theory that food photography sits badly on
-cold grey; at phone brightness that read as beige in light mode and brown in
-dark. **Ember** is reserved for the scan action.
+**Neutral** runs paper to ink and is very slightly warm: the light steps
+carry a few points more red and green than blue. The warmth is deliberate
+and it is small. A previous version was a warm clay that read as beige in
+light mode and brown in dark; the version after it was a true cold grey that
+left food photography looking refrigerated. The rule is that no step may
+differ from a true grey by enough to be named a colour, and
+`switching.test.tsx` holds the bound. **Ember** is reserved for the scan
+action.
 
-A fresh install opens **dark**. The dial, the photographs and the mark were
-all designed against a black page, and most people never open Appearance.
-System and Light are both a tap away in Settings, and the choice is
-remembered.
+A fresh install **follows the phone**. It used to force dark, which gave
+someone whose phone is set to light a dark app they never asked for and
+could only read as a bug - and meant the cream-and-forest identity was the
+one thing a new user never saw. Light and Dark are both a tap away in
+Settings, and the choice is remembered.
+
+**Auth screens are on the page, not on a hero.** Welcome, sign-in and
+sign-up were a full-bleed forest gradient with a raised card overlapping it.
+Two faults: the screens did not match the cream app behind them, so creating
+an account looked like a different product from using one, and a 356px wash
+of colour above four fields made the decoration the loudest thing on a page
+whose job is to be typed into. The title still carries the screen, at
+display size against the page, with a hairline rule where the form begins.
 
 ## The mark
 

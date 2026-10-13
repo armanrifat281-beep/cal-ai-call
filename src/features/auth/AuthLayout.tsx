@@ -52,8 +52,16 @@ export interface AuthLayoutProps {
  * anything is typed, and submitting returns the same plain "not configured"
  * the service already produces rather than a fake success.
  */
-const CARD_OVERLAP = 30;
-const CARD_RADIUS = 30;
+/*
+  The form sits on the page, not on a panel lifted over a coloured hero.
+
+  It was a raised, round-cornered card pulled 30px up over a forest
+  gradient. With the hero on the app's own paper there is no colour change
+  left for it to overlap, so a shadowed card would be a panel floating on an
+  identical background - decoration marking a boundary the eye can already
+  see from the hairline rule and the title above it.
+*/
+const CARD_RADIUS = 28;
 
 export function AuthLayout({
   title,
@@ -91,15 +99,15 @@ export function AuthLayout({
         <View
           style={{
             flexGrow: 1,
-            marginTop: -CARD_OVERLAP,
             borderTopLeftRadius: CARD_RADIUS,
             borderTopRightRadius: CARD_RADIUS,
+            borderTopWidth: 1,
+            borderTopColor: theme.colors.separator,
             backgroundColor: theme.colors.surface,
             paddingHorizontal: theme.gutter + 4,
             paddingTop: theme.spacing.xl,
             paddingBottom: insets.bottom + theme.spacing.xl,
             gap: theme.spacing.lg,
-            ...theme.elevation(3),
           }}
         >
           {unavailable ? (

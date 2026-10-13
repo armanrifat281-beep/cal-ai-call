@@ -40,15 +40,22 @@ beforeEach(async () => {
 });
 
 describe('switching appearance', () => {
-  it('opens dark on a fresh install', async () => {
+  /*
+    Follows the phone. Forcing dark gave someone whose phone is set to light
+    a dark app they never asked for and could only read as a bug, and it
+    meant the cream-and-forest identity was the one thing a new user never
+    saw.
+  */
+  it('follows the phone on a fresh install', async () => {
     await renderWithProviders(<Probe />);
-    expect(screen.getByText(/^dark:dark:/)).toBeTruthy();
+    expect(screen.getByText(/^system:/)).toBeTruthy();
   });
 
-  it('still offers following the phone', async () => {
+  it('still offers following the phone after a choice was made', async () => {
     const user = userEvent.setup();
     await renderWithProviders(<Probe />);
 
+    await user.press(screen.getByTestId('to-dark'));
     await user.press(screen.getByTestId('to-system'));
     expect(screen.getByText(/^system:/)).toBeTruthy();
   });
@@ -56,6 +63,9 @@ describe('switching appearance', () => {
   it('repaints the page when Light is chosen', async () => {
     const user = userEvent.setup();
     await renderWithProviders(<Probe />);
+    // From dark, because the default now follows the phone, which under
+    // test is already light - choosing Light from there repaints nothing.
+    await user.press(screen.getByTestId('to-dark'));
 
     const before = screen.getByTestId('page').props.style.backgroundColor;
     await user.press(screen.getByTestId('to-light'));
@@ -74,7 +84,11 @@ describe('switching appearance', () => {
   });
 
   it('gives dark mode a genuinely dark page', async () => {
+    const user = userEvent.setup();
     await renderWithProviders(<Probe />);
+    // Chosen explicitly: the default follows the phone now, which under test
+    // is light.
+    await user.press(screen.getByTestId('to-dark'));
 
     const background = screen.getByTestId('page').props.style
       .backgroundColor as string;
@@ -85,10 +99,16 @@ describe('switching appearance', () => {
     expect(Math.max(...channels)).toBeLessThan(40);
   });
 
-  it('keeps the page neutral rather than tinted', async () => {
-    // A warm near-black reads as brown on a phone screen, which is not what
-    // "dark mode" is understood to mean.
+  it('keeps the page close to neutral rather than tinted', async () => {
+    /*
+      The page carries a little warmth so food photography does not look
+      refrigerated against it, and no more than a little: a previous version
+      was a clay that read as brown in dark mode and beige in light. The
+      bound is what separates "warm" from "a colour".
+    */
+    const user = userEvent.setup();
     await renderWithProviders(<Probe />);
+    await user.press(screen.getByTestId('to-dark'));
 
     const background = screen.getByTestId('page').props.style
       .backgroundColor as string;

@@ -42,13 +42,18 @@ function findNode(predicate: (node: JsonNode) => boolean): JsonNode | null {
   return walk(screen.toJSON());
 }
 
-/** The filled pill: a view carrying the ink background. */
+/**
+ * The filled pill: the view carrying the brand background.
+ *
+ * Matched against the light palette, because the providers follow the phone
+ * and the phone is light under test.
+ */
 const filled = () =>
   findNode((node) => {
     const style = flatStyle(node.props?.style);
     return (
-      style.backgroundColor === palettes.dark.primary ||
-      style.backgroundColor === palettes.dark.primaryPressed
+      style.backgroundColor === palettes.light.primary ||
+      style.backgroundColor === palettes.light.primaryPressed
     );
   });
 
@@ -60,13 +65,24 @@ function flatStyle(style: unknown): Record<string, unknown> {
   return (style as Record<string, unknown>) ?? {};
 }
 
+/** WCAG contrast of white against a `#rrggbb` fill. */
+function contrastWithWhite(hex: string): number {
+  const channel = (index: number): number => {
+    const value = parseInt(hex.slice(index, index + 2), 16) / 255;
+    return value <= 0.03928 ? value / 12.92 : Math.pow((value + 0.055) / 1.055, 2.4);
+  };
+  const luminance =
+    0.2126 * channel(1) + 0.7152 * channel(3) + 0.0722 * channel(5);
+  return 1.05 / (luminance + 0.05);
+}
+
 /** Everything that renders as a filled pill. `ghost` is the one level apart. */
 const FILLED = ['primary', 'accent', 'tonal', 'secondary', 'danger'] as const;
 
 describe('every button wears the reference treatment', () => {
   // One render per case: unmounting inside a loop detaches `screen`, so
   // every later assertion in the file sees an empty tree.
-  it.each(FILLED)('fills %s with ink', async (variant) => {
+  it.each(FILLED)('fills %s as a solid pill', async (variant) => {
     await renderWithProviders(
       <Button label="Get All Access" variant={variant} onPress={jest.fn()} />,
     );
@@ -78,19 +94,25 @@ describe('every button wears the reference treatment', () => {
       <Button label="Get All Access" variant={variant} onPress={jest.fn()} />,
     );
     const style = flatStyle(screen.getByText('Get All Access').props.style);
-    // The providers open in the app's default scheme, which is dark.
-    expect(style.color).toBe(palettes.dark.textOnPrimary);
+    // The providers follow the phone, which under test is light.
+    expect(style.color).toBe(palettes.light.textOnPrimary);
   });
 
-  it('carries no colour of its own, so nothing competes with the food', async () => {
+  /*
+    The fill is the brand colour now, not ink. An earlier version required
+    it to be grey, on the reasoning that a coloured button competes with
+    photographs of food; forest at this depth does not, because it is darker
+    than the food in any photograph rather than brighter.
+
+    What actually has to hold is that the label survives on it, so that is
+    what is measured.
+  */
+  it('is dark enough for the label to be readable on it', async () => {
     await renderWithProviders(<Button label="Save meal" onPress={jest.fn()} />);
     const background = flatStyle(filled()?.props?.style).backgroundColor as string;
 
-    const channels = [1, 3, 5].map((index) =>
-      parseInt(background.slice(index, index + 2), 16),
-    );
-    const spread = Math.max(...channels) - Math.min(...channels);
-    expect(spread).toBeLessThanOrEqual(6);
+    // WCAG AA for body text, against the white the label is painted in.
+    expect(contrastWithWhite(background)).toBeGreaterThanOrEqual(4.5);
   });
 
   it('leaves a ghost action as text, so two pills never stack', async () => {
@@ -108,7 +130,7 @@ describe('every button wears the reference treatment', () => {
     );
     const style = flatStyle(screen.getByText('Skip for now').props.style);
     // The providers open in the app's default scheme, which is dark.
-    expect(style.color).toBe(palettes.dark.primary);
+    expect(style.color).toBe(palettes.light.primary);
   });
 
   it('keeps a ghost action tappable, with no fill to show for it', async () => {
@@ -175,7 +197,8 @@ describe('the shape', () => {
 describe('icons inside a button', () => {
   it('paints a leading icon white, whatever colour the call site asked for', async () => {
     // Call sites chose colours to suit the fill their variant used to have.
-    // Dark ink on the gradient would be unreadable, so the button overrides.
+    // A dark icon on the forest fill would be unreadable, so the button
+    // overrides whatever was asked for and paints it out of the fill.
     await renderWithProviders(
       <Button
         label="Back"
@@ -186,7 +209,7 @@ describe('icons inside a button', () => {
     );
     const path = findNode((node) => node.type === 'RNSVGPath');
     const stroke = path?.props?.stroke as { payload?: number } | undefined;
-    expect(stroke?.payload).toBe(processColor(palettes.dark.textOnPrimary));
+    expect(stroke?.payload).toBe(processColor(palettes.light.textOnPrimary));
   });
 
   it('paints a trailing icon the same way', async () => {
@@ -200,7 +223,7 @@ describe('icons inside a button', () => {
     );
     const path = findNode((node) => node.type === 'RNSVGPath');
     const stroke = path?.props?.stroke as { payload?: number } | undefined;
-    expect(stroke?.payload).toBe(processColor(palettes.dark.textOnPrimary));
+    expect(stroke?.payload).toBe(processColor(palettes.light.textOnPrimary));
   });
 
   it('shows a spinner instead of the icon while loading', async () => {

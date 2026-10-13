@@ -12,16 +12,20 @@ import HomeScreen from '../(tabs)/index';
 import ProfileScreen from '../(tabs)/profile';
 import EditProfileScreen from '../settings/profile';
 import PrivacyStepScreen from '../(onboarding)/privacy';
-import WelcomeScreen from '../(onboarding)/welcome';
 
 beforeEach(() => {
   jest.clearAllMocks();
 });
 
-describe('the settings screen', () => {
-  it('is called Settings, because that is what it is', async () => {
+describe('the profile screen', () => {
+  /*
+    Called Profile, because the account, the name and the email are the top
+    of it. Labelled "Settings" it read as a utility screen, and the Profile
+    the app is supposed to have looked missing entirely.
+  */
+  it('is called Profile, and leads with who is signed in', async () => {
     await renderWithProviders(<ProfileScreen />);
-    expect(screen.getByText('Settings')).toBeTruthy();
+    expect(screen.getByText('Profile')).toBeTruthy();
   });
 
   it('offers help, data handling and terms', async () => {
@@ -126,38 +130,6 @@ describe('changing a password', () => {
   });
 });
 
-describe('the welcome screen', () => {
-  it('leads with one action, not three', async () => {
-    // Sign-in comes before onboarding now, so Welcome no longer carries a
-    // link to it, and the escape moved to the corner.
-    await renderWithProviders(<WelcomeScreen />);
-
-    expect(screen.getByRole('button', { name: 'Get started' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Skip' })).toBeTruthy();
-    expect(
-      screen.queryByRole('button', { name: 'I already have an account' }),
-    ).toBeNull();
-  });
-
-  it('no longer claims an account is optional, now that it is not', async () => {
-    await renderWithProviders(<WelcomeScreen />);
-    expect(screen.queryByText(/No account needed/)).toBeNull();
-  });
-
-  it('offers a way past the questions', async () => {
-    const user = userEvent.setup();
-    await renderWithProviders(<WelcomeScreen />);
-
-    await user.press(screen.getByRole('button', { name: 'Skip' }));
-    expect(router.push).toHaveBeenCalledWith('/(onboarding)/privacy');
-  });
-
-  it('is honest about estimates on the first screen, not later', async () => {
-    await renderWithProviders(<WelcomeScreen />);
-
-    expect(screen.getByText('Estimates, not measurements')).toBeTruthy();
-  });
-});
 
 describe('your profile', () => {
   beforeEach(() => {

@@ -92,13 +92,17 @@ function isThemePreference(value: unknown): value is ThemePreference {
 /**
  * What a fresh install opens in.
  *
- * Dark, rather than following the phone. FoodLens is a dark product - the
- * dial, the photographs and the red accent were all designed against a
- * black page - and most people never open Appearance. System and Light are
- * both still there, one tap away in Settings, and whatever is chosen is
- * remembered.
+ * Follows the phone. An earlier version forced dark on the reasoning that
+ * the product was designed against a black page, which had two problems:
+ * someone whose phone is set to light got a dark app they never asked for
+ * and could only explain as a bug, and the cream-and-forest identity the
+ * app is actually built on was the one thing a new user never saw.
+ *
+ * `system` is the honest default: it is the choice the user already made,
+ * once, for every app on the device. Light and Dark remain one tap away in
+ * Settings, and whatever is chosen is remembered.
  */
-const DEFAULT_PREFERENCE: ThemePreference = 'dark';
+const DEFAULT_PREFERENCE: ThemePreference = 'system';
 
 export function ThemeProvider({ children }: PropsWithChildren) {
   const systemScheme = useColorScheme();

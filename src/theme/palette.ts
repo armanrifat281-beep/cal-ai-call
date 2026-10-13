@@ -128,19 +128,33 @@ export interface Palette {
  * food colours themselves, which are still forest, wheat and terracotta,
  * and in the photographs.
  */
+/**
+ * Paper to ink, very slightly warm.
+ *
+ * The warmth is deliberate and it is small. A previous version was a warm
+ * clay that read as beige in light mode and brown in dark, and a version
+ * after that was a true cold grey that left food photography looking
+ * refrigerated. These sit between: the light steps carry a few points more
+ * red and green than blue, which reads as paper rather than as cream, and
+ * the dark steps stay close to neutral so a photograph is not tinted.
+ *
+ * The one rule: no step may differ from a true grey by enough to be named a
+ * colour. If a surface looks beige on a phone at full brightness, it has
+ * gone too far.
+ */
 const neutral = {
   0: '#FFFFFF',
-  25: '#F7F7F8',
-  50: '#F1F1F3',
-  100: '#E7E7EA',
-  200: '#D7D7DB',
-  300: '#BBBBC1',
-  400: '#8E8E96',
-  500: '#6A6A72',
-  600: '#4A4A51',
-  700: '#2F2F34',
-  800: '#1D1D21',
-  900: '#0F0F12',
+  25: '#FAF9F6',
+  50: '#F5F3EF',
+  100: '#ECE9E3',
+  200: '#DBD7CF',
+  300: '#BEB9AF',
+  400: '#918C83',
+  500: '#6C6862',
+  600: '#4B4844',
+  700: '#302E2B',
+  800: '#1E1D1B',
+  900: '#100F0E',
 } as const;
 
 const forest = {
@@ -201,12 +215,21 @@ const light: Palette = {
   // the button you press next are visibly the same idea. Forest is still the
   // app's green, but as a data colour now - protein on a chart - rather than
   // as the thing that marks a choice.
-  // Ink. A filled button, a chosen chip and a finished step are all this,
-  // and none of them competes with the food.
-  primary: neutral[800],
-  primaryPressed: neutral[700],
-  primarySoft: neutral[100],
-  primaryOnSoft: neutral[800],
+  /*
+    Deep forest. A filled button, a chosen chip and a finished step are all
+    this, so the app has one identity colour rather than borrowing ink.
+
+    Chosen over the near-black that was here before, which was safe but said
+    nothing: a page of grey furniture and black buttons is not a food
+    product, it is a settings screen. The risk the ink was avoiding is real
+    and worth naming - a green chip can read as a chart swatch - so the
+    charts use forest 500 and 600 for data while the furniture uses 700,
+    dark enough to read as a surface rather than as a value.
+  */
+  primary: forest[700],
+  primaryPressed: forest[800],
+  primarySoft: forest[50],
+  primaryOnSoft: forest[700],
 
   accent: ember[500],
   accentPressed: ember[600],
@@ -240,24 +263,31 @@ const light: Palette = {
 /**
  * Dark mode.
  *
- * Not an inversion. The page is a warm near-black, surfaces step UP in
- * lightness rather than down, and the brand green is lifted well past its
- * light-mode value so it stays legible without glowing.
+ * Not an inversion. Surfaces step UP in lightness rather than down, and the
+ * page is a genuinely warm near-black - it claimed to be one before while
+ * being measurably blue, which is what made photographs of food look
+ * refrigerated against it.
+ *
+ * The forest identity stays in light mode's furniture and remains a data
+ * colour here. Two adjacent greens, one meaning "selected" and one meaning
+ * "succeeded", would be harder to tell apart on a dark page than the ink
+ * they replaced - so a filled button is still near-white, which also keeps
+ * the contrast ratio that was measured for it.
  */
 const dark: Palette = {
-  background: '#0E0E11',
-  surface: '#17171B',
-  surfaceRaised: '#1E1E23',
-  surfaceAlt: '#232329',
-  surfacePressed: '#2C2C33',
-  separator: '#26262C',
-  border: '#313138',
-  borderStrong: '#4A4A53',
+  background: '#121110',
+  surface: '#1C1A19',
+  surfaceRaised: '#231F1E',
+  surfaceAlt: '#282423',
+  surfacePressed: '#322D2C',
+  separator: '#2B2726',
+  border: '#36312F',
+  borderStrong: '#514A47',
   shadow: '#000000',
 
-  text: '#F2F2F4',
-  textMuted: '#A0A0A8',
-  textSubtle: '#76767E',
+  text: '#F4F2F0',
+  textMuted: '#A5A09A',
+  textSubtle: '#7A756F',
   textOnPrimary: neutral[900],
   textOnAccent: '#190A03',
 
