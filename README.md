@@ -37,19 +37,21 @@ These are design rules, not aspirations, and they are enforced in code:
 | Food journal with day navigation and daily summaries | Working |
 | Nutrition engine (portions, scaling, totals, goals) | Working, unit tested |
 | Food Memory insights from saved records | Working, unit tested |
-| Photo capture, validation, compression | Working |
-| Database schema, RLS policies | Written and tested locally, **not deployed** |
-| Email authentication | Written and unit tested, **never run against a live project** |
-| Supabase journal repository | Written and unit tested, **never run against a live project** |
-| Photo analysis (Claude) | Edge Function written, **never deployed or called** |
-| Account deletion | Edge Function written, **never deployed** |
-| AI Recipe Creator | Working, with a labelled demo fallback. Generation needs the Edge Function deployed |
+| In-app camera, validation, compression | Working |
+| Database schema, RLS policies | **Deployed and verified against the live project** |
+| Email authentication | **Working against the live project** |
+| Supabase journal repository | **Working against the live project** |
+| Account deletion | **Deployed and verified** |
+| Photo analysis (Claude) | Deployed and wired to the UI. **Needs `ANTHROPIC_API_KEY`**; returns 503 until it is set |
+| AI Recipe Creator | Deployed, with a labelled demo fallback. **Needs `ANTHROPIC_API_KEY`** |
 | Cooking mode, ingredient checklist, serving adjustment | Working |
 | Shopping lists | Working |
+| Sign in with Google | Built. Provider not enabled on the project, and the button says so |
+| Sign in with Apple | **Removed.** This app ships on Android; Apple's provider needs a paid membership |
 | Recipe images | **Not built.** A labelled placeholder is drawn instead |
-| Food database lookup (USDA) | **Not built** |
-| Sign in with Apple / Google | **Not built** |
+| Food database lookup (USDA) | **Not built.** Types exist; no search screen or provider |
 | Subscriptions | Schema only, deliberately unused |
+| Email delivery | **Supabase's built-in sender only: 2 messages an hour.** Confirmation is currently off so the app can be tested; custom SMTP is needed before release |
 
 Until Supabase is configured the app runs in a clearly labelled device-only
 mode: meals are saved to the device with real persistence, and the UI says they

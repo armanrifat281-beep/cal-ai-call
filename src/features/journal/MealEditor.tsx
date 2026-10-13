@@ -57,6 +57,13 @@ export interface MealEditorProps {
   initialPhotoUri?: string | null;
   /** Shown above the form, e.g. the scanner's uncertainty warnings. */
   banner?: React.ReactNode;
+  /**
+   * Shown at the end of the form, for actions that are about the meal but
+   * are not editing it - saving it for quick re-use, or taking it to the
+   * recipe creator. Kept out of the sticky footer, which belongs to the one
+   * decision the screen exists for.
+   */
+  extras?: React.ReactNode;
   saving: boolean;
   saveError: AppError | null;
   onSave: (draft: MealDraft) => void;
@@ -112,6 +119,7 @@ export function MealEditor({
   initial,
   initialPhotoUri,
   banner,
+  extras,
   saving,
   saveError,
   onSave,
@@ -354,6 +362,8 @@ export function MealEditor({
         numberOfLines={3}
         autoCapitalize="sentences"
       />
+
+      {extras}
     </Screen>
   );
 }

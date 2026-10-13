@@ -3,10 +3,23 @@ import { useState } from 'react';
 import { View } from 'react-native';
 
 import { Icon } from '@/components/Icon';
-import { Button, Disclosure, Screen, Text, TextField } from '@/components/ui';
+import {
+  Button,
+  Disclosure,
+  ErrorState,
+  Screen,
+  Text,
+  TextField,
+} from '@/components/ui';
+import { AuthBackButton } from '@/features/auth/AuthBackButton';
 import { AuthLayout } from '@/features/auth/AuthLayout';
 import { SocialSignIn } from '@/features/auth/SocialSignIn';
-import { hasAnyError, useAuth, validateSignUp } from '@/features/auth';
+import {
+  hasAnyError,
+  resendConfirmationEmail,
+  useAuth,
+  validateSignUp,
+} from '@/features/auth';
 import type { AppError } from '@/lib/result';
 import { useTheme } from '@/theme';
 
@@ -24,6 +37,25 @@ export default function SignUpScreen() {
   const [awaitingConfirmation, setAwaitingConfirmation] = useState(false);
 
   const errors = validateSignUp(email, password, confirmation);
+
+  const [resending, setResending] = useState(false);
+  const [resent, setResent] = useState(false);
+  const [resendError, setResendError] = useState<AppError | null>(null);
+
+  const resend = async () => {
+    setResending(true);
+    setResendError(null);
+    const result = await resendConfirmationEmail(email);
+    setResending(false);
+
+    if (!result.ok) {
+      setResendError(result.error);
+      return;
+    }
+    // Disabled afterwards: the sender allows very few messages an hour, and
+    // a second press would spend one of them for nothing.
+    setResent(true);
+  };
 
   const submit = async () => {
     setSubmitted(true);
@@ -61,13 +93,33 @@ export default function SignUpScreen() {
         </View>
         <Disclosure
           summary="Nothing arrived?"
-          detail="Check your spam folder. The link can take a minute to arrive, and it expires after a while - ask for a new one from the sign-in screen if it does."
+          detail="Check your spam folder first - the link can take a minute. If it still has not come, send it again below. The link expires after a while, and a fresh one always works."
+        />
+
+        {resendError ? (
+          <ErrorState message={resendError.message} detail={resendError.detail} />
+        ) : null}
+
+        {/*
+          Without this, an email that never arrives is the end of the road:
+          the sign-in screen only offers a password reset, which does not
+          confirm an address, so the account stays unreachable and the email
+          is already taken.
+        */}
+        <Button
+          label={resent ? 'Sent again' : 'Send the email again'}
+          onPress={() => void resend()}
+          loading={resending}
+          disabled={resent}
+          size="lg"
+          fullWidth
+          haptic
         />
         <Button
           label="Go to sign in"
+          variant="ghost"
           onPress={() => router.replace('/(auth)/sign-in')}
-          size="lg"
-          fullWidth
+          style={{ alignSelf: 'center' }}
         />
       </Screen>
     );
@@ -75,7 +127,9 @@ export default function SignUpScreen() {
 
   return (
     <AuthLayout
-      title="Create an account"
+      title={'Create your\naccount'}
+      heroLeading={router.canGoBack() ? <AuthBackButton /> : undefined}
+      heroHeight={240}
       subtitle="Backs up your meals, recipes and shopping lists, and syncs them across devices."
       error={error}
       onRetry={error?.retryable ? () => void submit() : undefined}

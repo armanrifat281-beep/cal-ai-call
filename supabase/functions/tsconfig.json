@@ -7,7 +7,12 @@
     "This config typechecks the function's PURE modules (schema.ts, helpers.ts",
     "and their tests), which is what `npm run typecheck:functions` runs.",
     "index.ts is excluded because checking it needs Deno's own types; the",
-    "Supabase CLI typechecks it at deploy time, and `deno check` does locally."
+    "Supabase CLI typechecks it at deploy time, and `deno check` does locally.",
+    "",
+    "vision.test.ts is excluded for the same reason: it imports vision.ts,",
+    "which uses the Deno global and an npm: specifier. Jest still runs it",
+    "(Babel, not tsc), so the retry and error-handling behaviour it covers is",
+    "verified; the types are checked by Deno at deploy time."
   ],
   "compilerOptions": {
     "target": "ES2022",
@@ -29,5 +34,6 @@
     "analyze-meal/__tests__/**/*.ts",
     "generate-recipe/schema.ts",
     "generate-recipe/__tests__/**/*.ts"
-  ]
+  ],
+  "exclude": ["analyze-meal/__tests__/vision.test.ts"]
 }

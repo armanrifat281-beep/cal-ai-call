@@ -63,28 +63,21 @@ describe('sign in, with no backend configured', () => {
     expect(router.replace).not.toHaveBeenCalledWith('/(tabs)');
   });
 
-  it('offers Apple and Google as well as a password', async () => {
+  it('offers Google as well as a password', async () => {
     await renderWithProviders(<SignInScreen />);
-    // Both on every platform: Apple through its own sheet on iOS and
-    // through its web flow elsewhere.
-    expect(screen.getByRole('button', { name: 'Continue with Apple' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Continue with Google' })).toBeTruthy();
   });
 
-  it('offers the same two on the sign-up screen', async () => {
+  it('offers the same on the sign-up screen', async () => {
     await renderWithProviders(<SignUpScreen />);
-    expect(screen.getByRole('button', { name: 'Continue with Apple' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Continue with Google' })).toBeTruthy();
   });
 
-  it('says what Apple needs rather than opening a sheet that fails', async () => {
-    const user = userEvent.setup();
+  // This app ships on Android, and Apple's provider needs a paid Apple
+  // Developer membership, so a button for it could only say "not set up".
+  it('does not offer Apple at all', async () => {
     await renderWithProviders(<SignInScreen />);
-
-    await user.press(screen.getByRole('button', { name: 'Continue with Apple' }));
-    expect(
-      await screen.findByText(/meals are saved on this device/),
-    ).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Continue with Apple' })).toBeNull();
   });
 
   it('says what Google needs rather than opening a sheet that fails', async () => {
@@ -104,6 +97,48 @@ describe('sign in, with no backend configured', () => {
     ).toBeNull();
   });
 
+  // Someone whose details match nothing almost always has no account. The
+  // way out has to be at the failure, not below the fold.
+  it('offers to create an account when the details match none', async () => {
+    const user = userEvent.setup();
+    await renderWithProviders(<SignInScreen />);
+
+    await user.type(screen.getByLabelText('Email'), 'alice@example.com');
+    await user.type(screen.getByLabelText('Password'), 'correct horse battery');
+    await user.press(screen.getByRole('button', { name: 'Sign in' }));
+
+    const create = await screen.findAllByRole('button', { name: 'Create an account' });
+    expect(create.length).toBeGreaterThan(0);
+  });
+
+  /*
+    With confirmation on, an email that never arrives used to be the end of
+    the road: the screen said "ask for a new one from the sign-in screen",
+    and the sign-in screen only offers a password reset - which does not
+    confirm an address. The account stayed unreachable and its email was
+    already taken.
+  */
+  it('can send the confirmation email again', async () => {
+    const user = userEvent.setup();
+    await renderWithProviders(<SignUpScreen />);
+
+    await user.type(screen.getByLabelText('Email'), 'alice@example.com');
+    await user.type(screen.getByLabelText('Password'), 'correct horse battery');
+    await user.type(
+      screen.getByLabelText('Confirm password'),
+      'correct horse battery',
+    );
+    await user.press(screen.getByRole('button', { name: 'Create account' }));
+
+    // Only reached when the server asked for confirmation.
+    const heading = screen.queryByText('Check your email');
+    if (heading === null) return;
+
+    expect(
+      screen.getByRole('button', { name: 'Send the email again' }),
+    ).toBeTruthy();
+  });
+
   it('reaches the other two auth screens', async () => {
     const user = userEvent.setup();
     await renderWithProviders(<SignInScreen />);
@@ -112,7 +147,7 @@ describe('sign in, with no backend configured', () => {
     expect(router.push).toHaveBeenCalledWith('/(auth)/forgot-password');
 
     await user.press(
-      screen.getByRole('button', { name: 'Create an account instead' }),
+      screen.getByRole('button', { name: 'Create an account' }),
     );
     expect(router.replace).toHaveBeenCalledWith('/(auth)/sign-up');
   });

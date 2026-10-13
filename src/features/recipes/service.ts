@@ -1,3 +1,5 @@
+import { File as FileSystemFile } from 'expo-file-system';
+
 import { env } from '@/lib/env';
 import { logger } from '@/lib/logger';
 import { appError, err, ok, toAppError, type Result } from '@/lib/result';
@@ -122,11 +124,17 @@ export async function generateRecipe(
       // Multipart, so the photo rides along with the request.
       const form = new FormData();
       form.append('request', JSON.stringify(payload));
-      form.append('photo', {
-        uri: request.referenceImageUri,
-        name: 'reference.jpg',
-        type: 'image/jpeg',
-      } as unknown as Blob);
+      /*
+        A real file, not a `{ uri, name, type }` descriptor - the same trap
+        the meal scanner fell into. That descriptor is React Native's own
+        extension, and Expo's WinterCG `fetch` rejects it with "Unsupported
+        FormDataPart implementation"; it accepts a string, a Blob, or
+        anything exposing `bytes()`, which this File does.
+      */
+      form.append(
+        'photo',
+        new FileSystemFile(request.referenceImageUri) as unknown as Blob,
+      );
       body = form;
     } else {
       body = payload;
@@ -138,7 +146,7 @@ export async function generateRecipe(
     });
 
     if (error) {
-      return err(mapFunctionError(error));
+      return err(mapFunctionError(error, await readServerMessage(error)));
     }
 
     const validation = validateRecipe(data, {
@@ -169,13 +177,40 @@ function readProviderLabel(data: unknown): string {
 }
 
 /**
+ * Reads the server's own message out of a failed invocation.
+ *
+ * `functions.invoke` surfaces a non-2xx as a FunctionsHttpError whose
+ * `context` is the Response, so the structured error the function sent is
+ * still there - but only behind an await. Without this the user saw the
+ * client's generic line plus supabase-js's "Edge Function returned a non-2xx
+ * status code", neither of which says what actually happened.
+ */
+async function readServerMessage(error: unknown): Promise<string | null> {
+  const response = (error as { context?: unknown })?.context;
+  if (typeof (response as Response | undefined)?.json !== 'function') return null;
+
+  try {
+    const body: unknown = await (response as Response).clone().json();
+    const message = (body as { error?: { message?: unknown } })?.error?.message;
+    return typeof message === 'string' && message.trim().length > 0
+      ? message.trim()
+      : null;
+  } catch {
+    // A body that is not our JSON tells us nothing; the status still does.
+    return null;
+  }
+}
+
+/**
  * Maps an Edge Function error to something the user can act on.
  *
- * `functions.invoke` surfaces a non-2xx as a FunctionsHttpError whose body
- * holds our own structured error, so the server's message is preferred over a
- * generic one where it exists.
+ * The server's message wins where there is one: it knows which of several
+ * reasons applied, and the status alone cannot say.
  */
-function mapFunctionError(error: unknown): ReturnType<typeof appError> {
+function mapFunctionError(
+  error: unknown,
+  serverMessage: string | null = null,
+): ReturnType<typeof appError> {
   const message = error instanceof Error ? error.message : String(error);
   const context = (error as { context?: { status?: number } })?.context;
   const status = typeof context?.status === 'number' ? context.status : null;
@@ -207,10 +242,12 @@ function mapFunctionError(error: unknown): ReturnType<typeof appError> {
     );
   }
   if (status === 503) {
-    return appError('not_configured', 'Recipe creation is not available right now.', {
-      detail: message,
-      retryable: false,
-    });
+    return appError(
+      'not_configured',
+      serverMessage ??
+        'Recipe creation is not set up on the server yet. Saved recipes still work, and you can write one by hand.',
+      { detail: message, retryable: false },
+    );
   }
   if (status !== null && status >= 500) {
     return appError('provider_error', 'The recipe service had a problem. Try again.', {

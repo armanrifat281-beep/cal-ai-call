@@ -86,7 +86,12 @@ export default function CreateRecipeScreen() {
   const theme = useTheme();
   const router = useRouter();
   const { session } = useAuth();
-  const params = useLocalSearchParams<{ mode?: string; photoUri?: string }>();
+  const params = useLocalSearchParams<{
+    mode?: string;
+    photoUri?: string;
+    /** Comma-separated foods to start from, e.g. handed over by a scan. */
+    pantry?: string;
+  }>();
   // The hook, not the module getter: the getter is always device-local, so
   // a signed-in user's new recipe would be written to the phone instead of
   // to their account.
@@ -99,9 +104,12 @@ export default function CreateRecipeScreen() {
 
   // Arriving from the scanner means there is a photo and the mode is fixed.
   const photoUri = typeof params.photoUri === 'string' ? params.photoUri : null;
+  // Arriving from an analysed meal: the foods it identified, to cook with
+  // rather than to log. Trimmed here because the names come from a model.
+  const seededPantry = typeof params.pantry === 'string' ? params.pantry.trim() : '';
   const initialMode: RecipeRequestMode = photoUri
     ? 'from_photo'
-    : params.mode === 'from_pantry'
+    : params.mode === 'from_pantry' || seededPantry.length > 0
       ? 'from_pantry'
       : 'dish_name';
 
@@ -116,7 +124,7 @@ export default function CreateRecipeScreen() {
   const [cuisineNote, setCuisineNote] = useState('');
   const [equipment, setEquipment] = useState<string[]>([]);
   const [maxMinutes, setMaxMinutes] = useState<number | null>(null);
-  const [pantryText, setPantryText] = useState('');
+  const [pantryText, setPantryText] = useState(seededPantry);
 
   const [submitted, setSubmitted] = useState(false);
   const [busy, setBusy] = useState(false);

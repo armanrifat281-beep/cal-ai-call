@@ -4,7 +4,7 @@ import { View } from 'react-native';
 
 import { Icon } from '@/components/Icon';
 import { Button, ErrorState, Screen, Skeleton, Text } from '@/components/ui';
-import { useJournalRepository } from '@/features/journal';
+import { MealActions, useJournalRepository } from '@/features/journal';
 import { MealEditor, type MealDraft } from '@/features/journal/MealEditor';
 import { deleteMealPhoto, mealPhotoUri, saveMealPhoto } from '@/features/photos';
 import { formatDayLabel, toDateKey, todayKey } from '@/lib/date';
@@ -154,6 +154,16 @@ export default function EntryDetailScreen() {
         saveError={saveError}
         onSave={(draft) => void save(draft)}
         onDelete={() => void remove()}
+        extras={
+          <MealActions
+            title={entry.title}
+            mealType={entry.mealType}
+            items={entry.items}
+            // The meal is already in the journal, so a shortcut to it makes
+            // sense here in a way it would not on an unsaved draft.
+            allowSaving
+          />
+        }
         banner={
           isFromAnotherDay ? (
             <View

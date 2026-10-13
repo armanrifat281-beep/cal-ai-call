@@ -4,7 +4,7 @@ import { View } from 'react-native';
 import { Icon } from '@/components/Icon';
 import { RecipeImage } from '@/components/recipes/RecipeImage';
 import {
-  Button,
+  BrandGradient,
   Disclosure,
   EmptyState,
   ErrorState,
@@ -18,7 +18,7 @@ import {
 } from '@/components/ui';
 import { getGenerationAvailability, useRecipes, useShoppingLists } from '@/features/recipes';
 import { cuisineLabel } from '@/features/recipes/options';
-import { useTheme } from '@/theme';
+import { ramps, useTheme } from '@/theme';
 import type { Recipe } from '@/types/recipe';
 
 /**
@@ -53,14 +53,55 @@ export default function RecipesScreen() {
         The one thing this screen is for, as the call-to-action button
         itself rather than a tappable panel wearing a different colour.
       */}
-      <Button
-        label="Create a recipe"
+      {/*
+        A question rather than a verb. "Create a recipe" is what the button
+        does; "What shall we cook?" is what the user came here to answer, and
+        on the one screen of the app that is about wanting something rather
+        than recording it, that difference is worth the card.
+      */}
+      <PressableScale
         onPress={() => router.push('/recipe/create')}
-        size="lg"
-        fullWidth
-        leading={<Icon name="sparkle" size={20} color={theme.colors.textOnPrimary} />}
+        haptic
+        scaleTo={0.99}
+        accessibilityRole="button"
+        accessibilityLabel="What shall we cook?"
         accessibilityHint="Name a dish, describe one, or use a photo"
-      />
+      >
+        <BrandGradient
+          extent="band"
+          style={{ borderRadius: theme.radius.surface + 6 }}
+        >
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: theme.spacing.base,
+              padding: theme.spacing.lg,
+            }}
+          >
+            <View style={{ flex: 1, gap: theme.spacing.xs }}>
+              <Text variant="headline" color={ramps.neutral[25]}>
+                What shall we cook?
+              </Text>
+              <Text variant="footnote" color="rgba(247,247,248,0.66)">
+                Name a dish, or say what you have in.
+              </Text>
+            </View>
+            <View
+              style={{
+                width: 46,
+                height: 46,
+                borderRadius: 23,
+                backgroundColor: ramps.neutral[25],
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <Icon name="sparkle" size={20} color={ramps.neutral[900]} />
+            </View>
+          </View>
+        </BrandGradient>
+      </PressableScale>
 
       <Surface variant="grouped">
         <Row

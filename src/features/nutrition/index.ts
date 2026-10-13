@@ -1,4 +1,9 @@
 export {
+  describeConfidence,
+  summarizeConfidence,
+  type DayConfidence,
+} from './confidence';
+export {
   buildItemFromEstimate,
   buildItemFromRecord,
   computeDailyProgress,

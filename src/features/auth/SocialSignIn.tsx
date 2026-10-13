@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { View } from 'react-native';
 
 import { Icon } from '@/components/Icon';
@@ -7,8 +7,6 @@ import { env } from '@/lib/env';
 import type { AppError } from '@/lib/result';
 import { useTheme } from '@/theme';
 
-import { AppleButton } from './AppleButton';
-import { signInWithApple } from './socialService';
 import { useGoogleSignIn } from './useGoogleSignIn';
 
 export interface SocialSignInProps {
@@ -19,44 +17,25 @@ export interface SocialSignInProps {
 }
 
 /**
- * Sign in with Apple, and with Google.
+ * Sign in with Google.
  *
- * Neither carries a provider secret; the app only ever handles a token or
- * a one-time code that Supabase verifies. Both buttons appear on every
- * platform, because both services work on every platform - Apple through
- * its own sheet on iOS and through its web flow elsewhere.
+ * It carries no provider secret; the app only ever handles an identity token
+ * that Supabase verifies.
  *
- * When a provider is not configured the button is still here - the sign-in
- * page has to be a complete page - and pressing it says exactly what is
- * missing instead of opening a sheet that fails.
+ * Sign in with Apple is not offered. This app ships on Android, and Apple's
+ * provider cannot be configured without a paid Apple Developer membership -
+ * so a button for it could only ever say "not set up".
+ *
+ * When Google is not configured the button is still here - the sign-in page
+ * has to be a complete page - and pressing it says exactly what is missing
+ * instead of opening a sheet that fails.
  */
 export function SocialSignIn({ onSignedIn, onError }: SocialSignInProps) {
   const theme = useTheme();
-  const [appleBusy, setAppleBusy] = useState(false);
-
-  const pressApple = async () => {
-    setAppleBusy(true);
-    const result = await signInWithApple();
-    setAppleBusy(false);
-
-    if (!result.ok) {
-      onError(result.error);
-      return;
-    }
-    // Null means the user closed Apple's sheet, which is not a failure.
-    if (result.value) onSignedIn();
-  };
 
   return (
     <View style={{ gap: theme.spacing.md }}>
       <Separator />
-
-      {/*
-        Offered on every platform - Sign in with Apple is not an iOS-only
-        service. Its own component, because Apple specifies how this button
-        may look and the app's pill is not one of the permitted fills.
-      */}
-      <AppleButton loading={appleBusy} onPress={() => void pressApple()} />
 
       {/*
         Two components rather than one with a branch inside it. The request

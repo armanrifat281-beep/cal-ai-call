@@ -6,14 +6,21 @@ import { usePreferencesStore } from '@/store/preferencesStore';
 /**
  * Boot gate.
  *
- * Sign-in is the first screen. Always. Onboarding comes after it, so the
- * questions are asked of someone whose answers have somewhere to be saved.
+ * Signed out: the welcome screen, which says what the app is before asking
+ * for an email address. It offers both doors, so arriving with an account
+ * still costs one tap. An earlier version redirected straight to the
+ * sign-in form, which put a credential prompt in front of anyone who had
+ * not yet been told what they would be signing into.
+ *
+ * Signed in: onboarding if it has not been done, so the questions are asked
+ * of someone whose answers have somewhere to be saved, and the app itself
+ * after that.
  *
  * There is no backend-missing shortcut here. An earlier version skipped
  * straight to onboarding when no Supabase project was configured, on the
  * reasoning that there was nothing to sign into - which meant that in the
  * build anyone actually runs, the login screen never appeared at all. The
- * screen itself handles that case now, where it is visible.
+ * screens themselves handle that case now, where it is visible.
  */
 export default function BootGate() {
   const { isSignedIn } = useAuth();
@@ -21,7 +28,7 @@ export default function BootGate() {
     (state) => state.onboardingCompletedAt !== null,
   );
 
-  if (!isSignedIn) return <Redirect href="/(auth)/sign-in" />;
+  if (!isSignedIn) return <Redirect href="/(auth)/welcome" />;
 
   return <Redirect href={hasOnboarded ? '/(tabs)' : '/(onboarding)/welcome'} />;
 }

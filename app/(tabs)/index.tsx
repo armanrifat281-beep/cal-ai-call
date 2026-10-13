@@ -1,10 +1,19 @@
 import { useRouter } from 'expo-router';
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { View } from 'react-native';
 
 import { Icon } from '@/components/Icon';
-import { DayOverview, DayOverviewSkeleton, MealRow } from '@/components/nutrition';
 import {
+  ConfidenceBar,
+  DayOverview,
+  DayOverviewSkeleton,
+  MealRow,
+  OtherNutrients,
+  QuickActions,
+  WeekStrip,
+} from '@/components/nutrition';
+import {
+  Appear,
   Disclosure,
   EmptyState,
   ErrorState,
@@ -14,7 +23,10 @@ import {
   Skeleton,
   Surface,
 } from '@/components/ui';
-import { useDayJournal, useRecentEntries } from '@/features/journal';
+import { useDayAndWeek, useRecentEntries } from '@/features/journal';
+import { WaterCard } from '@/features/water';
+import { WeightCard } from '@/features/weight';
+import { summarizeConfidence } from '@/features/nutrition';
 import { formatDayLabel, todayKey } from '@/lib/date';
 import { env } from '@/lib/env';
 import { greetingFor } from '@/lib/greeting';
@@ -24,10 +36,17 @@ import { useTheme } from '@/theme';
 /**
  * Home.
  *
- * One hero figure, then the day as a timeline, then two quiet ways out.
- * Scanning is a tab now, so this screen no longer repeats a giant scan
- * block - it offers the two things you cannot reach in one tap from the tab
- * bar: adding a meal by hand, and re-logging something from earlier.
+ * The week, then the three ways to log a meal, then the day's figure, then
+ * the day itself. That order is deliberate: the two things a returning user
+ * wants are "am I keeping this up" and "let me add what I just ate", and
+ * both used to be below the fold or absent. Scanning in particular could not
+ * be started from this screen at all - it needed a trip to another tab -
+ * while adding a meal by hand moved between two places depending on whether
+ * the day was empty.
+ *
+ * On a first run the dial is held back. A ring reading 0 of 2,000 above an
+ * empty list is the whole screen saying "you have done nothing", which is a
+ * poor first impression and tells the user nothing they did not know.
  */
 export default function HomeScreen() {
   const theme = useTheme();
@@ -35,8 +54,11 @@ export default function HomeScreen() {
   const dateKey = todayKey();
 
   const targets = usePreferencesStore((state) => state.preferences.dailyTargets);
-  const { entries, summary, loading, error, reload } = useDayJournal(dateKey);
+  // One read for the day and the week it sits in: the week's range already
+  // contains the day, and two reads could disagree about it after a save.
+  const { entries, summary, week, loading, error, reload } = useDayAndWeek(dateKey);
   const recent = useRecentEntries(4);
+  const confidence = useMemo(() => summarizeConfidence(entries), [entries]);
 
   const refreshAll = useCallback(() => {
     reload();
@@ -48,6 +70,10 @@ export default function HomeScreen() {
   const earlier = recent.entries.filter(
     (entry) => !entries.some((today) => today.id === entry.id),
   );
+
+  // Nothing logged, ever - not merely nothing yet today.
+  const firstRun =
+    !loading && entries.length === 0 && recent.entries.length === 0;
 
   const dayLabel = formatDayLabel(dateKey);
   const displayName = usePreferencesStore((state) => state.preferences.displayName);
@@ -65,6 +91,24 @@ export default function HomeScreen() {
       refreshing={loading}
       onRefresh={refreshAll}
     >
+      {/* The shape of the habit, before any number. */}
+      <Appear index={0}>
+        <WeekStrip
+          days={week}
+          selectedKey={dateKey}
+          onSelect={() => router.push('/(tabs)/journal')}
+          targetKcal={targets.caloriesKcal}
+        />
+      </Appear>
+
+      <Appear index={1}>
+        <QuickActions
+          onScan={() => router.push('/(tabs)/scan')}
+          onSearch={() => router.push('/foods/search')}
+          onManual={() => router.push('/entry/new')}
+        />
+      </Appear>
+
       {error ? (
         <ErrorState
           message={error.message}
@@ -74,75 +118,131 @@ export default function HomeScreen() {
       ) : loading && entries.length === 0 ? (
         <DayOverviewSkeleton />
       ) : (
-        <DayOverview summary={summary} targets={targets} dayLabel={dayLabel} />
+        /*
+          Shown on a first run too.
+
+          An earlier version hid the dial until something was logged, on the
+          grounds that a ring reading 0 of 2,000 is the screen saying "you
+          have done nothing". That reasoning was wrong in practice: the dial
+          is the app's one signature element, and without it home is a
+          greeting, a row of buttons and a large empty space - which reads
+          as unfinished rather than tactful. An empty ring against a target
+          is also simply the truth about the day so far.
+        */
+        <Appear index={2}>
+          <DayOverview summary={summary} targets={targets} dayLabel={dayLabel} />
+        </Appear>
       )}
 
-      <Section
-        title="Meals"
-        action={
-          entries.length > 0
-            ? { label: 'Add', onPress: () => router.push('/entry/new') }
-            : undefined
-        }
-      >
-        {loading && entries.length === 0 ? (
-          <View style={{ gap: theme.spacing.base }}>
-            <Skeleton height={44} />
-            <Skeleton height={44} />
-          </View>
-        ) : entries.length === 0 ? (
-          <EmptyState
-            title="Nothing logged yet"
-            body="Photograph your next meal from the Scan tab, or add one by hand. Everything you save stays editable."
-            illustration={<Icon name="leaf" size={38} color="primary" strokeWidth={1.5} />}
-            actionLabel="Add a meal"
-            onAction={() => router.push('/entry/new')}
-          />
-        ) : (
-          <View>
-            {entries.map((entry, index) => (
-              <MealRow
-                key={entry.id}
-                entry={entry}
-                divided={index > 0}
-                onPress={() => router.push(`/entry/${entry.id}`)}
-              />
-            ))}
-          </View>
-        )}
-      </Section>
+      {/* The app's whole argument, in one strip: which of today's calories
+          are measured and which are guesses. Directly under the dial, so it
+          qualifies the number it belongs to. */}
+      <Appear index={3}>
+        <ConfidenceBar confidence={confidence} />
+      </Appear>
+
+      <Appear index={4}>
+        <WaterCard />
+      </Appear>
+
+      {/* The one card worth looking at from the first day: it needs no
+          logged meals, no backend and no API key. */}
+      <Appear index={5}>
+        <WeightCard />
+      </Appear>
+
+      {/* Fibre, sugar, saturated fat and sodium - stored on every item all
+          along, and shown nowhere until now. */}
+      <Appear index={6}>
+        <OtherNutrients
+          totals={summary.totals.nutrients}
+          incompleteKeys={summary.totals.incompleteKeys}
+        />
+      </Appear>
+
+      <Appear index={7}>
+        <Section
+          title="Meals"
+          action={
+            entries.length > 0
+              ? { label: 'Add', onPress: () => router.push('/entry/new') }
+              : undefined
+          }
+        >
+          {loading && entries.length === 0 ? (
+            <View style={{ gap: theme.spacing.base }}>
+              <Skeleton height={44} />
+              <Skeleton height={44} />
+            </View>
+          ) : entries.length === 0 ? (
+            <EmptyState
+              title={firstRun ? 'Log your first meal' : 'Nothing logged yet'}
+              body={
+                firstRun
+                  ? 'Photograph it, look it up, or type it in. Every estimate shows where its numbers came from, and you can correct any of them.'
+                  : 'Photograph your next meal, or add one by hand. Everything you save stays editable.'
+              }
+              illustration={
+                <Icon name="leaf" size={38} color="primary" strokeWidth={1.5} />
+              }
+            />
+          ) : (
+            <View>
+              {entries.map((entry, index) => (
+                <MealRow
+                  key={entry.id}
+                  entry={entry}
+                  divided={index > 0}
+                  onPress={() => router.push(`/entry/${entry.id}`)}
+                />
+              ))}
+            </View>
+          )}
+        </Section>
+      </Appear>
 
       {earlier.length > 0 ? (
-        <Section
-          title="Log again"
-          subtitle="Meals you saved earlier. Open one to add it to today."
-        >
-          <Surface variant="grouped">
-            {earlier.map((entry, index) => (
-              <Row
-                key={entry.id}
-                title={entry.title}
-                subtitle={formatDayLabel(
-                  new Date(entry.consumedAt).toISOString().slice(0, 10),
-                )}
-                divided={index > 0}
-                trailing={<Icon name="chevronRight" size={16} color="textSubtle" />}
-                onPress={() => router.push(`/entry/${entry.id}`)}
-              />
-            ))}
-          </Surface>
-        </Section>
+        <Appear index={8}>
+          <Section
+            title="Log again"
+            subtitle="Meals you saved earlier. Open one to add it to today."
+          >
+            <Surface variant="grouped">
+              {earlier.map((entry, index) => (
+                <Row
+                  key={entry.id}
+                  title={entry.title}
+                  subtitle={formatDayLabel(
+                    new Date(entry.consumedAt).toISOString().slice(0, 10),
+                  )}
+                  divided={index > 0}
+                  trailing={
+                    <Icon name="chevronRight" size={16} color="textSubtle" />
+                  }
+                  onPress={() => router.push(`/entry/${entry.id}`)}
+                />
+              ))}
+            </Surface>
+          </Section>
+        </Appear>
       ) : null}
 
-      <Surface variant="grouped">
-        <Row
-          title="Insights"
-          subtitle="Patterns counted from your saved meals"
-          leading={<Icon name="insights" size={19} color="primary" />}
-          trailing={<Icon name="chevronRight" size={16} color="textSubtle" />}
-          onPress={() => router.push('/(tabs)/insights')}
-        />
-      </Surface>
+      {/* Nothing saved means nothing to count, and the insights screen can
+          only answer "not enough logged yet". Offering a route whose single
+          possible reply is a refusal is worse than not offering it. */}
+      {firstRun ? null : (
+        <Appear index={9}>
+          <Surface variant="grouped">
+            <Row
+              title="Insights"
+              subtitle="Patterns counted from your saved meals"
+              leading={<Icon name="insights" size={19} color="primary" />}
+              trailing={<Icon name="chevronRight" size={16} color="textSubtle" />}
+              onPress={() => router.push('/(tabs)/insights')}
+            />
+          </Surface>
+        </Appear>
+      )}
 
       {!env.isSupabaseConfigured ? (
         <Disclosure

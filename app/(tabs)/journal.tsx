@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { View } from 'react-native';
 
 import { Icon } from '@/components/Icon';
@@ -8,9 +8,9 @@ import {
   DayOverviewSkeleton,
   MealRow,
   WeekStrip,
-  type WeekStripDay,
 } from '@/components/nutrition';
 import {
+  AddPrompt,
   Button,
   EmptyState,
   ErrorState,
@@ -20,13 +20,10 @@ import {
   Section,
   Text,
 } from '@/components/ui';
-import { computeEntryTotals } from '@/features/nutrition';
-import { useDayJournal, useRangeJournal } from '@/features/journal';
+import { QuickAddMeals, useDayJournal, useWeekStripDays } from '@/features/journal';
 import {
   addDaysToKey,
   formatDayLabel,
-  groupByDateKey,
-  lastSevenDayKeys,
   todayKey,
 } from '@/lib/date';
 import { usePreferencesStore } from '@/store/preferencesStore';
@@ -61,26 +58,13 @@ export default function JournalScreen() {
   // The strip's window moves a week at a time; tapping a day inside it only
   // moves the selection, so the week you are comparing against stays put.
   const [stripEnd, setStripEnd] = useState(today);
-  const weekKeys = useMemo(() => lastSevenDayKeys(stripEnd), [stripEnd]);
 
   const targets = usePreferencesStore((state) => state.preferences.dailyTargets);
   const { entries, summary, loading, error, reload } = useDayJournal(dateKey);
 
-  const week = useRangeJournal(weekKeys[0] ?? stripEnd, stripEnd);
-  const weekDays = useMemo<WeekStripDay[]>(() => {
-    const byDay = groupByDateKey(week.entries, (entry) => entry.consumedAt);
-    return weekKeys.map((key) => {
-      const dayEntries = byDay.get(key) ?? [];
-      return {
-        dateKey: key,
-        caloriesKcal: dayEntries.reduce(
-          (sum, entry) => sum + computeEntryTotals(entry).nutrients.caloriesKcal,
-          0,
-        ),
-        entryCount: dayEntries.length,
-      };
-    });
-  }, [week.entries, weekKeys]);
+  // Home draws the same strip, so the grouping lives in one hook.
+  const week = useWeekStripDays(stripEnd);
+  const weekDays = week.days;
 
   const isToday = dateKey === today;
 
@@ -175,6 +159,20 @@ export default function JournalScreen() {
         />
       )}
 
+      {/*
+        Above the meal sections rather than below them: on a day with nothing
+        logged it is the fastest way to fill the day, and on a full day it is
+        still the first thing reached for. It draws nothing until the user has
+        saved a meal.
+      */}
+      <QuickAddMeals
+        dateKey={dateKey}
+        onAdded={reload}
+        // On a day with meals on it, say how to save one. On an empty day the
+        // day's own empty state is already asking for a meal.
+        hintWhenEmpty={entries.length > 0}
+      />
+
       {entries.length === 0 && !loading ? (
         <EmptyState
           title={isToday ? 'Nothing logged today' : `Nothing on ${formatDayLabel(dateKey)}`}
@@ -199,9 +197,10 @@ export default function JournalScreen() {
               }}
             >
               {forMeal.length === 0 ? (
-                <Text variant="footnote" color="textSubtle">
-                  Nothing here yet.
-                </Text>
+                <AddPrompt
+                  label={`Add ${MEAL_SECTION_TITLES[mealType].toLowerCase()}`}
+                  onPress={() => router.push(`/entry/new?mealType=${mealType}`)}
+                />
               ) : (
                 <View>
                   <Metric

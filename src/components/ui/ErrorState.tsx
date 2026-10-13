@@ -10,8 +10,17 @@ export interface ErrorStateProps {
   title?: string;
   /** Plain language. Never a stack trace. */
   message: string;
+  /** Try the same thing again. For a failure that might not repeat. */
   onRetry?: () => void;
   retryLabel?: string;
+  /**
+   * A different way forward, for a failure that retrying cannot fix.
+   *
+   * Signing in with details that match no account is the case this exists
+   * for: the useful next step is to create one, and without it the user is
+   * left pressing the same button against the same answer.
+   */
+  action?: { label: string; onPress: () => void };
   /** Technical detail, shown in development builds only. */
   detail?: string;
   testID?: string;
@@ -29,6 +38,7 @@ export function ErrorState({
   message,
   onRetry,
   retryLabel = 'Try again',
+  action,
   detail,
   testID,
 }: ErrorStateProps) {
@@ -64,14 +74,22 @@ export function ErrorState({
           </Text>
         ) : null}
 
-        {onRetry ? (
-          <Button
-            label={retryLabel}
-            variant="ghost"
-            size="sm"
-            onPress={onRetry}
-            style={{ marginTop: theme.spacing.xxs, marginLeft: -theme.spacing.sm }}
-          />
+        {onRetry || action ? (
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              marginTop: theme.spacing.xxs,
+              marginLeft: -theme.spacing.sm,
+            }}
+          >
+            {onRetry ? (
+              <Button label={retryLabel} variant="ghost" size="sm" onPress={onRetry} />
+            ) : null}
+            {action ? (
+              <Button label={action.label} variant="ghost" size="sm" onPress={action.onPress} />
+            ) : null}
+          </View>
         ) : null}
       </View>
     </View>

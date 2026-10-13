@@ -2,7 +2,14 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { View } from 'react-native';
 
-import { Disclosure, PressableScale, Text, TextField } from '@/components/ui';
+import {
+  Disclosure,
+  Metric,
+  PressableScale,
+  Surface,
+  Text,
+  TextField,
+} from '@/components/ui';
 import { GOAL_OPTIONS } from '@/features/onboarding/options';
 import { StepLayout } from '@/features/onboarding/StepLayout';
 import { usePreferencesStore } from '@/store/preferencesStore';
@@ -129,6 +136,31 @@ export default function GoalsScreen() {
           <Text variant="label" color="textMuted">
             DAILY TARGETS (OPTIONAL)
           </Text>
+
+          {/*
+            The number read back, large, once it is a valid one.
+
+            This is the only payoff this step can honestly offer. A calorie
+            target worked out from height and weight would be personalised
+            health advice, which this app does not give - see the caution
+            below, which is the product's position and not a placeholder. So
+            the figure shown is the user's own, confirmed back to them.
+          */}
+          {parsedCalories !== null && caloriesError === null ? (
+            <Surface
+              variant="raised"
+              padding="lg"
+              style={{ alignItems: 'center', gap: theme.spacing.xs }}
+            >
+              <Metric value={String(parsedCalories)} label="KCAL A DAY" size="xl" />
+              {parsedProtein !== null && proteinError === null ? (
+                <Text variant="footnote" color="textMuted">
+                  {`with ${parsedProtein} g of protein`}
+                </Text>
+              ) : null}
+            </Surface>
+          ) : null}
+
           <TextField
             label="Calories"
             value={targets.calories}

@@ -74,6 +74,49 @@ export async function signUpWithEmail(
   }
 }
 
+/**
+ * Sends the confirmation email again.
+ *
+ * Without this, a confirmation email that never arrives is the end of the
+ * road: the sign-in screen only offers a password reset, which does not
+ * confirm an address, so the account stays unreachable and the email is
+ * already taken. That matters most where it is hardest to notice - a typo
+ * in the address, or a first message that went to spam.
+ *
+ * Reports success unconditionally, for the same reason `requestPasswordReset`
+ * does: a different answer for "no such pending signup" would turn this into
+ * a way to discover who has an account here.
+ */
+export async function resendConfirmationEmail(email: string): Promise<Result<void>> {
+  const client = requireClient();
+  if (!client.ok) return client;
+
+  try {
+    const { error } = await client.value.auth.resend({
+      type: 'signup',
+      email: normalizeEmail(email),
+      options: { emailRedirectTo: REDIRECT_URL },
+    });
+
+    // Rate limiting is worth saying out loud: the built-in sender allows very
+    // few messages an hour, and silence here would look like a broken button.
+    if (error && error.code === 'over_email_send_rate_limit') {
+      return err(mapAuthError(error, 'resendConfirmation'));
+    }
+    if (error) {
+      logger.warn('resend confirmation failed', { detail: error.message });
+    }
+    return ok(undefined);
+  } catch (cause) {
+    logger.warn('resendConfirmation threw', { cause: String(cause) });
+    return err(
+      appError('network', 'No connection. Check your internet and try again.', {
+        detail: String(cause),
+      }),
+    );
+  }
+}
+
 export async function signInWithEmail(
   email: string,
   password: string,

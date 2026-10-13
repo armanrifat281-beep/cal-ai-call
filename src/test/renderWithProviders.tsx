@@ -1,4 +1,4 @@
-import { render } from '@testing-library/react-native';
+import { render, renderHook } from '@testing-library/react-native';
 import { SafeAreaProvider, type Metrics } from 'react-native-safe-area-context';
 
 import { AuthProvider } from '@/features/auth';
@@ -33,4 +33,15 @@ export function renderWithProviders(ui: React.ReactElement) {
   // Passed as `wrapper` rather than wrapped inline, so `rerender` keeps the
   // providers instead of replacing the whole tree with a bare element.
   return render(ui, { wrapper: Providers });
+}
+
+/**
+ * The same providers, for a hook with no component of its own.
+ *
+ * A data hook reaches for the auth context to decide which repository to
+ * use, so testing one outside the providers throws before it can read
+ * anything.
+ */
+export function renderHookWithProviders<T>(hook: () => T) {
+  return renderHook(hook, { wrapper: Providers });
 }

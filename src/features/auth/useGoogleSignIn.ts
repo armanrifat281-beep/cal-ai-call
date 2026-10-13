@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { env } from '@/lib/env';
 import type { AppError } from '@/lib/result';
 
+import { isProviderEnabled, providerNotConfigured } from './providerAvailability';
 import { signInWithGoogleToken } from './socialService';
 
 export interface GoogleSignIn {
@@ -99,7 +100,18 @@ export function useGoogleSignIn(onSignedIn?: () => void): GoogleSignIn {
   const start = useCallback(() => {
     setError(null);
     setBusy(true);
-    void promptAsync().catch(() => setBusy(false));
+
+    void (async () => {
+      // Having the client ids says this side is ready; it says nothing about
+      // whether the project accepts Google tokens. Asking first means the
+      // user is not walked through Google's sheet only to be refused.
+      if (!(await isProviderEnabled('google'))) {
+        setBusy(false);
+        setError(providerNotConfigured('google'));
+        return;
+      }
+      await promptAsync().catch(() => setBusy(false));
+    })();
   }, [promptAsync]);
 
   return {

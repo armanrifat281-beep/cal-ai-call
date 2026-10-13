@@ -70,7 +70,8 @@ export default function ForgotPasswordScreen() {
 
   return (
     <AuthLayout
-      title="Reset your password"
+      title={'Reset your\npassword'}
+      heroHeight={300}
       subtitle="Tell us the address you signed up with and we will send a link to choose a new password."
       error={error}
       onRetry={error?.retryable ? () => void submit() : undefined}

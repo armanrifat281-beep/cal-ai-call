@@ -68,7 +68,9 @@ describe('recipes hub', () => {
 
     // A row's accessible name is its title plus its supporting line, so
     // these are matched by prefix.
-    expect(screen.getByRole('button', { name: 'Create a recipe' })).toBeTruthy();
+    expect(
+      screen.getByRole('button', { name: 'What shall we cook?' }),
+    ).toBeTruthy();
     expect(screen.getByRole('button', { name: /^Cook with what I have/ })).toBeTruthy();
     expect(screen.getByRole('button', { name: /^My recipes/ })).toBeTruthy();
     expect(screen.getByRole('button', { name: /^Shopping lists/ })).toBeTruthy();

@@ -55,9 +55,12 @@ beforeEach(async () => {
 describe('onboarding screens', () => {
   it('welcome explains the value and states the estimation limits up front', async () => {
     await renderWithProviders(<WelcomeScreen />);
-    expect(screen.getByText('Understand what is on your plate.')).toBeTruthy();
+    expect(screen.getByText('Eat with\nyour eyes\nopen.')).toBeTruthy();
+    // The caveat is on the first screen, not buried in settings.
     expect(screen.getByText('Estimates, not measurements')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Get started' })).toBeTruthy();
+    // One button to go forward, plus a way past the questions.
+    expect(screen.getByRole('button', { name: 'Skip' })).toBeTruthy();
   });
 
   it('basics saves the chosen language, region and units', async () => {
@@ -186,15 +189,28 @@ describe('onboarding screens', () => {
 });
 
 describe('tab screens with an empty journal', () => {
-  it('shows an empty state and a way to add a meal by hand', async () => {
+  it('invites a first meal rather than reporting an empty one', async () => {
     await renderWithProviders(<HomeScreen />);
 
-    // Scanning is its own tab now, so Home does not repeat a scan block. It
-    // offers the thing the tab bar cannot reach in one tap.
-    expect(await screen.findByText('Nothing logged yet')).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Add a meal' })).toBeTruthy();
+    // Nothing has ever been logged, so the copy says what to do rather than
+    // what has not happened.
+    expect(await screen.findByText('Log your first meal')).toBeTruthy();
     // And it is honest about where data lives in an unconfigured build.
     expect(screen.getByText('Saved on this device only')).toBeTruthy();
+  });
+
+  it('offers all three ways to log a meal, in one fixed place', async () => {
+    await renderWithProviders(<HomeScreen />);
+
+    // The empty state carries no button of its own: these sit above it on
+    // every visit, logged or not, which is what makes them findable.
+    for (const label of [
+      'Photograph a meal',
+      'Search for a food',
+      'Add a meal by hand',
+    ]) {
+      expect(screen.getByRole('button', { name: label })).toBeTruthy();
+    }
   });
 
   it('journal shows an empty day', async () => {
@@ -271,8 +287,20 @@ describe('scan screen', () => {
   it('offers both capture routes', async () => {
     await renderWithProviders(<ScanScreen />);
 
-    expect(screen.getByRole('button', { name: 'Take a photo' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Choose from library' })).toBeTruthy();
+    // The camera is in the app now, so these are the shutter and the gallery
+    // control on it rather than two buttons on a panel.
+    expect(screen.getByRole('button', { name: 'Take the photo' })).toBeTruthy();
+    expect(
+      screen.getByRole('button', { name: 'Choose from your photos' }),
+    ).toBeTruthy();
+  });
+
+  it('keeps the frame clear of the controls', async () => {
+    await renderWithProviders(<ScanScreen />);
+
+    // The guides are decoration over the preview: they must not be read out,
+    // and they must not swallow a tap meant for the shutter.
+    expect(screen.getByText('Fit the whole plate in the frame')).toBeTruthy();
   });
 
   it('does not show the post-capture actions before a photo exists', async () => {

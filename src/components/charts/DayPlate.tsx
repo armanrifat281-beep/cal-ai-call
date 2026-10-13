@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { View, type StyleProp, type ViewStyle } from 'react-native';
 import Svg, { Circle, G, Line, Path } from 'react-native-svg';
 
-import { Text } from '@/components/ui';
+import { AnimatedNumber, Text } from '@/components/ui';
 import { KCAL_PER_GRAM } from '@/features/nutrition';
 import { useTheme } from '@/theme';
 import type { Nutrients } from '@/types/domain';
@@ -316,9 +316,18 @@ export function DayPlate({
           justifyContent: 'center',
         }}
       >
-        <Text variant="metricXL" numberOfLines={1} adjustsFontSizeToFit>
-          {segments.length === 0 ? '0' : String(shownKcal)}
-        </Text>
+        {/*
+          The figure counts to its value. This is the first number anyone
+          sees in the app, and arriving at it rather than appearing at it is
+          what makes the dial read as a live instrument.
+        */}
+        <AnimatedNumber
+          value={segments.length === 0 ? 0 : shownKcal}
+          variant="metricXL"
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          accessibilityLabel={`${shownKcal}`}
+        />
         <Text variant="footnote" color="textMuted" align="center" numberOfLines={2}>
           {shownLabel}
         </Text>

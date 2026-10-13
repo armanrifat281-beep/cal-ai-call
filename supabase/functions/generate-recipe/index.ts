@@ -1,14 +1,18 @@
 /**
  * generate-recipe - writes a complete recipe from what the user asked for.
  *
- * Runs on Supabase Edge Functions (Deno). The Anthropic key exists only here,
- * as an Edge Function secret, and never reaches the app.
+ * Runs on Supabase Edge Functions (Deno). The model's API key exists only
+ * here, as an Edge Function secret, and never reaches the app.
+ *
+ * Which model answers is `_shared/vision.ts`'s decision, made from whichever
+ * key is configured, so this function and analyze-meal are never set up for
+ * different providers.
  *
  * A request:
  *   1. authenticates the caller;
  *   2. checks their rolling recipe allowance (server-side);
  *   3. optionally reads a reference photo, validated by its magic bytes;
- *   4. asks Claude for a recipe, constrained to a JSON schema;
+ *   4. asks the configured model for a recipe, shaped by a JSON schema;
  *   5. validates the response against ranges a schema cannot express;
  *   6. records the attempt, success or failure.
  *
@@ -17,21 +21,19 @@
  * image provider is documented in docs/SETUP.md.
  *
  * Deploy with:
- *   supabase secrets set ANTHROPIC_API_KEY=sk-ant-...
+ *   supabase secrets set ANTHROPIC_API_KEY=...   # or GEMINI_API_KEY
  *   supabase functions deploy generate-recipe
  */
 
-import Anthropic from 'npm:@anthropic-ai/sdk@0.133.0';
 import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2.117.3';
+
+import { selectVisionProvider } from '../_shared/vision.ts';
 
 import {
   RECIPE_SCHEMA,
   validateGeneratedRecipe,
   type ValidatedRecipe,
 } from './schema.ts';
-
-/** Claude Opus 5.5. Thinking is always on, so the parameter is omitted. */
-const MODEL = 'claude-opus-5-5';
 
 /**
  * Writing a good recipe needs more care than reading a photo: quantities have
@@ -270,13 +272,18 @@ Deno.serve(async (request: Request): Promise<Response> => {
 
   const startedAt = Date.now();
 
-  const anthropicKey = Deno.env.get('ANTHROPIC_API_KEY');
+  // Whichever model the deployment has a key for. Shared with analyze-meal,
+  // so a deployment configured for one feature is configured for both - the
+  // recipe creator used to demand an Anthropic key specifically and answered
+  // 503 on a Gemini-only deployment, with the app correctly reporting that
+  // the feature was not set up.
+  const vision = selectVisionProvider(PROVIDER_TIMEOUT_MS);
   const supabaseUrl = Deno.env.get('SUPABASE_URL');
   const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
-  if (!anthropicKey || !supabaseUrl || !serviceRoleKey) {
+  if (!vision || !supabaseUrl || !serviceRoleKey) {
     console.error('generate-recipe: missing required secrets', {
-      hasAnthropicKey: Boolean(anthropicKey),
+      hasVisionProvider: Boolean(vision),
       hasSupabaseUrl: Boolean(supabaseUrl),
       hasServiceRoleKey: Boolean(serviceRoleKey),
     });
@@ -379,54 +386,35 @@ Deno.serve(async (request: Request): Promise<Response> => {
     );
   }
 
-  // ---- Ask Claude ----------------------------------------------------------
-
-  const anthropic = new Anthropic({
-    apiKey: anthropicKey,
-    timeout: PROVIDER_TIMEOUT_MS,
-    maxRetries: 1,
-  });
+  // ---- Ask the model -------------------------------------------------------
 
   let recipe: ValidatedRecipe;
   let inputTokens: number | null = null;
   let outputTokens: number | null = null;
 
   try {
-    const promptText = buildPrompt(recipeRequest, photoBytes !== null);
-    const content: Anthropic.ContentBlockParam[] = [];
-
-    if (photoBytes && photoType) {
-      content.push({
-        type: 'image',
-        source: {
-          type: 'base64',
-          media_type: photoType as 'image/jpeg' | 'image/png' | 'image/webp',
-          data: toBase64(photoBytes),
-        },
-      });
-    }
-    content.push({ type: 'text', text: promptText });
-
-    const response = await anthropic.messages.create({
-      model: MODEL,
-      max_tokens: MAX_TOKENS,
-      system: SYSTEM_PROMPT,
-      output_config: {
-        effort: EFFORT,
-        format: { type: 'json_schema', schema: RECIPE_SCHEMA },
-      },
-      messages: [{ role: 'user', content }],
+    const response = await vision.analyse({
+      systemPrompt: SYSTEM_PROMPT,
+      userPrompt: buildPrompt(recipeRequest, photoBytes !== null),
+      imageBase64: photoBytes ? toBase64(photoBytes) : null,
+      mimeType: photoType,
+      schema: RECIPE_SCHEMA,
+      maxTokens: MAX_TOKENS,
+      timeoutMs: PROVIDER_TIMEOUT_MS,
+      // A recipe has to be cookable, which is worth more thinking than
+      // naming what is on a plate.
+      effort: EFFORT,
     });
 
-    inputTokens = response.usage?.input_tokens ?? null;
-    outputTokens = response.usage?.output_tokens ?? null;
+    inputTokens = response.inputTokens;
+    outputTokens = response.outputTokens;
 
     // Checked BEFORE reading content: a refusal is an HTTP 200 with no usable
     // output.
-    if (response.stop_reason === 'refusal') {
-      console.warn('generate-recipe: provider declined', response.stop_details);
+    if (response.refused) {
+      console.warn('generate-recipe: provider declined');
       await recordUsage(admin, user.id, 'refused', {
-        providerLabel: MODEL,
+        providerLabel: vision.label,
         inputTokens,
         outputTokens,
         durationMs: Date.now() - startedAt,
@@ -438,10 +426,27 @@ Deno.serve(async (request: Request): Promise<Response> => {
       );
     }
 
-    const rawText = response.content
-      .filter((block): block is { type: 'text'; text: string } => block.type === 'text')
-      .map((block) => block.text)
-      .join('');
+    // Cut off at the token budget: the JSON is unclosed, so parsing it would
+    // report "unreadable" and blame the model for a budget that was too small.
+    if (response.truncated) {
+      console.warn('generate-recipe: answer truncated at the token budget', {
+        outputTokens,
+        maxTokens: MAX_TOKENS,
+      });
+      await recordUsage(admin, user.id, 'invalid_response', {
+        providerLabel: vision.label,
+        inputTokens,
+        outputTokens,
+        durationMs: Date.now() - startedAt,
+      });
+      return errorResponse(
+        502,
+        'That recipe came out longer than the model could finish in one go. Try asking for something simpler, or fewer servings.',
+        'response_truncated',
+      );
+    }
+
+    const rawText = response.text;
 
     let parsed: unknown;
     try {
@@ -451,7 +456,7 @@ Deno.serve(async (request: Request): Promise<Response> => {
         length: rawText.length,
       });
       await recordUsage(admin, user.id, 'invalid_response', {
-        providerLabel: MODEL,
+        providerLabel: vision.label,
         inputTokens,
         outputTokens,
         durationMs: Date.now() - startedAt,
@@ -459,11 +464,11 @@ Deno.serve(async (request: Request): Promise<Response> => {
       return errorResponse(502, 'The recipe came back unreadable. Try again.', 'invalid_response');
     }
 
-    const validation = validateGeneratedRecipe(parsed, MODEL, recipeRequest.servings);
+    const validation = validateGeneratedRecipe(parsed, vision.label, recipeRequest.servings);
     if (!validation.ok) {
       console.warn('generate-recipe: response failed validation', validation.reason);
       await recordUsage(admin, user.id, 'invalid_response', {
-        providerLabel: MODEL,
+        providerLabel: vision.label,
         inputTokens,
         outputTokens,
         durationMs: Date.now() - startedAt,
@@ -487,7 +492,7 @@ Deno.serve(async (request: Request): Promise<Response> => {
     });
 
     await recordUsage(admin, user.id, 'provider_error', {
-      providerLabel: MODEL,
+      providerLabel: vision.label,
       durationMs: Date.now() - startedAt,
     });
 
@@ -498,7 +503,7 @@ Deno.serve(async (request: Request): Promise<Response> => {
   }
 
   await recordUsage(admin, user.id, 'succeeded', {
-    providerLabel: MODEL,
+    providerLabel: vision.label,
     inputTokens,
     outputTokens,
     durationMs: Date.now() - startedAt,

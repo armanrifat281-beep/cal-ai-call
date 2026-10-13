@@ -1,14 +1,20 @@
+export { MealActions, type MealActionsProps } from './MealActions';
+export { QuickAddMeals, type QuickAddMealsProps } from './QuickAddMeals';
 export {
   getDeviceJournalRepository,
   setJournalRepository,
+  useDayAndWeek,
   useDayJournal,
   useJournalRepository,
   useRangeJournal,
   useRecentEntries,
   useSavedMeals,
+  useWeekStripDays,
+  type DayAndWeek,
   type DayJournal,
   type RangeJournal,
   type SavedMealsState,
+  type WeekStrip,
 } from './hooks';
 export {
   LOCAL_ENTRY_LIMIT,

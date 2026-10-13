@@ -3,7 +3,7 @@ import { View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
 import { DayPlate, dayPlateSegments } from '@/components/charts';
-import { Disclosure, Skeleton, Surface, Text } from '@/components/ui';
+import { AnimatedNumber, Disclosure, Skeleton, Surface, Text } from '@/components/ui';
 import {
   computeDailyProgress,
   describeIncompleteTotals,
@@ -107,9 +107,10 @@ export function DayOverview({
         </Animated.View>
       ) : (
         <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: theme.spacing.sm }}>
-          <Text variant="metricXL">
-            {Math.round(totals.nutrients.caloriesKcal)}
-          </Text>
+          <AnimatedNumber
+            value={Math.round(totals.nutrients.caloriesKcal)}
+            variant="metricXL"
+          />
           <Text variant="footnote" color="textMuted">
             {progress.calories.target !== null
               ? `of ${progress.calories.target} kcal`
@@ -140,7 +141,11 @@ export function DayOverview({
                 </Text>
               </View>
               <Text variant="metricM">
-                {grams < 10 ? grams.toFixed(1) : Math.round(grams)}
+                <AnimatedNumber
+                  value={grams < 10 ? Number(grams.toFixed(1)) : Math.round(grams)}
+                  decimals={grams < 10 ? 1 : 0}
+                  variant="metricM"
+                />
                 <Text variant="caption" color="textMuted">
                   {target !== null ? ` / ${target} g` : ' g'}
                 </Text>

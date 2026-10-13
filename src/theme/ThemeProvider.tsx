@@ -19,6 +19,7 @@ import {
   hairline,
   minTouchTarget,
   pressScale,
+  spring,
   radius,
   spacing,
   typography,
@@ -45,6 +46,7 @@ export interface Theme {
   hairline: number;
   /** How far a pressable scales on touch. */
   pressScale: number;
+  spring: typeof spring;
   /**
    * Shadow for a level, already resolved against this scheme's shadow
    * colour. Call it rather than hand-rolling shadow props.
@@ -78,6 +80,7 @@ function buildTheme(scheme: ColorScheme): Theme {
     blockGap,
     hairline,
     pressScale,
+    spring,
     elevation: (level) => elevation(level, colors.shadow),
   };
 }

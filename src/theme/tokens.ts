@@ -282,3 +282,25 @@ export const duration = {
 
 /** How far a pressable scales down on touch. Enough to feel, not to wobble. */
 export const pressScale = 0.975;
+
+/**
+ * Spring configurations.
+ *
+ * A duration-and-easing curve arrives at its destination and stops dead.
+ * A spring decelerates into it, which is what the hand expects of something
+ * it just pushed - and the difference between an interface that responds and
+ * one that merely updates.
+ *
+ * Both are critically damped or near it: no visible bounce. Bounce on a
+ * press reads as a toy, and on a number it makes the value hard to read
+ * while it settles.
+ *
+ *   press    a control under the finger; must feel instant
+ *   settle   something arriving on screen, or a value changing
+ */
+export const spring = {
+  press: { damping: 26, stiffness: 420, mass: 0.7 },
+  settle: { damping: 22, stiffness: 180, mass: 0.9 },
+} as const;
+
+export type SpringKey = keyof typeof spring;

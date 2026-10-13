@@ -34,17 +34,23 @@ beforeEach(() => {
 });
 
 describe('the boot gate', () => {
-  it('opens on sign-in', async () => {
+  /*
+    Welcome, not sign-in. Opening on the form asked for an email address
+    before anything had said what the app was or why an account was worth
+    making; welcome says that in one sentence and offers both doors, so a
+    returning user still reaches sign-in in one tap.
+  */
+  it('opens on welcome while signed out', async () => {
     await renderWithProviders(<BootGate />);
-    expect(destination()).toBe('/(auth)/sign-in');
+    expect(destination()).toBe('/(auth)/welcome');
   });
 
-  it('opens on sign-in even with no backend configured', async () => {
+  it('opens on welcome even with no backend configured', async () => {
     // An earlier version skipped straight to onboarding here, which meant
-    // the login screen never appeared in the build anyone actually runs.
+    // the auth screens never appeared in the build anyone actually runs.
     usePreferencesStore.getState().completeOnboarding();
     await renderWithProviders(<BootGate />);
-    expect(destination()).toBe('/(auth)/sign-in');
+    expect(destination()).toBe('/(auth)/welcome');
   });
 });
 

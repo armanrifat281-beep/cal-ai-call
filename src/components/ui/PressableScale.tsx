@@ -4,7 +4,7 @@ import { Pressable, type PressableProps, type StyleProp, type ViewStyle } from '
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
-  withTiming,
+  withSpring,
 } from 'react-native-reanimated';
 
 import { useMotion, useTheme } from '@/theme';
@@ -26,6 +26,18 @@ export interface PressableScaleProps extends Omit<PressableProps, 'style'> {
  * be delayed by JavaScript work, is what makes a tap feel like it landed on
  * something. Kept subtle: 2.5% at 90ms is felt rather than seen.
  */
+/**
+ * One element, carrying both the caller's style and the animated transform.
+ *
+ * This used to be a `Pressable` inside an `Animated.View`, with the caller's
+ * style on the inner one. Any layout the caller asked for - `flex`, `width`,
+ * `alignSelf` - was then applied to a child of a wrapper that sized itself
+ * to its content, so it did nothing: three `flex` buttons in a row came out
+ * squashed against the left edge with their labels clipped. Merging them
+ * means the element the parent lays out is the element the caller styled.
+ */
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+
 export function PressableScale({
   children,
   style,
@@ -55,18 +67,18 @@ export function PressableScale({
   // swap the gradient, and must not lose that by using this wrapper.
   const handlePressIn = useCallback<NonNullable<PressableProps['onPressIn']>>(
     (event) => {
-      scale.set(withTiming(target, { duration: theme.duration.press }));
+      scale.set(withSpring(target, theme.spring.press));
       onPressIn?.(event);
     },
-    [scale, target, theme.duration.press, onPressIn],
+    [scale, target, theme.spring.press, onPressIn],
   );
 
   const handlePressOut = useCallback<NonNullable<PressableProps['onPressOut']>>(
     (event) => {
-      scale.set(withTiming(1, { duration: theme.duration.fast }));
+      scale.set(withSpring(1, theme.spring.press));
       onPressOut?.(event);
     },
-    [scale, theme.duration.fast, onPressOut],
+    [scale, theme.spring.press, onPressOut],
   );
 
   const handlePress = useCallback<NonNullable<PressableProps['onPress']>>(
@@ -82,17 +94,15 @@ export function PressableScale({
   );
 
   return (
-    <Animated.View style={[animatedStyle, disabled ? { opacity: 0.4 } : null]}>
-      <Pressable
-        {...rest}
-        disabled={disabled}
-        onPress={handlePress}
-        onPressIn={handlePressIn}
-        onPressOut={handlePressOut}
-        style={style}
-      >
-        {children}
-      </Pressable>
-    </Animated.View>
+    <AnimatedPressable
+      {...rest}
+      disabled={disabled}
+      onPress={handlePress}
+      onPressIn={handlePressIn}
+      onPressOut={handlePressOut}
+      style={[style, animatedStyle, disabled ? { opacity: 0.4 } : null]}
+    >
+      {children}
+    </AnimatedPressable>
   );
 }

@@ -1,48 +1,131 @@
 import { useRouter } from 'expo-router';
 import { View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { BrandMark } from '@/components/BrandMark';
-import { Button, Disclosure, Screen, Text } from '@/components/ui';
-import { useTheme } from '@/theme';
+import { Icon } from '@/components/Icon';
+import { BrandGradient, Button, Disclosure, Text } from '@/components/ui';
+import { ramps, useTheme } from '@/theme';
 
 /** What the app does, in the user's terms, before asking for anything. */
-const VALUE_POINTS = [
-  {
-    title: 'Photograph a meal',
-    body: 'Point your camera at your plate and get an estimate of what is in it.',
-  },
-  {
-    title: 'Keep a food journal',
-    body: 'Edit anything that looks wrong, then save the meal to your day.',
-  },
-  {
-    title: 'Cook what you want',
-    body: 'Name a dish or list what you have, and get a recipe you can follow.',
-  },
+const CLAIMS = [
+  'Every estimate shows its source',
+  'Correct anything the camera got wrong',
+  'Your photos stay on your device',
 ];
 
 /**
  * The first screen.
  *
- * One statement, three lines about what the app does, and the honest caveat.
- * It previously put each value point in its own outlined card, which made a
- * first impression of three identical boxes. Here the numbered rail carries
- * the structure and the mark carries the identity.
+ * It is the only screen in the app that exists purely to make a case, so it
+ * is the one place where the type is allowed to be the whole design: one
+ * statement at 46px, three things the app can actually keep, and a single
+ * button.
  *
- * There is deliberately no chart on this screen. The dial is the app's
- * signature, and showing it here would mean either inventing a day that
- * nobody ate or drawing an empty ring as decoration. Neither is worth the
- * first impression, so the type does the work instead.
+ * An earlier version set all of this as dark text on the page ground with a
+ * numbered rail down the left. It read as a well-formatted document rather
+ * than the start of something, which on a first screen is the whole battle.
+ * The gradient does that work now, so the list could lose its numbers and
+ * become three claims the eye takes in at once.
+ *
+ * There is deliberately no chart here. The dial is the app's signature, and
+ * showing it would mean either inventing a day nobody ate or drawing an
+ * empty ring as decoration.
  */
 export default function WelcomeScreen() {
   const theme = useTheme();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const onLight = ramps.neutral[25];
 
   return (
-    <Screen
-      edges={{ top: true, bottom: true }}
-      contentStyle={{ gap: theme.spacing.xxl, justifyContent: 'center' }}
-      footer={
+    <BrandGradient style={{ flex: 1 }}>
+      <View
+        style={{
+          flex: 1,
+          paddingTop: insets.top + theme.spacing.xxl,
+          paddingBottom: insets.bottom + theme.spacing.lg,
+          paddingHorizontal: theme.gutter + 8,
+        }}
+      >
+        <View
+          style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
+        >
+          <BrandMark size={56} />
+          <Text
+            variant="footnote"
+            color="rgba(247,247,248,0.7)"
+            style={{ fontWeight: '600' }}
+            onPress={() => router.push('/(onboarding)/privacy')}
+            accessibilityRole="button"
+            accessibilityLabel="Skip"
+            accessibilityHint="Skips the questions and goes straight to the app"
+          >
+            Skip
+          </Text>
+        </View>
+
+        <View style={{ flexGrow: 1 }} />
+
+        <View style={{ gap: theme.spacing.base }}>
+          <Text
+            variant="display"
+            color={onLight}
+            style={{ fontSize: 46, lineHeight: 48, letterSpacing: -2 }}
+          >
+            {'Eat with\nyour eyes\nopen.'}
+          </Text>
+          <Text
+            variant="body"
+            color="rgba(247,247,248,0.64)"
+            style={{ maxWidth: 292 }}
+          >
+            Photograph what is on your plate. FoodLens estimates the nutrition
+            and shows you where every number came from.
+          </Text>
+        </View>
+
+        <View style={{ height: theme.spacing.xxxl }} />
+
+        <View style={{ gap: theme.spacing.base }}>
+          {CLAIMS.map((claim) => (
+            <View
+              key={claim}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: theme.spacing.md,
+              }}
+            >
+              <View
+                style={{
+                  width: 24,
+                  height: 24,
+                  borderRadius: 12,
+                  backgroundColor: 'rgba(107,171,144,0.2)',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Icon name="check" size={13} color={ramps.forest[200]} strokeWidth={3} />
+              </View>
+              <Text variant="footnote" color="rgba(247,247,248,0.86)">
+                {claim}
+              </Text>
+            </View>
+          ))}
+        </View>
+
+        <View style={{ height: theme.spacing.xl }} />
+
+        <Disclosure
+          summary="Estimates, not measurements"
+          detail="A photo cannot show hidden oil, sugar or exact weight. FoodLens gives an estimate, labels where every number came from, and lets you correct it. It is not medical advice."
+          tone="caution"
+        />
+
+        <View style={{ height: theme.spacing.xl }} />
+
         <Button
           label="Get started"
           onPress={() => router.push('/(onboarding)/basics')}
@@ -50,66 +133,7 @@ export default function WelcomeScreen() {
           fullWidth
           haptic
         />
-      }
-    >
-      <View
-        style={{
-          flexDirection: 'row',
-          justifyContent: 'flex-end',
-          marginBottom: -theme.spacing.base,
-        }}
-      >
-        <Button
-          label="Skip"
-          variant="ghost"
-          size="sm"
-          onPress={() => router.push('/(onboarding)/privacy')}
-          accessibilityHint="Skips the questions and goes straight to the app"
-        />
       </View>
-
-      <View style={{ gap: theme.spacing.xl }}>
-        <BrandMark size={58} />
-        <View style={{ gap: theme.spacing.base }}>
-          {/* Set larger and tighter than the display token, because this is
-              the one line on the one screen that has to carry the app. */}
-          <Text
-            variant="display"
-            style={{ fontSize: 40, lineHeight: 45, letterSpacing: -1.1 }}
-          >
-            Understand what is on your plate.
-          </Text>
-          <Text variant="body" color="textMuted">
-            A food journal that reads your photos, shows its working, and tells
-            you when it is not sure.
-          </Text>
-        </View>
-      </View>
-
-      <View style={{ gap: theme.spacing.lg }}>
-        {VALUE_POINTS.map((point, index) => (
-          <View
-            key={point.title}
-            style={{ flexDirection: 'row', gap: theme.spacing.md }}
-          >
-            <Text variant="metricS" color="textSubtle" style={{ width: 16, paddingTop: 4 }}>
-              {index + 1}
-            </Text>
-            <View style={{ flex: 1, gap: 2 }}>
-              <Text variant="headline">{point.title}</Text>
-              <Text variant="footnote" color="textMuted">
-                {point.body}
-              </Text>
-            </View>
-          </View>
-        ))}
-      </View>
-
-      <Disclosure
-        summary="Estimates, not measurements"
-        detail="A photo cannot show hidden oil, sugar or exact weight. FoodLens gives an estimate, labels where every number came from, and lets you correct it. It is not medical advice."
-        tone="caution"
-      />
-    </Screen>
+    </BrandGradient>
   );
 }

@@ -1,43 +1,60 @@
-import { View } from 'react-native';
+import { ScrollView, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { BrandMark } from '@/components/BrandMark';
-import { Disclosure, ErrorState, OfflineNotice, Screen, Text } from '@/components/ui';
+import { Disclosure, ErrorState, OfflineNotice } from '@/components/ui';
 import type { AppError } from '@/lib/result';
 import { useTheme } from '@/theme';
 
+import { AuthHero } from './AuthHero';
 import { useAuth } from './AuthProvider';
 
 export interface AuthLayoutProps {
+  /** Set over the hero. Line breaks in it are deliberate. */
   title: string;
-  subtitle: string;
+  /** One sentence under the title, over the hero. */
+  subtitle?: string;
   /** The fields. */
   children: React.ReactNode;
-  /** The buttons, pinned to the bottom. */
+  /** The buttons, at the end of the card. */
   footer: React.ReactNode;
   /** Shown above the fields when a request failed. */
   error?: AppError | null;
   onRetry?: () => void;
+  /** A different way forward, for a failure that retrying cannot fix. */
+  errorAction?: { label: string; onPress: () => void };
   /** What needs a connection, in a few words. */
   offlineMessage: string;
   /** Explains what cannot work yet when no backend is configured. */
   unavailableDetail: string;
+  /** Replaces the brand mark at the top of the hero, e.g. a back button. */
+  heroLeading?: React.ReactNode;
+  /** How tall the hero runs. Shorter where the card holds more fields. */
+  heroHeight?: number;
 }
 
 /**
  * The frame every auth screen shares.
  *
- * The form is always rendered, including when no backend is configured.
- * An earlier version replaced the whole screen with a notice in that case,
- * which was over-cautious to the point of being wrong: it meant the app
- * had no login page at all to look at, set up or hand to a designer, and
- * the brief was to build the integration-ready interface rather than hide
- * it until credentials arrive.
+ * A hero, then a card that overlaps its lower edge. The overlap is the whole
+ * point: two panels butted together read as two screens stacked, where a
+ * card lifted onto the image reads as one surface with depth. It is also why
+ * the card's radius is larger than the app's standard - at 18 the overlap
+ * looks like a mistake.
+ *
+ * The form is always rendered, including when no backend is configured. An
+ * earlier version replaced the whole screen with a notice in that case,
+ * which was over-cautious to the point of being wrong: it meant the app had
+ * no login page at all to look at, set up or hand to a designer, and the
+ * brief was to build the integration-ready interface rather than hide it
+ * until credentials arrive.
  *
  * Nothing pretends to work. The notice sits above the fields, before
- * anything is typed, and submitting returns the same plain
- * "not configured" the service already produces rather than a fake
- * success.
+ * anything is typed, and submitting returns the same plain "not configured"
+ * the service already produces rather than a fake success.
  */
+const CARD_OVERLAP = 30;
+const CARD_RADIUS = 30;
+
 export function AuthLayout({
   title,
   subtitle,
@@ -45,52 +62,74 @@ export function AuthLayout({
   footer,
   error,
   onRetry,
+  errorAction,
   offlineMessage,
   unavailableDetail,
+  heroLeading,
+  heroHeight,
 }: AuthLayoutProps) {
   const theme = useTheme();
+  const insets = useSafeAreaInsets();
   const { status } = useAuth();
   const unavailable = status === 'unavailable';
 
   return (
-    <Screen
-      edges={{ bottom: true }}
-      // Centred rather than stacked from the top. These are short forms, and
-      // left at the top they sit above a large empty area with the buttons
-      // stranded at the bottom of it.
-      contentStyle={{ gap: theme.spacing.xl, justifyContent: 'center' }}
-      footer={footer}
-    >
-      <View style={{ gap: theme.spacing.lg, paddingTop: theme.spacing.sm }}>
-        <BrandMark size={44} />
-        <View style={{ gap: theme.spacing.sm }}>
-          <Text
-            variant="display"
-            style={{ fontSize: 34, lineHeight: 39, letterSpacing: -0.9 }}
-          >
-            {title}
-          </Text>
-          <Text variant="body" color="textMuted">
-            {subtitle}
-          </Text>
-        </View>
-      </View>
-
-      {unavailable ? (
-        <Disclosure
-          summary="Accounts are not set up in this build"
-          detail={unavailableDetail}
-          tone="caution"
+    <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ flexGrow: 1 }}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        <AuthHero
+          title={title}
+          subtitle={subtitle}
+          height={heroHeight}
+          leading={heroLeading}
         />
-      ) : null}
 
-      <OfflineNotice message={offlineMessage} />
+        <View
+          style={{
+            flexGrow: 1,
+            marginTop: -CARD_OVERLAP,
+            borderTopLeftRadius: CARD_RADIUS,
+            borderTopRightRadius: CARD_RADIUS,
+            backgroundColor: theme.colors.surface,
+            paddingHorizontal: theme.gutter + 4,
+            paddingTop: theme.spacing.xl,
+            paddingBottom: insets.bottom + theme.spacing.xl,
+            gap: theme.spacing.lg,
+            ...theme.elevation(3),
+          }}
+        >
+          {unavailable ? (
+            <Disclosure
+              summary="Accounts are not set up in this build"
+              detail={unavailableDetail}
+              tone="caution"
+            />
+          ) : null}
 
-      {error ? (
-        <ErrorState message={error.message} detail={error.detail} onRetry={onRetry} />
-      ) : null}
+          <OfflineNotice message={offlineMessage} />
 
-      <View style={{ gap: theme.spacing.base }}>{children}</View>
-    </Screen>
+          {error ? (
+            <ErrorState
+              message={error.message}
+              detail={error.detail}
+              onRetry={onRetry}
+              action={errorAction}
+            />
+          ) : null}
+
+          <View style={{ gap: theme.spacing.base }}>{children}</View>
+
+          {/* Pushes the buttons to the end of the card on a tall screen,
+              without stranding them when the keyboard is up. */}
+          <View style={{ flexGrow: 1, minHeight: theme.spacing.sm }} />
+
+          <View style={{ gap: theme.spacing.md }}>{footer}</View>
+        </View>
+      </ScrollView>
+    </View>
   );
 }

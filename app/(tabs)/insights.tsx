@@ -5,13 +5,16 @@ import { View } from 'react-native';
 import { EnergyBarChart, type EnergyBarDay } from '@/components/charts';
 import { Icon } from '@/components/Icon';
 import {
+  Appear,
   Disclosure,
   EmptyState,
   ErrorState,
+  Metric,
   Screen,
   Section,
   SegmentedControl,
   Skeleton,
+  Surface,
   Text,
 } from '@/components/ui';
 import { LOCAL_USER_ID, useRangeJournal } from '@/features/journal';
@@ -79,6 +82,24 @@ export default function InsightsScreen() {
     });
   }, [entries, startKey, endKey]);
 
+  /**
+   * Two figures worth seeing before any prose.
+   *
+   * Both come from `chartDays`, which already includes the days with nothing
+   * logged - so the average is over days actually eaten on, not over the
+   * calendar, which would read low for anyone who skips a day. A logging
+   * streak would be the obvious third tile and is deliberately absent: there
+   * is no consecutive-day calculation in the app, and inventing one here
+   * would put a number on screen that nothing else could reproduce.
+   */
+  const logged = chartDays.filter((day) => day.hasData);
+  const dailyAverage =
+    logged.length === 0
+      ? null
+      : Math.round(
+          logged.reduce((sum, day) => sum + day.caloriesKcal, 0) / logged.length,
+        );
+
   if (!foodMemoryEnabled) {
     return (
       <Screen title="Insights" edges={{ top: true }}>
@@ -113,7 +134,41 @@ export default function InsightsScreen() {
       </Text>
 
       {!error && entries.length > 0 ? (
-        <EnergyBarChart days={chartDays} targetKcal={targets.caloriesKcal} />
+        <Appear index={0}>
+          <EnergyBarChart days={chartDays} targetKcal={targets.caloriesKcal} />
+        </Appear>
+      ) : null}
+
+      {dailyAverage !== null ? (
+        <Appear index={1}>
+          <View style={{ flexDirection: 'row', gap: theme.spacing.sm }}>
+            <Surface variant="grouped" padding="base" style={{ flex: 1, gap: theme.spacing.xxs }}>
+              <Text variant="label" color="textMuted">
+                DAILY AVERAGE
+              </Text>
+              <Metric value={String(dailyAverage)} unit="kcal" size="m" />
+              <Text variant="caption" color="textSubtle">
+                {targets.caloriesKcal === null
+                  ? 'No target set'
+                  : dailyAverage > targets.caloriesKcal
+                    ? `${dailyAverage - targets.caloriesKcal} over target`
+                    : `${targets.caloriesKcal - dailyAverage} under target`}
+              </Text>
+            </Surface>
+            <Surface variant="grouped" padding="base" style={{ flex: 1, gap: theme.spacing.xxs }}>
+              <Text variant="label" color="textMuted">
+                DAYS LOGGED
+              </Text>
+              <Metric
+                value={`${logged.length} of ${chartDays.length}`}
+                size="m"
+              />
+              <Text variant="caption" color="textSubtle">
+                {`In the last ${period} days`}
+              </Text>
+            </Surface>
+          </View>
+        </Appear>
       ) : null}
 
       {error ? (

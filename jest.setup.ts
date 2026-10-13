@@ -75,6 +75,8 @@ jest.mock('expo-router', () => {
     push: jest.fn(),
     replace: jest.fn(),
     back: jest.fn(),
+    // Screens ask before drawing a back button, so this has to answer.
+    canGoBack: jest.fn(() => true),
     navigate: jest.fn(),
     dismiss: jest.fn(),
     setParams: jest.fn(),
@@ -115,3 +117,19 @@ jest.mock('expo-network', () => ({
   getNetworkStateAsync: () =>
     Promise.resolve({ isConnected: true, isInternetReachable: true }),
 }));
+
+// expo-camera drives real hardware, so a test gets a plain view in place of
+// the preview and a permission that is already granted. Without the granted
+// permission the screen renders its explanation instead of the camera, and
+// nothing a scan test cares about would be on screen.
+jest.mock('expo-camera', () => {
+  const { View } = require('react-native');
+  return {
+    CameraView: View,
+    useCameraPermissions: () => [
+      { granted: true, status: 'granted', canAskAgain: true, expires: 'never' },
+      jest.fn(),
+      jest.fn(),
+    ],
+  };
+});

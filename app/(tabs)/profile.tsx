@@ -5,7 +5,9 @@ import { Alert, Switch, View } from 'react-native';
 import { Icon } from '@/components/Icon';
 import {
   Badge,
+  BrandGradient,
   Disclosure,
+  PressableScale,
   Row,
   Screen,
   Section,
@@ -17,10 +19,12 @@ import { useAuth } from '@/features/auth';
 import { clearLocalJournal } from '@/features/journal';
 import { deleteAllMealPhotos, deleteAllPhotos } from '@/features/photos';
 import { clearLocalRecipes, toCuisineId } from '@/features/recipes';
+import { clearLocalWater } from '@/features/water';
+import { clearLocalWeight } from '@/features/weight';
 import { cuisineLabel } from '@/features/recipes/options';
 import { describeMissingConfig, env } from '@/lib/env';
 import { usePreferencesStore } from '@/store/preferencesStore';
-import { useTheme, useThemeContext, type ThemePreference } from '@/theme';
+import { ramps, useTheme, useThemeContext, type ThemePreference } from '@/theme';
 import type { MeasurementSystem } from '@/types/domain';
 
 const THEME_OPTIONS = [
@@ -69,6 +73,8 @@ export default function ProfileScreen() {
               setClearing(true);
               await clearLocalJournal();
               await clearLocalRecipes();
+              await clearLocalWater();
+              await clearLocalWeight();
               deleteAllPhotos();
               resetPreferences();
               setClearing(false);
@@ -123,21 +129,78 @@ export default function ProfileScreen() {
 
   return (
     <Screen title="Settings" edges={{ top: true }}>
-      {/* Account */}
-      <Section title="You" dense>
-        <Surface variant="grouped">
-          <Row
-            title={preferences.displayName ?? 'Add your name'}
-            subtitle={
-              preferences.displayName
-                ? 'Shown when FoodLens greets you'
-                : 'So Home can greet you by name'
-            }
-            leading={<Icon name="profile" size={19} color="primary" />}
-            trailing={<Icon name="chevronRight" size={16} color="textSubtle" />}
-            onPress={() => router.push('/settings/profile')}
+      {/*
+        Who you are, before the settings list.
+
+        The screen opened straight onto "You > Add your name", which is a
+        settings row where a person expects to see themselves. An initial and
+        a name is not decoration: it is the one place in the app that
+        confirms whose data this is, which matters most on the screen that
+        also holds sign-out and delete-account.
+      */}
+      <PressableScale
+        onPress={() => router.push('/settings/profile')}
+        accessibilityRole="button"
+        accessibilityLabel={
+          preferences.displayName ?? 'Add your name'
+        }
+        scaleTo={0.99}
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: theme.spacing.base,
+          paddingVertical: theme.spacing.sm,
+        }}
+      >
+        <View
+          style={{
+            width: 60,
+            height: 60,
+            borderRadius: 30,
+            overflow: 'hidden',
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: theme.colors.surfaceAlt,
+          }}
+        >
+          <BrandGradient
+            extent="band"
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+            }}
           />
-        </Surface>
+          <Text variant="title2" color={ramps.neutral[25]}>
+            {initialFor(preferences.displayName)}
+          </Text>
+        </View>
+        <View style={{ flex: 1, gap: 2 }}>
+          <Text variant="title2">
+            {preferences.displayName ?? 'Add your name'}
+          </Text>
+          <Text variant="footnote" color="textMuted">
+            {/* With no name the line has to say why one is worth adding;
+                once there is one, whose account this is matters more. */}
+            {preferences.displayName === null
+              ? 'So Home can greet you by name'
+              : (user?.email ?? 'Saved on this device')}
+          </Text>
+        </View>
+        <Icon name="chevronRight" size={16} color="textSubtle" />
+      </PressableScale>
+
+      {/* Appearance, in the open rather than three screens down: it is the
+          setting people reach for first and change most. */}
+      <Section title="Appearance" dense>
+        <SegmentedControl
+          options={THEME_OPTIONS}
+          value={preference}
+          onChange={(next: ThemePreference) => setPreference(next)}
+          accessibilityLabel="Theme"
+        />
       </Section>
 
       <Section title="Account" dense>
@@ -221,16 +284,7 @@ export default function ProfileScreen() {
         </Surface>
       </Section>
 
-      {/* Appearance and units: inline controls, no boxes. */}
-      <Section title="Appearance" dense>
-        <SegmentedControl
-          options={THEME_OPTIONS}
-          value={preference}
-          onChange={(next: ThemePreference) => setPreference(next)}
-          accessibilityLabel="Theme"
-        />
-      </Section>
-
+      {/* Units: an inline control, no box. */}
       <Section title="Portion units" dense>
         <SegmentedControl
           options={UNIT_OPTIONS}
@@ -422,4 +476,15 @@ function summarizePreferences(patterns: number, cuisines: number): string {
 
 function formatGoal(goal: string): string {
   return goal.replace(/_/g, ' ').replace(/^./, (character) => character.toUpperCase());
+}
+
+/**
+ * One letter for the avatar.
+ *
+ * A dot rather than a letter when there is no name: an initial invented from
+ * an email address would show a character the user never typed.
+ */
+function initialFor(displayName: string | null): string {
+  const first = displayName?.trim().charAt(0);
+  return first === undefined || first === '' ? '·' : first.toUpperCase();
 }

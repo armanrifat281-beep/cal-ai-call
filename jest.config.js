@@ -10,6 +10,10 @@ module.exports = {
   roots: ['<rootDir>/src', '<rootDir>/app', '<rootDir>/supabase/functions'],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
+    // Deno resolves `npm:` specifiers natively; Node cannot. Without this,
+    // `vision.ts` - which decides whether a failed analysis is retried - was
+    // untestable, so that decision went unverified.
+    '^npm:@anthropic-ai/sdk.*$': '<rootDir>/supabase/functions/__stubs__/anthropic.ts',
   },
   setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],
   collectCoverageFrom: [

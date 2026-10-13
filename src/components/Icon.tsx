@@ -17,10 +17,13 @@ export type IconName =
   | 'insights'
   | 'profile'
   | 'settings'
-  | 'apple'
   | 'google'
   | 'scan'
   | 'camera'
+  | 'search'
+  | 'eye'
+  | 'eyeOff'
+  | 'droplet'
   | 'gallery'
   | 'plus'
   | 'chevronRight'
@@ -160,21 +163,6 @@ function renderGlyph(
           <Circle cx={12} cy={8.5} r={3.8} {...common} fill={fill} />
           <Path d="M4.8 20.2a7.6 7.6 0 0 1 14.4 0" {...common} fill={fill} />
         </>
-      );
-
-    /**
-     * The Apple mark, drawn as a single filled silhouette.
-     *
-     * Always `currentColor` rather than a brand colour: Apple's guidelines
-     * require the mark to be solid black or solid white depending on the
-     * button it sits on, and here it sits on the app's own red.
-     */
-    case 'apple':
-      return (
-        <Path
-          d="M16.3 12.6c0-2.2 1.8-3.3 1.9-3.3-1-1.5-2.6-1.7-3.2-1.7-1.4-.1-2.7.8-3.3.8-.7 0-1.7-.8-2.8-.8-1.5 0-2.8.8-3.6 2.1-1.5 2.6-.4 6.5 1.1 8.6.7 1 1.6 2.2 2.7 2.2 1.1 0 1.5-.7 2.8-.7 1.3 0 1.6.7 2.8.7 1.2 0 1.9-1.1 2.6-2.1.8-1.2 1.2-2.4 1.2-2.4s-2.2-.9-2.2-3.4zM14.2 6.3c.6-.7 1-1.7.9-2.7-.9 0-1.9.6-2.5 1.3-.6.6-1.1 1.6-.9 2.6 1 .1 2-.5 2.5-1.2z"
-          fill={stroke}
-        />
       );
 
     /**
@@ -350,6 +338,47 @@ function renderGlyph(
         <>
           <Rect x={8.5} y={8.5} width={12} height={12} rx={2.2} {...common} />
           <Path d="M15.5 5.5A2 2 0 0 0 13.5 3.5h-8a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2" {...common} />
+        </>
+      );
+
+    case 'droplet':
+      // A drop: one glass of water.
+      return (
+        <Path
+          d="M12 3.2c3.6 4.1 5.6 6.9 5.6 9.4a5.6 5.6 0 0 1-11.2 0c0-2.5 2-5.3 5.6-9.4Z"
+          {...common}
+          fill="none"
+        />
+      );
+
+    case 'search':
+      // A magnifier. Home's second way in: look a food up rather than
+      // photograph it.
+      return (
+        <>
+          <Circle cx={11} cy={11} r={6.4} {...common} fill="none" />
+          <Path d="M15.8 15.8L20 20" {...common} />
+        </>
+      );
+
+    case 'eye':
+      // An open eye: reveals what a password field is hiding.
+      return (
+        <>
+          <Path d="M2.5 12S6 5.8 12 5.8 21.5 12 21.5 12 18 18.2 12 18.2 2.5 12 2.5 12Z" {...common} fill="none" />
+          <Circle cx={12} cy={12} r={3.1} {...common} fill="none" />
+        </>
+      );
+
+    case 'eyeOff':
+      // The same eye, struck through. A separate glyph rather than a rotated
+      // one, so the stroke crosses the pupil where the eye is widest.
+      return (
+        <>
+          <Path d="M9.9 6.1A8.6 8.6 0 0 1 12 5.8c6 0 9.5 6.2 9.5 6.2a18 18 0 0 1-2.4 3.2" {...common} fill="none" />
+          <Path d="M6.3 7.9A17.6 17.6 0 0 0 2.5 12S6 18.2 12 18.2a8.9 8.9 0 0 0 3.6-.7" {...common} fill="none" />
+          <Path d="M10 10a2.9 2.9 0 0 0 4 4" {...common} fill="none" />
+          <Path d="M4 4l16 16" {...common} />
         </>
       );
 

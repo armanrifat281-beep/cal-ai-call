@@ -5,6 +5,7 @@ export {
   exchangeCodeForSession,
   getCurrentSession,
   requestPasswordReset,
+  resendConfirmationEmail,
   signInWithEmail,
   signOut,
   signUpWithEmail,

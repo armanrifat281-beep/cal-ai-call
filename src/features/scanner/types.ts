@@ -78,7 +78,14 @@ export interface MealAnalysis {
 export interface AnalyzeMealInput {
   /** Local file URI of the prepared (validated, resized) image. */
   imageUri: string;
-  /** MIME type, already validated against the allowed list. */
+  /**
+   * MIME type, already validated against the allowed list.
+   *
+   * Not put on the wire: the upload part carries the file's own type, and
+   * the server re-checks the bytes themselves rather than trusting any
+   * declared type. This is kept because it is the result of validation the
+   * app did, and callers hold it either way.
+   */
   mimeType: string;
   /** Local hour, so the server can suggest a meal type. Not identifying. */
   localHour: number;

@@ -15,10 +15,12 @@ export {
   pressScale,
   radius,
   spacing,
+  spring,
   typography,
   type ElevationLevel,
   type RadiusKey,
   type SpacingKey,
+  type SpringKey,
   type TypographyVariant,
 } from './tokens';
 export {

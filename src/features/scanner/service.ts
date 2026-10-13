@@ -1,3 +1,5 @@
+import { File as FileSystemFile } from 'expo-file-system';
+
 import { env } from '@/lib/env';
 import { logger } from '@/lib/logger';
 import { appError, err, toAppError, type Result } from '@/lib/result';
@@ -18,8 +20,16 @@ import type { AnalyzeMealInput, MealAnalysis } from './types';
  * than showing invented results.
  */
 
-/** Analysis is slow; the device gives up well before the user does. */
-export const ANALYSIS_TIMEOUT_MS = 45_000;
+/**
+ * How long the app waits for an analysis.
+ *
+ * Longer than the server's own provider timeout, deliberately. It used to be
+ * shorter, which meant the app hung up first: the server was still working,
+ * its own timeout handling never ran, and the user saw a dropped connection
+ * instead of the message the server would have sent. Whoever gives up first
+ * decides what the user is told, and the server knows more.
+ */
+export const ANALYSIS_TIMEOUT_MS = 60_000;
 
 /** Path of the Edge Function that performs the analysis. */
 const ANALYZE_FUNCTION_PATH = '/functions/v1/analyze-meal';
@@ -86,12 +96,21 @@ export async function analyzeMealPhoto(
 
   try {
     const form = new FormData();
-    // React Native's FormData accepts this file descriptor shape for a local URI.
-    form.append('photo', {
-      uri: options.imageUri,
-      name: 'meal.jpg',
-      type: options.mimeType,
-    } as unknown as Blob);
+    /*
+      A real file, not a `{ uri, name, type }` descriptor.
+
+      That descriptor is React Native's own extension, and it stopped working
+      when Expo replaced `fetch` with a WinterCG-compliant one: the new
+      implementation serialises FormData itself and accepts a string, a Blob,
+      or anything exposing `bytes()`. Handed the descriptor it threw
+      "Unsupported FormDataPart implementation", which surfaced as a failed
+      analysis with nothing on screen to explain it.
+
+      `expo-file-system`'s File satisfies the third case, and carries its own
+      name and mime type, so the part arrives with a filename - which is what
+      makes the server see a file rather than a text field.
+    */
+    form.append('photo', new FileSystemFile(options.imageUri) as unknown as Blob);
     form.append('localHour', String(options.localHour));
     form.append('retainPhoto', String(options.retainPhoto));
     if (options.regionHint) form.append('regionHint', options.regionHint);
@@ -107,7 +126,7 @@ export async function analyzeMealPhoto(
     });
 
     if (!response.ok) {
-      return err(httpError(response.status));
+      return err(httpError(response.status, await readServerError(response)));
     }
 
     const raw: unknown = await response.json();
@@ -120,39 +139,99 @@ export async function analyzeMealPhoto(
   }
 }
 
+/**
+ * The server's own message, when it sent one.
+ *
+ * The function answers with `{ error: { code, message } }`, and it knows
+ * which of several reasons applied where the status alone cannot say. The
+ * body is read once here rather than being thrown away, which is what used
+ * to happen.
+ */
+interface ServerError {
+  message: string | null;
+  /** The server's own reason, e.g. `invalid_response`. */
+  code: string | null;
+}
+
+function readString(value: unknown): string | null {
+  return typeof value === 'string' && value.trim().length > 0 ? value.trim() : null;
+}
+
+async function readServerError(response: Response): Promise<ServerError> {
+  try {
+    const body: unknown = await response.clone().json();
+    const error = (body as { error?: { message?: unknown; code?: unknown } })?.error;
+    return { message: readString(error?.message), code: readString(error?.code) };
+  } catch {
+    // Not our JSON. The status still tells us something.
+    return { message: null, code: null };
+  }
+}
+
 /** Maps an HTTP status to a message the user can act on. */
-function httpError(status: number) {
+function httpError(status: number, server: ServerError = { message: null, code: null }) {
+  const serverMessage = server.message;
+  // The server's reason travels with every error, so a report names the
+  // branch that failed instead of a bare status. Two quite different faults
+  // answer 502 - the model was unreachable, and the model's answer was
+  // unreadable - and without the code they are indistinguishable from here,
+  // which cost a long diagnosis once already.
+  const detail = server.code === null ? `HTTP ${status}` : `HTTP ${status} · ${server.code}`;
+
   if (status === 401 || status === 403) {
     return appError('unauthorized', 'Your session expired. Sign in again to analyse photos.', {
-      detail: `HTTP ${status}`,
+      detail,
       retryable: false,
     });
   }
   if (status === 413) {
     return appError('unsupported_media', 'That photo is too large to analyse.', {
-      detail: `HTTP ${status}`,
+      detail,
       retryable: false,
     });
   }
   if (status === 415) {
     return appError('unsupported_media', 'That image format cannot be analysed.', {
-      detail: `HTTP ${status}`,
+      detail,
       retryable: false,
     });
   }
   if (status === 429) {
+    // Three different limits answer 429 - this account's daily scans, the
+    // provider being momentarily busy, and the provider's own allowance
+    // being spent for the day - and only the server knows which. Its
+    // sentence says how long the wait actually is.
     return appError(
       'rate_limited',
-      'You have reached the scan limit for now. Try again later, or add the meal by hand.',
-      { detail: `HTTP ${status}` },
+      serverMessage ??
+        'You have reached the scan limit for now. Try again later, or add the meal by hand.',
+      // A spent daily allowance will not clear by pressing the button again.
+      { detail, retryable: server.code !== 'provider_quota' },
+    );
+  }
+  // 503 before the general 5xx branch: the server uses it for "not set up",
+  // which no amount of retrying will fix. Calling that "having trouble, try
+  // again" sends the user round a loop that cannot end.
+  if (status === 503) {
+    return appError(
+      'not_configured',
+      serverMessage ??
+        'Photo analysis is not set up on the server yet. You can still add meals by hand.',
+      { detail, retryable: false },
     );
   }
   if (status >= 500) {
-    return appError('provider_error', 'The analysis service is having trouble. Try again.', {
-      detail: `HTTP ${status}`,
-    });
+    // The server's sentence, when it sent one. It distinguishes "the model
+    // could not be reached" from "the model's answer was unreadable", and it
+    // is already written for the user - throwing it away to say something
+    // vaguer helped nobody.
+    return appError(
+      'provider_error',
+      serverMessage ?? 'The analysis service is having trouble. Try again.',
+      { detail },
+    );
   }
   return appError('unknown', 'We could not analyse that photo.', {
-    detail: `HTTP ${status}`,
+    detail,
   });
 }

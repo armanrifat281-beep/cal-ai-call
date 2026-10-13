@@ -30,6 +30,7 @@ export default function NewEntryScreen() {
 
   const presetMealType = isMealType(params.mealType) ? params.mealType : undefined;
 
+
   const save = async (draft: MealDraft) => {
     setSaving(true);
     setSaveError(null);

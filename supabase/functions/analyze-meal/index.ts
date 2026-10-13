@@ -22,8 +22,9 @@
  *   supabase functions deploy analyze-meal
  */
 
-import Anthropic from 'npm:@anthropic-ai/sdk@0.133.0';
 import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2.117.3';
+
+import { selectVisionProvider } from '../_shared/vision.ts';
 
 import {
   ALLOWED_MIME_TYPES,
@@ -45,18 +46,10 @@ import {
 // Configuration
 // ---------------------------------------------------------------------------
 
-/**
- * Claude Opus 5.5. Thinking is always on for this model, so the `thinking`
- * parameter is deliberately omitted; depth is controlled with
- * `output_config.effort` instead.
- */
-const MODEL = 'claude-opus-5-5';
-
-/**
- * `medium` is this model's default and suits the task: reading a photo needs
- * care but not deep reasoning. Raise it if identification proves weak.
- */
-const EFFORT = 'medium' as const;
+/*
+  Which model reads the photo now lives in `vision.ts`, chosen by whichever
+  provider key is configured. Everything here speaks in prompts and JSON.
+*/
 
 /** Thinking tokens count toward output, so leave generous headroom. */
 const MAX_TOKENS = 8_000;
@@ -125,15 +118,15 @@ Deno.serve(async (request: Request): Promise<Response> => {
 
   const startedAt = Date.now();
 
-  const anthropicKey = Deno.env.get('ANTHROPIC_API_KEY');
+  const vision = selectVisionProvider(PROVIDER_TIMEOUT_MS);
   const supabaseUrl = Deno.env.get('SUPABASE_URL');
   const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
-  if (!anthropicKey || !supabaseUrl || !serviceRoleKey) {
+  if (!vision || !supabaseUrl || !serviceRoleKey) {
     // A configuration gap is our fault, and saying which secret is missing to
     // an unauthenticated caller would leak deployment detail.
     console.error('analyze-meal: missing required secrets', {
-      hasAnthropicKey: Boolean(anthropicKey),
+      hasVisionProvider: Boolean(vision),
       hasSupabaseUrl: Boolean(supabaseUrl),
       hasServiceRoleKey: Boolean(serviceRoleKey),
     });
@@ -246,52 +239,30 @@ Deno.serve(async (request: Request): Promise<Response> => {
 
   // ---- 4. Ask Claude -------------------------------------------------------
 
-  const anthropic = new Anthropic({
-    apiKey: anthropicKey,
-    timeout: PROVIDER_TIMEOUT_MS,
-    maxRetries: 1,
-  });
-
   let analysis: ValidatedAnalysis;
   let inputTokens: number | null = null;
   let outputTokens: number | null = null;
 
   try {
-    const response = await anthropic.messages.create({
-      model: MODEL,
-      max_tokens: MAX_TOKENS,
-      system: SYSTEM_PROMPT,
-      output_config: {
-        effort: EFFORT,
-        format: { type: 'json_schema', schema: MEAL_ANALYSIS_SCHEMA },
-      },
-      messages: [
-        {
-          role: 'user',
-          content: [
-            {
-              type: 'image',
-              source: {
-                type: 'base64',
-                media_type: detectedType as 'image/jpeg' | 'image/png' | 'image/webp',
-                data: toBase64(bytes),
-              },
-            },
-            { type: 'text', text: buildUserPrompt(localHour, regionHint) },
-          ],
-        },
-      ],
+    const response = await vision.analyse({
+      systemPrompt: SYSTEM_PROMPT,
+      userPrompt: buildUserPrompt(localHour, regionHint),
+      imageBase64: toBase64(bytes),
+      mimeType: detectedType,
+      schema: MEAL_ANALYSIS_SCHEMA,
+      maxTokens: MAX_TOKENS,
+      timeoutMs: PROVIDER_TIMEOUT_MS,
     });
 
-    inputTokens = response.usage?.input_tokens ?? null;
-    outputTokens = response.usage?.output_tokens ?? null;
+    inputTokens = response.inputTokens;
+    outputTokens = response.outputTokens;
 
     // Check the stop reason BEFORE reading content: a refusal returns HTTP 200
     // with no usable output.
-    if (response.stop_reason === 'refusal') {
-      console.warn('analyze-meal: provider declined', response.stop_details);
+    if (response.refused) {
+      console.warn('analyze-meal: provider declined');
       await recordScan(admin, user.id, 'refused', {
-        providerLabel: MODEL,
+        providerLabel: vision.label,
         imageBytes: bytes.byteLength,
         inputTokens,
         outputTokens,
@@ -304,10 +275,29 @@ Deno.serve(async (request: Request): Promise<Response> => {
       );
     }
 
-    const rawText = response.content
-      .filter((block): block is { type: 'text'; text: string } => block.type === 'text')
-      .map((block) => block.text)
-      .join('');
+    // Cut off at the token budget: the JSON is unclosed, so parsing it would
+    // fail and report "unreadable", which blames the model for what is
+    // really a budget too small for a crowded plate.
+    if (response.truncated) {
+      console.warn('analyze-meal: answer truncated at the token budget', {
+        outputTokens,
+        maxTokens: MAX_TOKENS,
+      });
+      await recordScan(admin, user.id, 'invalid_response', {
+        providerLabel: vision.label,
+        imageBytes: bytes.byteLength,
+        inputTokens,
+        outputTokens,
+        durationMs: Date.now() - startedAt,
+      });
+      return errorResponse(
+        502,
+        'That photo had more in it than the analyser could list in one go. Try a photo of fewer dishes, or add the meal by hand.',
+        'response_truncated',
+      );
+    }
+
+    const rawText = response.text;
 
     let parsed: unknown;
     try {
@@ -317,7 +307,7 @@ Deno.serve(async (request: Request): Promise<Response> => {
         length: rawText.length,
       });
       await recordScan(admin, user.id, 'invalid_response', {
-        providerLabel: MODEL,
+        providerLabel: vision.label,
         imageBytes: bytes.byteLength,
         inputTokens,
         outputTokens,
@@ -330,11 +320,11 @@ Deno.serve(async (request: Request): Promise<Response> => {
       );
     }
 
-    const validation = validateAnalysis(parsed, MODEL, fallbackMealType(localHour));
+    const validation = validateAnalysis(parsed, vision.label, fallbackMealType(localHour));
     if (!validation.ok) {
       console.warn('analyze-meal: response failed validation', validation.reason);
       await recordScan(admin, user.id, 'invalid_response', {
-        providerLabel: MODEL,
+        providerLabel: vision.label,
         imageBytes: bytes.byteLength,
         inputTokens,
         outputTokens,
@@ -358,16 +348,22 @@ Deno.serve(async (request: Request): Promise<Response> => {
     });
 
     await recordScan(admin, user.id, 'provider_error', {
-      providerLabel: MODEL,
+      providerLabel: vision.label,
       imageBytes: bytes.byteLength,
       durationMs: Date.now() - startedAt,
     });
 
     if (status === 429) {
+      // A spent daily allowance is not momentary busyness, and saying "try
+      // again in a minute" to someone who has to wait until tomorrow sends
+      // them round a loop that cannot end.
+      const exhausted = (cause as { quotaExhausted?: boolean })?.quotaExhausted === true;
       return errorResponse(
         429,
-        'The analysis service is busy. Try again in a minute.',
-        'rate_limited',
+        exhausted
+          ? "The analysis service's daily allowance is used up. It resets within a day; until then you can add meals by hand."
+          : 'The analysis service is busy. Try again in a minute.',
+        exhausted ? 'provider_quota' : 'rate_limited',
       );
     }
     return errorResponse(
@@ -397,7 +393,7 @@ Deno.serve(async (request: Request): Promise<Response> => {
   // only in this function's memory for the duration of the request.
 
   await recordScan(admin, user.id, 'succeeded', {
-    providerLabel: MODEL,
+    providerLabel: vision.label,
     imageBytes: bytes.byteLength,
     inputTokens,
     outputTokens,
