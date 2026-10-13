@@ -171,12 +171,18 @@ export default function HomeScreen() {
 
       <Appear index={7}>
         <Section
-          title="Meals"
-          action={
-            entries.length > 0
-              ? { label: 'Add', onPress: () => router.push('/entry/new') }
-              : undefined
-          }
+          title="Today's meals"
+          subtitle="Tap a day above, or History, for anything earlier"
+          /*
+            The way to a past day, now that the journal is off the tab bar.
+            Home is fixed to today, so without this link the only route to
+            yesterday is tapping the week strip - which works but looks like
+            a chart rather than a door.
+          */
+          action={{
+            label: 'History',
+            onPress: () => router.push('/(tabs)/journal'),
+          }}
         >
           {loading && entries.length === 0 ? (
             <View style={{ gap: theme.spacing.base }}>

@@ -17,6 +17,7 @@ const TAB_ICONS: Record<string, IconName> = {
   index: 'home',
   scan: 'scan',
   recipes: 'recipes',
+  discover: 'search',
   journal: 'journal',
   // A person, not a gear. Labelled and drawn as settings, the destination
   // holding the account, the name and the email read as a utility screen,
@@ -80,7 +81,7 @@ export default function TabsLayout() {
       <Tabs.Screen name="index" options={{ title: 'Home' }} />
       <Tabs.Screen name="scan" options={{ title: 'Scan' }} />
       <Tabs.Screen name="recipes" options={{ title: 'Recipes' }} />
-      <Tabs.Screen name="journal" options={{ title: 'Journal' }} />
+      <Tabs.Screen name="discover" options={{ title: 'Discover' }} />
       {/*
         Named for what it holds - the account, preferences, privacy and the
         way out - rather than for the word "settings", which described the
@@ -88,10 +89,17 @@ export default function TabsLayout() {
       */}
       <Tabs.Screen name="profile" options={{ title: 'Profile' }} />
       {/*
-        Insights lives at app/(tabs)/insights.tsx so it keeps the tab bar
-        while open, but it is not itself a tab: href null hides the button.
+        Insights and Journal live here so they keep the tab bar while open,
+        but neither is itself a tab: href null hides the button.
+
+        Journal is off the bar at the user's request, NOT deleted. It is the
+        only screen that can reach a day other than today - Home is fixed to
+        `todayKey()` - so removing the file would take past days, and editing
+        or deleting any meal logged before today, with it. Home and Discover
+        both link to it.
       */}
       <Tabs.Screen name="insights" options={{ title: 'Insights', href: null }} />
+      <Tabs.Screen name="journal" options={{ title: 'Journal', href: null }} />
     </Tabs>
   );
 }

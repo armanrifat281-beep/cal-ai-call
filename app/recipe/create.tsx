@@ -91,6 +91,8 @@ export default function CreateRecipeScreen() {
     photoUri?: string;
     /** Comma-separated foods to start from, e.g. handed over by a scan. */
     pantry?: string;
+    /** A cuisine to start on, e.g. chosen from Discover. */
+    cuisine?: string;
   }>();
   // The hook, not the module getter: the getter is always device-local, so
   // a signed-in user's new recipe would be written to the phone instead of
@@ -119,8 +121,13 @@ export default function CreateRecipeScreen() {
   const [servings, setServings] = useState(preferences.preferredServings);
   // The stored value is an opaque string, so it is validated rather than
   // trusted: a cuisine removed from the list later must not break this form.
+  /*
+    A cuisine handed over by the route wins over the remembered favourite:
+    choosing "Thai" on Discover and arriving on "Italian" would make the tap
+    look broken.
+  */
   const [cuisine, setCuisine] = useState<CuisineId | null>(
-    toCuisineId(preferences.favoriteCuisineId),
+    toCuisineId(params.cuisine) ?? toCuisineId(preferences.favoriteCuisineId),
   );
   const [cuisineNote, setCuisineNote] = useState('');
   const [equipment, setEquipment] = useState<string[]>([]);
