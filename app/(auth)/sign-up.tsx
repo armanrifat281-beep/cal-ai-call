@@ -129,7 +129,13 @@ export default function SignUpScreen() {
     <AuthLayout
       title={'Create your\naccount'}
       heroLeading={router.canGoBack() ? <AuthBackButton /> : undefined}
-      heroHeight={240}
+      /*
+        The same photograph as the welcome screen, deliberately. Creating an
+        account is the second half of that invitation, and a plain form here
+        made the two screens look like two different products.
+      */
+      heroPhoto={require('../../assets/welcome-meal.jpg')}
+      heroPhotoLabel="A plated salmon dish photographed on a dark table"
       subtitle="Backs up your meals, recipes and shopping lists, and syncs them across devices."
       error={error}
       onRetry={error?.retryable ? () => void submit() : undefined}
@@ -189,10 +195,13 @@ export default function SignUpScreen() {
         onSubmitEditing={() => void submit()}
         returnKeyType="go"
       />
-      <Text variant="footnote" color="textSubtle">
-        Anything already saved on this device stays on this device.
-      </Text>
-
+      {/*
+        The reassurance that local meals survive signing up used to sit here
+        as a footnote. It cost two lines on a form that already ran past the
+        bottom of a phone, and it answers a question almost nobody asks
+        before they have signed up - the same point is made in Profile, where
+        someone actually looks for it.
+      */}
       <SocialSignIn
         onSignedIn={() => router.replace('/')}
         onError={setError}

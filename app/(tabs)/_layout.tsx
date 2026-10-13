@@ -1,8 +1,7 @@
-import { Redirect, Tabs } from 'expo-router';
+import { Tabs } from 'expo-router';
 import { Platform } from 'react-native';
 
 import { Icon, type IconName } from '@/components/Icon';
-import { useAuth } from '@/features/auth';
 import { useTheme } from '@/theme';
 
 /**
@@ -27,23 +26,22 @@ const TAB_ICONS: Record<string, IconName> = {
 
 export default function TabsLayout() {
   const theme = useTheme();
-  const { status } = useAuth();
 
   /*
-    Signing out used to leave the user standing in the app.
+    No session guard here, deliberately.
 
-    The boot gate only runs when the app launches, so a session that ended
-    while someone was inside it - by signing out, or by the session expiring
-    - left them on the Profile tab, still looking at tabs full of an account
-    they no longer had. This sends them back to the welcome screen the moment
-    the session goes, and covers expiry as well as sign-out, because neither
-    should leave a signed-out person inside the app.
+    This layout used to redirect to the welcome screen whenever the session
+    read as signed out. It was meant to stop a sign-out leaving someone
+    standing inside the app, and it did - but a layout guard fires on every
+    render, so any momentary gap in the session threw the user out of
+    whatever they were doing. That is a far worse fault than the one it
+    fixed, and it is impossible to tell apart from a crash.
 
-    `signed_out` specifically, never `loading`: the stored session is read
-    asynchronously on launch, and treating "not yet known" as "signed out"
-    would throw a signed-in user out of their own app for the first frame.
+    Leaving is now driven by the action that causes it: signing out and
+    deleting an account both navigate on success, in `(tabs)/profile.tsx`.
+    A session that dies on its own surfaces as a 401 with "your session
+    expired, sign in again", which the services already produce.
   */
-  if (status === 'signed_out') return <Redirect href="/(auth)/welcome" />;
 
   return (
     <Tabs

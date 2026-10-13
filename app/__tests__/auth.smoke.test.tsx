@@ -63,14 +63,33 @@ describe('sign in, with no backend configured', () => {
     expect(router.replace).not.toHaveBeenCalledWith('/(tabs)');
   });
 
-  it('offers Google as well as a password', async () => {
+  /*
+    Google appears only when it can actually sign someone in.
+
+    It used to be drawn in every build, saying what was missing when
+    pressed. To anyone but a developer that is a broken button: it looks
+    exactly like the working one, the explanation lands at the top of the
+    form where nobody is looking, and pressing it again does the same
+    nothing.
+  */
+  it('does not offer Google in a build where it cannot work', async () => {
     await renderWithProviders(<SignInScreen />);
-    expect(screen.getByRole('button', { name: 'Continue with Google' })).toBeTruthy();
+    expect(
+      screen.queryByRole('button', { name: 'Continue with Google' }),
+    ).toBeNull();
   });
 
-  it('offers the same on the sign-up screen', async () => {
+  it('does not offer it on the sign-up screen either', async () => {
     await renderWithProviders(<SignUpScreen />);
-    expect(screen.getByRole('button', { name: 'Continue with Google' })).toBeTruthy();
+    expect(
+      screen.queryByRole('button', { name: 'Continue with Google' }),
+    ).toBeNull();
+  });
+
+  it('leaves the password path complete without it', async () => {
+    await renderWithProviders(<SignInScreen />);
+    expect(screen.getByRole('button', { name: 'Sign in' })).toBeTruthy();
+    expect(screen.getByLabelText('Email')).toBeTruthy();
   });
 
   // This app ships on Android, and Apple's provider needs a paid Apple
@@ -78,16 +97,6 @@ describe('sign in, with no backend configured', () => {
   it('does not offer Apple at all', async () => {
     await renderWithProviders(<SignInScreen />);
     expect(screen.queryByRole('button', { name: 'Continue with Apple' })).toBeNull();
-  });
-
-  it('says what Google needs rather than opening a sheet that fails', async () => {
-    const user = userEvent.setup();
-    await renderWithProviders(<SignInScreen />);
-
-    await user.press(screen.getByRole('button', { name: 'Continue with Google' }));
-    expect(
-      await screen.findByText(/meals are saved on this device/),
-    ).toBeTruthy();
   });
 
   it('no longer offers a way past the account', async () => {

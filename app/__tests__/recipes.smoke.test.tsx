@@ -71,9 +71,11 @@ describe('recipes hub', () => {
     expect(
       screen.getByRole('button', { name: 'What shall we cook?' }),
     ).toBeTruthy();
-    expect(screen.getByRole('button', { name: /^Cook with what I have/ })).toBeTruthy();
-    expect(screen.getByRole('button', { name: /^My recipes/ })).toBeTruthy();
+    expect(
+      screen.getByRole('button', { name: 'Cook with your ingredients' }),
+    ).toBeTruthy();
     expect(screen.getByRole('button', { name: /^Shopping lists/ })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /^My kitchen/ })).toBeTruthy();
   });
 
   it('says recipe writing is not set up, rather than failing later', async () => {
@@ -85,7 +87,7 @@ describe('recipes hub', () => {
 
   it('shows an empty state before anything is saved', async () => {
     await renderWithProviders(<RecipesHubScreen />);
-    expect(await screen.findByText('No saved recipes')).toBeTruthy();
+    expect(await screen.findByText('No recipes yet')).toBeTruthy();
   });
 
   it('lists a saved recipe', async () => {
@@ -100,7 +102,9 @@ describe('recipes hub', () => {
     const user = userEvent.setup();
     await renderWithProviders(<RecipesHubScreen />);
 
-    await user.press(screen.getByRole('button', { name: /^Cook with what I have/ }));
+    await user.press(
+      screen.getByRole('button', { name: 'Cook with your ingredients' }),
+    );
     expect(router.push).toHaveBeenCalledWith({
       pathname: '/recipe/create',
       params: { mode: 'from_pantry' },

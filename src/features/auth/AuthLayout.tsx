@@ -5,7 +5,7 @@ import { Disclosure, ErrorState, OfflineNotice } from '@/components/ui';
 import type { AppError } from '@/lib/result';
 import { useTheme } from '@/theme';
 
-import { AuthHero } from './AuthHero';
+import { AuthHero, type AuthHeroProps } from './AuthHero';
 import { useAuth } from './AuthProvider';
 
 export interface AuthLayoutProps {
@@ -28,6 +28,9 @@ export interface AuthLayoutProps {
   unavailableDetail: string;
   /** Replaces the brand mark at the top of the hero, e.g. a back button. */
   heroLeading?: React.ReactNode;
+  /** A photograph behind the hero's title. See `AuthHero`. */
+  heroPhoto?: AuthHeroProps['photo'];
+  heroPhotoLabel?: string;
   /** How tall the hero runs. Shorter where the card holds more fields. */
   heroHeight?: number;
 }
@@ -74,6 +77,8 @@ export function AuthLayout({
   offlineMessage,
   unavailableDetail,
   heroLeading,
+  heroPhoto,
+  heroPhotoLabel,
   heroHeight,
 }: AuthLayoutProps) {
   const theme = useTheme();
@@ -89,25 +94,50 @@ export function AuthLayout({
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
+        {/*
+          With a photograph the hero takes whatever the form does not.
+
+          Fixed heights could not satisfy both a 740pt phone, where the form
+          needed every point, and an 873pt one, where a fixed hero left a
+          slab of empty card below the buttons. Letting the image absorb the
+          slack means the form is always exactly as tall as it needs to be -
+          which is what "the form takes up most of the screen" was really
+          asking for.
+        */}
         <AuthHero
           title={title}
           subtitle={subtitle}
           height={heroHeight}
           leading={heroLeading}
+          photo={heroPhoto}
+          photoLabel={heroPhotoLabel}
+          style={heroPhoto === undefined ? undefined : { flexGrow: 1 }}
         />
 
         <View
           style={{
-            flexGrow: 1,
+            // Hugs its content when there is a photograph above it, so the
+            // image gets the rest. Without one it fills, as it always did.
+            flexGrow: heroPhoto === undefined ? 1 : 0,
+            flexShrink: 0,
+            // Lifted over the photograph, so its rounded top is the edge of
+            // the image rather than a line drawn near one.
+            marginTop: heroPhoto === undefined ? 0 : -CARD_RADIUS,
             borderTopLeftRadius: CARD_RADIUS,
             borderTopRightRadius: CARD_RADIUS,
             borderTopWidth: 1,
             borderTopColor: theme.colors.separator,
             backgroundColor: theme.colors.surface,
             paddingHorizontal: theme.gutter + 4,
-            paddingTop: theme.spacing.xl,
-            paddingBottom: insets.bottom + theme.spacing.xl,
-            gap: theme.spacing.lg,
+            /*
+              Tighter than the rest of the app on purpose. These cards hold
+              three or four fields and two buttons, and at the app's usual
+              rhythm that ran past the bottom of a phone - which made signing
+              up feel like a form to get through rather than two taps.
+            */
+            paddingTop: theme.spacing.base,
+            paddingBottom: insets.bottom + theme.spacing.base,
+            gap: theme.spacing.base,
           }}
         >
           {unavailable ? (
@@ -129,13 +159,19 @@ export function AuthLayout({
             />
           ) : null}
 
-          <View style={{ gap: theme.spacing.base }}>{children}</View>
+          <View style={{ gap: theme.spacing.md }}>{children}</View>
 
-          {/* Pushes the buttons to the end of the card on a tall screen,
-              without stranding them when the keyboard is up. */}
-          <View style={{ flexGrow: 1, minHeight: theme.spacing.sm }} />
+          {/*
+            No spacer between the form and its buttons.
 
-          <View style={{ gap: theme.spacing.md }}>{footer}</View>
+            There was one, pushing the buttons to the bottom of the card. Even
+            capped it left about 56pt of nothing in the middle of the screen -
+            its own height plus the card's gap on either side - which read as
+            a hole rather than as spacing. The buttons now follow the fields,
+            and whatever room is left falls below them, where it looks like
+            margin.
+          */}
+          <View style={{ gap: theme.spacing.sm }}>{footer}</View>
         </View>
       </ScrollView>
     </View>

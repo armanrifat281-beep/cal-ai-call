@@ -26,45 +26,28 @@ export interface SocialSignInProps {
  * provider cannot be configured without a paid Apple Developer membership -
  * so a button for it could only ever say "not set up".
  *
- * When Google is not configured the button is still here - the sign-in page
- * has to be a complete page - and pressing it says exactly what is missing
- * instead of opening a sheet that fails.
+ * When Google is not configured, nothing is drawn at all.
+ *
+ * An earlier version kept the button and explained what was missing when it
+ * was pressed. That reads as a complete page to whoever is building it and
+ * as a broken button to everyone else: the control looks identical to the
+ * working one, the message lands at the top of the form where the user is
+ * not looking, and pressing it again does the same nothing. A control that
+ * can never do its job should not be on the screen.
+ *
+ * It returns on its own the moment the client ids are set, along with the
+ * "or" rule above it, so configuring Google is the only step.
  */
 export function SocialSignIn({ onSignedIn, onError }: SocialSignInProps) {
   const theme = useTheme();
 
+  // Nothing to draw: no working provider, so no separator and no button.
+  if (!env.isGoogleSignInConfigured) return null;
+
   return (
     <View style={{ gap: theme.spacing.md }}>
       <Separator />
-
-      {/*
-        Two components rather than one with a branch inside it. The request
-        hook throws outright when the client ids are missing, so in an
-        unconfigured build it cannot be called at all - and that is the
-        build a developer opens first.
-      */}
-      {env.isGoogleSignInConfigured ? (
-        <GoogleButton onSignedIn={onSignedIn} onError={onError} />
-      ) : (
-        <Button
-          label="Continue with Google"
-          variant="secondary"
-          size="lg"
-          fullWidth
-          onPress={() =>
-            onError({
-              code: 'not_configured',
-              message: env.isSupabaseConfigured
-                ? 'Google sign-in is not set up in this build yet.'
-                : 'Accounts are not set up in this build. Your meals are saved on this device.',
-              detail:
-                'Needs EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID plus the platform client id, and the Google provider enabled in the Supabase dashboard.',
-              retryable: false,
-            })
-          }
-          leading={<Icon name="google" size={20} />}
-        />
-      )}
+      <GoogleButton onSignedIn={onSignedIn} onError={onError} />
     </View>
   );
 }

@@ -14,8 +14,8 @@ import { ramps } from '@/theme';
  * hardware button and the iOS edge swipe, neither of which is on screen.
  *
  * Drawn as a translucent disc rather than with `IconButton`, whose variants
- * all render a red gradient disc tuned for the page ground; over the hero's
- * forest gradient that reads as an alert rather than as navigation.
+ * all render a gradient disc tuned for the page ground; over a hero that
+ * reads as an alert rather than as navigation.
  */
 export function AuthBackButton() {
   const router = useRouter();
@@ -33,7 +33,12 @@ export function AuthBackButton() {
           borderRadius: 22,
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: 'rgba(247,247,248,0.14)',
+          /*
+            A dark disc, not a light one. Over the photograph on the sign-up
+            hero a translucent white disc vanished into the plate; this reads
+            against both a bright photograph and a dark one.
+          */
+          backgroundColor: 'rgba(10,10,10,0.48)',
         }}
       >
         <Icon

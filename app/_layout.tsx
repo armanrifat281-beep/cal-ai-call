@@ -1,7 +1,8 @@
-import { Stack, usePathname, useRouter } from 'expo-router';
+import { Stack, usePathname, useRouter, type ErrorBoundaryProps } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
+import { Pressable, ScrollView, Text as RNText, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
@@ -14,6 +15,71 @@ import { ThemeProvider, useTheme, useThemeContext } from '@/theme';
 void SplashScreen.preventAutoHideAsync().catch(() => {
   // Already hidden, or unavailable in this environment. Not fatal.
 });
+
+/**
+ * What the app shows instead of disappearing.
+ *
+ * Expo Router renders this in place of the tree when a screen throws. Without
+ * it a render error unmounts everything, which on a phone looks exactly like
+ * the app closing itself - and leaves no way to find out what happened,
+ * because the message goes to a console nobody is reading.
+ *
+ * Deliberately styled with literal values and plain React Native components:
+ * it has to draw correctly even when the thing that threw IS the theme, the
+ * font or a shared component.
+ */
+export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
+  return (
+    <View style={{ flex: 1, backgroundColor: '#FAF9F6', padding: 24, paddingTop: 72 }}>
+      <RNText style={{ fontSize: 24, fontWeight: '700', color: '#100F0E' }}>
+        This screen ran into a problem
+      </RNText>
+
+      <RNText style={{ fontSize: 15, color: '#4B4844', marginTop: 10, lineHeight: 21 }}>
+        Nothing you saved has been lost. Read the message below out to whoever
+        is working on the app - it names the fault exactly.
+      </RNText>
+
+      <ScrollView
+        style={{
+          marginTop: 20,
+          maxHeight: 280,
+          backgroundColor: '#ECE9E3',
+          borderRadius: 14,
+          padding: 14,
+        }}
+      >
+        <RNText selectable style={{ fontSize: 13, color: '#302E2B', lineHeight: 19 }}>
+          {error.message}
+        </RNText>
+        {error.stack ? (
+          <RNText
+            selectable
+            style={{ fontSize: 11, color: '#6C6862', marginTop: 12, lineHeight: 16 }}
+          >
+            {error.stack.split('\n').slice(0, 12).join('\n')}
+          </RNText>
+        ) : null}
+      </ScrollView>
+
+      <Pressable
+        onPress={retry}
+        accessibilityRole="button"
+        style={{
+          marginTop: 24,
+          backgroundColor: '#133F2F',
+          borderRadius: 999,
+          paddingVertical: 16,
+          alignItems: 'center',
+        }}
+      >
+        <RNText style={{ color: '#FFFFFF', fontSize: 16, fontWeight: '600' }}>
+          Try again
+        </RNText>
+      </Pressable>
+    </View>
+  );
+}
 
 export default function RootLayout() {
   return (

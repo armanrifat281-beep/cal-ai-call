@@ -1,8 +1,11 @@
-import { screen } from '@testing-library/react-native';
+import { fireEvent, screen, waitFor } from '@testing-library/react-native';
+import { router } from 'expo-router';
 
-import { useAuth, type AuthStatus } from '@/features/auth';
+import { useAuth } from '@/features/auth';
+import { ok } from '@/lib/result';
 import { renderWithProviders } from '@/test/renderWithProviders';
 
+import ProfileScreen from '../(tabs)/profile';
 import TabsLayout from '../(tabs)/_layout';
 
 jest.mock('@/features/auth', () => {
@@ -11,17 +14,20 @@ jest.mock('@/features/auth', () => {
 });
 
 const mockedUseAuth = useAuth as jest.MockedFunction<typeof useAuth>;
+const signOut = jest.fn();
 
-function signedWith(status: AuthStatus): void {
+function signedIn(): void {
   mockedUseAuth.mockReturnValue({
-    status,
-    session: null,
-    user: null,
-    isSignedIn: status === 'signed_in',
+    status: 'signed_in',
+    session: { access_token: 'a' },
+    user: { id: 'u1', email: 'someone@example.com' },
+    isSignedIn: true,
+    signOut,
+    deleteAccount: jest.fn(),
   } as unknown as ReturnType<typeof useAuth>);
 }
 
-/** The mocked router renders `redirect-<href>`, so the target is assertable. */
+/** The mocked router renders `redirect-<href>`, so a redirect is assertable. */
 function redirectedTo(): string | undefined {
   const found: string[] = [];
   const walk = (value: unknown): void => {
@@ -38,45 +44,67 @@ function redirectedTo(): string | undefined {
   return found[0];
 }
 
+beforeEach(() => {
+  jest.clearAllMocks();
+  signOut.mockResolvedValue(ok(undefined));
+  signedIn();
+});
+
 /**
- * Leaving the app when the session does.
+ * Leaving the app is driven by the action, not by a watcher.
  *
- * The boot gate only runs at launch, so signing out from the Profile tab
- * left the user standing inside the app, looking at tabs belonging to an
- * account they no longer had. The same held for a session that expired while
- * they were using it.
+ * The tab layout used to redirect to the welcome screen whenever the session
+ * read as signed out. It stopped a sign-out leaving someone inside the app -
+ * and then threw people out mid-use, because a layout guard re-runs on every
+ * render and any momentary gap in the session looked identical to signing
+ * out. From the phone that is indistinguishable from a crash.
  */
-describe('the tabs are closed to a signed-out user', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
+describe('signing out', () => {
+  it('takes the user to welcome, because they asked to leave', async () => {
+    await renderWithProviders(<ProfileScreen />);
+
+    fireEvent.press(screen.getByText('Sign out'));
+
+    await waitFor(() => {
+      expect(router.replace).toHaveBeenCalledWith('/(auth)/welcome');
+    });
   });
 
-  it('sends a signed-out user back to welcome', async () => {
-    signedWith('signed_out');
+  it('stays put when signing out fails, rather than pretending it worked', async () => {
+    signOut.mockResolvedValue({
+      ok: false,
+      error: { code: 'network', message: 'Offline.', retryable: true },
+    });
 
-    await renderWithProviders(<TabsLayout />);
+    await renderWithProviders(<ProfileScreen />);
 
-    expect(redirectedTo()).toBe('/(auth)/welcome');
+    fireEvent.press(screen.getByText('Sign out'));
+
+    await waitFor(() => {
+      expect(signOut).toHaveBeenCalled();
+    });
+    expect(router.replace).not.toHaveBeenCalled();
   });
+});
 
-  it('leaves a signed-in user where they are', async () => {
-    signedWith('signed_in');
-
-    await renderWithProviders(<TabsLayout />);
-
-    expect(redirectedTo()).toBeUndefined();
-  });
-
+describe('the tab layout', () => {
   /*
-    The stored session is read asynchronously at launch. Treating "not yet
-    known" as "signed out" would throw a signed-in user out of their own app
-    for the first frame, which is a worse bug than the one being fixed.
+    The regression this file exists for. Nothing about the session may move
+    the user from here: a passive guard cannot tell a real sign-out from a
+    token refresh that has not landed yet, and it fires on every render.
   */
-  it('waits while the stored session is still being read', async () => {
-    signedWith('loading');
+  it('never redirects on its own, whatever the session is doing', async () => {
+    await renderWithProviders(<TabsLayout />);
+    expect(redirectedTo()).toBeUndefined();
+
+    mockedUseAuth.mockReturnValue({
+      status: 'signed_out',
+      session: null,
+      user: null,
+      isSignedIn: false,
+    } as unknown as ReturnType<typeof useAuth>);
 
     await renderWithProviders(<TabsLayout />);
-
     expect(redirectedTo()).toBeUndefined();
   });
 });

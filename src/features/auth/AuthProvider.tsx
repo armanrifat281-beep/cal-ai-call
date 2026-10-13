@@ -110,9 +110,43 @@ export function AuthProvider({ children }: PropsWithChildren) {
       (event, nextSession) => {
         if (cancelled) return;
         logger.debug('auth state changed', { event });
+
+        /*
+          `INITIAL_SESSION` is the subscription replaying what is already in
+          storage, and it can arrive with a null session before the
+          `getSession()` read above has finished. The read owns the initial
+          state; acting on this event as well raced it, and reported
+          "signed out" for a split second to a user who was signed in.
+
+          That was harmless until the tabs started redirecting a signed-out
+          user to the welcome screen - at which point the race threw people
+          out of the app while they were using it.
+        */
+        if (event === 'INITIAL_SESSION') return;
+
         setSession(nextSession);
-        setStatus(nextSession ? 'signed_in' : 'signed_out');
         setSessionError(null);
+
+        /*
+          Only an actual sign-out ends the session.
+
+          Treating every event that arrives without one as a sign-out was too
+          blunt: Supabase emits events with a null session while a refresh is
+          in flight, and a momentary gap then evicted someone who was in the
+          middle of using the app. A refresh token that is genuinely dead
+          arrives as `SIGNED_OUT`, which is still handled here.
+
+          If a session does go missing without that event, the app keeps
+          believing it is signed in and the next request answers 401 - which
+          the services already turn into "your session expired, sign in
+          again". A wrong message is a far smaller fault than being thrown
+          out of the app for a network hiccup.
+        */
+        if (nextSession) {
+          setStatus('signed_in');
+        } else if (event === 'SIGNED_OUT') {
+          setStatus('signed_out');
+        }
 
         // The one event that means "signed in, but not by choice": the user
         // followed a reset link and still needs to pick a password.

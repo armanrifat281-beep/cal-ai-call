@@ -164,6 +164,38 @@ export const usePreferencesStore = create<PreferencesState>()(
         onboardingCompletedAt,
         syncedAt,
       }),
+      /*
+        Fills in anything the stored copy predates.
+
+        Zustand's default merge is shallow, so a stored `preferences` object
+        REPLACES the defaults wholesale rather than filling the gaps in them.
+        Every field added after a user's last save therefore arrived as
+        `undefined` - and the first screen to read `.length` on one crashed.
+
+        That is exactly what `pantryItems` did: it was added to the defaults,
+        and on every phone that already had preferences saved it came back
+        undefined, so Discover, the recipe screen and Profile all threw.
+
+        Merging level by level means a field added tomorrow lands on its
+        default instead, and no future addition can repeat this.
+      */
+      merge: (persisted, current) => {
+        const stored = (persisted ?? {}) as Partial<PreferencesState>;
+
+        return {
+          ...current,
+          ...stored,
+          preferences: {
+            ...current.preferences,
+            ...(stored.preferences ?? {}),
+            // Nested, so it needs the same treatment for the same reason.
+            dailyTargets: {
+              ...current.preferences.dailyTargets,
+              ...(stored.preferences?.dailyTargets ?? {}),
+            },
+          },
+        };
+      },
       // Runs after persisted state is applied, and also when reading it
       // failed, so the app never waits forever on a bad storage read.
       onRehydrateStorage: () => () => {

@@ -224,8 +224,17 @@ export default function ProfileScreen() {
                 onPress={() => {
                   void (async () => {
                     setAccountBusy(true);
-                    await signOut();
+                    const result = await signOut();
                     setAccountBusy(false);
+
+                    /*
+                      Leaving is driven by the action, not by a guard watching
+                      the session from the tab layout. That guard fired on
+                      every render, so a momentary gap in the session threw
+                      people out of whatever they were doing - and only a
+                      deliberate sign-out should take anyone anywhere.
+                    */
+                    if (result.ok) router.replace('/(auth)/welcome');
                   })();
                 }}
               />

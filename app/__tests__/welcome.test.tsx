@@ -22,7 +22,7 @@ describe('the welcome screen', () => {
   it('says what the app does before asking for anything', async () => {
     await renderWithProviders(<WelcomeScreen />);
 
-    expect(screen.getByText(/works out the nutrition/)).toBeTruthy();
+    expect(screen.getByText(/Scan a meal to see its nutrition/)).toBeTruthy();
     // The claim the app can actually keep, stated before anything is asked.
     expect(screen.getByText('MEASURED, OR ESTIMATED')).toBeTruthy();
   });
@@ -32,8 +32,14 @@ describe('the welcome screen', () => {
 
     expect(screen.getByRole('button', { name: 'Get started' })).toBeTruthy();
     expect(
-      screen.getByRole('button', { name: 'I already have an account' }),
+      screen.getByRole('button', { name: 'Log in to an existing account' }),
     ).toBeTruthy();
+  });
+
+  it('names the product before asking for anything', async () => {
+    await renderWithProviders(<WelcomeScreen />);
+
+    expect(screen.getByText('FoodLens AI')).toBeTruthy();
   });
 
   it('opens sign-up from "Get started"', async () => {
@@ -48,7 +54,7 @@ describe('the welcome screen', () => {
     await renderWithProviders(<WelcomeScreen />);
 
     fireEvent.press(
-      screen.getByRole('button', { name: 'I already have an account' }),
+      screen.getByRole('button', { name: 'Log in to an existing account' }),
     );
 
     expect(router.push).toHaveBeenCalledWith('/(auth)/sign-in');
