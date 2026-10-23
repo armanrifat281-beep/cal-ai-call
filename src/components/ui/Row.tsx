@@ -9,8 +9,16 @@ export interface RowProps {
   title: string;
   /** Supporting line under the title. */
   subtitle?: string;
-  /** Leading slot: an icon, a thumbnail, a checkbox. */
+  /**
+   * Leading slot: an icon, a thumbnail, a checkbox.
+   *
+   * This is a fixed 26px column, so that the row separators all inset to the
+   * same place. Anything wider than a glyph - a badge, a label - gets
+   * squeezed to one letter per line here; put it in `below` instead.
+   */
   leading?: React.ReactNode;
+  /** Under the subtitle, inside the text column: a badge, a chip, a bar. */
+  below?: React.ReactNode;
   /** Trailing slot: a value, a chevron, a switch. */
   trailing?: React.ReactNode;
   onPress?: () => void;
@@ -34,6 +42,7 @@ export function Row({
   title,
   subtitle,
   leading,
+  below,
   trailing,
   onPress,
   divided = false,
@@ -66,6 +75,9 @@ export function Row({
           <Text variant="footnote" color="textMuted">
             {subtitle}
           </Text>
+        ) : null}
+        {below ? (
+          <View style={{ marginTop: theme.spacing.xs }}>{below}</View>
         ) : null}
       </View>
 

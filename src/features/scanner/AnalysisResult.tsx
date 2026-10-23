@@ -131,7 +131,7 @@ export function AnalysisResult({
                   <Icon name="chevronRight" size={15} color="textSubtle" />
                 </View>
               }
-              leading={
+              below={
                 <SourceBadge
                   source={item.provenance.source}
                   confidence={item.provenance.confidence}

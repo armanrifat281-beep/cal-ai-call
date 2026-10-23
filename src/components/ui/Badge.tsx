@@ -37,6 +37,10 @@ export function Badge({ label, tone = 'neutral', leading, style }: BadgeProps) {
           alignItems: 'center',
           gap: theme.spacing.xs,
           alignSelf: 'flex-start',
+          // A badge is its label. React Native lets a row child shrink by
+          // default, and a shrunk badge does not clip - it wraps, one letter
+          // per line, into a tall ribbon. Never shrink.
+          flexShrink: 0,
           paddingHorizontal: theme.spacing.sm,
           paddingVertical: theme.spacing.xxs + 2,
           borderRadius: theme.radius.pill,
