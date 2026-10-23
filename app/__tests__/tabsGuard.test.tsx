@@ -70,7 +70,20 @@ describe('signing out', () => {
     });
   });
 
-  it('stays put when signing out fails, rather than pretending it worked', async () => {
+  /*
+    This used to assert the opposite - that a failed sign-out left you here.
+    That was wrong about what `signOut` does: `AuthProvider` drops the local
+    session whether or not the server call succeeds, on the grounds that
+    someone who asked to be signed out should not still look signed in. So
+    staying put did not keep anyone signed in. It left them inside the app
+    with no session, which is the one outcome nobody asked for, and it is
+    what people hit in real use: sign out with a bad connection and nothing
+    appears to happen.
+
+    Leaving is now unconditional, and the failure is reported instead of
+    being expressed as a screen that refuses to move.
+  */
+  it('still leaves when the server call fails, because the session is gone anyway', async () => {
     signOut.mockResolvedValue({
       ok: false,
       error: { code: 'network', message: 'Offline.', retryable: true },
@@ -81,9 +94,8 @@ describe('signing out', () => {
     fireEvent.press(screen.getByText('Sign out'));
 
     await waitFor(() => {
-      expect(signOut).toHaveBeenCalled();
+      expect(router.replace).toHaveBeenCalledWith('/(auth)/welcome');
     });
-    expect(router.replace).not.toHaveBeenCalled();
   });
 });
 

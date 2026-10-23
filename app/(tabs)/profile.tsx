@@ -16,6 +16,7 @@ import {
   Text,
 } from '@/components/ui';
 import { useAuth } from '@/features/auth';
+import { forgetAvatarLocally } from '@/features/profile';
 import { clearLocalJournal } from '@/features/journal';
 import { deleteAllMealPhotos, deleteAllPhotos } from '@/features/photos';
 import { clearLocalRecipes, toCuisineId } from '@/features/recipes';
@@ -108,7 +109,13 @@ export default function ProfileScreen() {
                 return;
               }
               deleteAllPhotos();
-              router.replace('/');
+              forgetAvatarLocally();
+              /*
+                Not `/`: that path matches both `app/index.tsx` and
+                `app/(tabs)/index.tsx`, and resolving to the second one would
+                land a deleted account back on Home. Name the destination.
+              */
+              router.replace('/(auth)/welcome');
             })();
           },
         },
@@ -233,8 +240,19 @@ export default function ProfileScreen() {
                       every render, so a momentary gap in the session threw
                       people out of whatever they were doing - and only a
                       deliberate sign-out should take anyone anywhere.
+
+                      Leave whether or not the server agreed. `signOut` drops
+                      the local session either way, on the grounds that
+                      someone who asked to be signed out should not still look
+                      signed in - so staying here left them inside the app
+                      with no session, which is the one outcome nobody asked
+                      for. The message explains the half that failed.
                     */
-                    if (result.ok) router.replace('/(auth)/welcome');
+                    forgetAvatarLocally();
+                    router.replace('/(auth)/welcome');
+                    if (!result.ok) {
+                      Alert.alert('Signed out on this phone', result.error.message);
+                    }
                   })();
                 }}
               />
