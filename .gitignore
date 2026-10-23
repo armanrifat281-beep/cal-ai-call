@@ -50,3 +50,13 @@ yarn-error.*
 
 # Test output
 coverage/
+
+# Claude Code
+#
+# Only the local bits. `launch.json` is the dev-server config the preview
+# tool writes for itself: nothing in this project reads it, no document
+# mentions it, and the port it picks collides with the Supabase edge
+# function inspector in supabase/config.toml. A shared `.claude/settings.json`
+# is deliberately NOT ignored, so project-level instructions can be committed.
+.claude/launch.json
+.claude/settings.local.json
