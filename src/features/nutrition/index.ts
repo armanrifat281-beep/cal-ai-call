@@ -59,3 +59,31 @@ export {
   portionToGramsForRecord,
   type GramConversion,
 } from './units';
+export {
+  REFERENCE_INTAKE,
+  dailyValueFor,
+  type DailyValue,
+  type DailyValueKey,
+} from './dailyValues';
+export {
+  SCORE_BAND_LABELS,
+  bandFor,
+  describeEntry,
+  describeNutrients,
+  scoreDay,
+  scoreEntry,
+  scoreNutrients,
+  type Characteristic,
+  type FoodScore,
+  type ScoreBand,
+} from './score';
+export { TargetSetup, type TargetSetupProps } from './TargetSetup';
+export {
+  ACTIVITY_LABELS,
+  EMPTY_BODY_BASICS,
+  isCompleteBodyBasics,
+  maintenanceKcal,
+  restingEnergyKcal,
+  suggestDailyTargets,
+  type SuggestedTargets,
+} from './targets';

@@ -33,36 +33,38 @@ function fakeRepository(initial: WaterEntry[] = []): WaterRepository & {
 
 afterEach(() => setWaterRepository(null));
 
-function glass(n: number) {
-  return screen.getByRole('button', { name: `Add a glass, ${n} of 8` });
+/** The one control on the card. */
+function addButton() {
+  return screen.getByRole('button', { name: 'Add 250 millilitres of water' });
 }
 
 describe('WaterCard', () => {
-  it('invites the first tap when nothing has been drunk', async () => {
+  it('reads as nothing drunk rather than as a missing card', async () => {
     setWaterRepository(fakeRepository());
     await renderWithProviders(<WaterCard />);
 
-    expect(await screen.findByText('Tap a glass as you drink it.')).toBeTruthy();
+    expect(await screen.findByText('0.00')).toBeTruthy();
+    expect(screen.getByText('L')).toBeTruthy();
   });
 
-  it('records a glass when one is tapped', async () => {
+  it('records a glass when the button is pressed', async () => {
     const repo = fakeRepository();
     setWaterRepository(repo);
     const user = userEvent.setup();
     await renderWithProviders(<WaterCard />);
 
-    await user.press(glass(1));
+    await user.press(addButton());
 
     expect(repo.rows).toHaveLength(1);
     expect(repo.rows[0]?.amountMl).toBe(250);
   });
 
   /*
-    Tapping the last filled glass takes it back. Without this a mis-tap is
-    permanent, which on a button people hit repeatedly is the single most
-    likely thing to go wrong.
+    A long press takes the last glass back. Without a way back a mis-tap is
+    permanent, which on a button people hit several times a day is the single
+    most likely thing to go wrong.
   */
-  it('takes the last glass back when it is tapped again', async () => {
+  it('takes the last glass back on a long press', async () => {
     const repo = fakeRepository([
       { id: 'w0', consumedAt: new Date().toISOString(), amountMl: 250 },
     ]);
@@ -70,9 +72,9 @@ describe('WaterCard', () => {
     const user = userEvent.setup();
     await renderWithProviders(<WaterCard />);
 
-    await user.press(
-      await screen.findByRole('button', { name: 'Take back the last glass' }),
-    );
+    await user.longPress(await screen.findByRole('button', {
+      name: 'Add 250 millilitres of water',
+    }));
 
     expect(repo.rows).toHaveLength(0);
   });
@@ -90,7 +92,7 @@ describe('WaterCard', () => {
   });
 
   // The app does not tell anyone how much to drink - the same position it
-  // takes on calories. Eight glasses is a scale, not a goal it set.
+  // takes on calories. Eight marks is a scale, not a goal it set.
   it('sets no target and offers no praise', async () => {
     setWaterRepository(
       fakeRepository(
@@ -103,7 +105,8 @@ describe('WaterCard', () => {
     );
     await renderWithProviders(<WaterCard />);
 
-    await screen.findByText(/8 glasses/);
+    // The gauge is read against eight marks, with nothing said about them.
+    expect(await screen.findByLabelText('8 of 8 glasses')).toBeTruthy();
     expect(screen.queryByText(/goal|target|well done|great/i)).toBeNull();
   });
 });

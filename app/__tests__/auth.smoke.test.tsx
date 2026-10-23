@@ -28,15 +28,14 @@ describe('sign in, with no backend configured', () => {
   it('shows the real form, because the app needs a login page', async () => {
     await renderWithProviders(<SignInScreen />);
 
-    expect(screen.getByText('Welcome back')).toBeTruthy();
     expect(screen.getByLabelText('Email')).toBeTruthy();
     expect(screen.getByLabelText('Password')).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Sign in' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Sign In' })).toBeTruthy();
   });
 
   it('says above the form that it cannot work yet', async () => {
     await renderWithProviders(<SignInScreen />);
-    expect(screen.getByText('Accounts are not set up in this build')).toBeTruthy();
+    expect(screen.getByText('No account backend in this build.')).toBeTruthy();
   });
 
   it('checks the form before it tries anything', async () => {
@@ -44,7 +43,7 @@ describe('sign in, with no backend configured', () => {
     await renderWithProviders(<SignInScreen />);
 
     await user.type(screen.getByLabelText('Email'), 'not-an-email');
-    await user.press(screen.getByRole('button', { name: 'Sign in' }));
+    await user.press(screen.getByRole('button', { name: 'Sign In' }));
 
     expect(screen.getByText('That does not look like an email address.')).toBeTruthy();
   });
@@ -55,10 +54,20 @@ describe('sign in, with no backend configured', () => {
 
     await user.type(screen.getByLabelText('Email'), 'alice@example.com');
     await user.type(screen.getByLabelText('Password'), 'correct horse battery');
-    await user.press(screen.getByRole('button', { name: 'Sign in' }));
+    await user.press(screen.getByRole('button', { name: 'Sign In' }));
 
+    /*
+      An alert, not just the standing notice above the form.
+
+      The screen already says a backend is missing before anyone touches it;
+      what this is checking is that PRESSING the button reports a failure
+      rather than appearing to succeed. Matching on the shared wording would
+      pass against the notice that was there all along.
+    */
     expect(
-      await screen.findByText(/meals are saved on this device/),
+      await screen.findByText(
+        'Accounts are not set up in this build. Your meals are saved on this device.',
+      ),
     ).toBeTruthy();
     expect(router.replace).not.toHaveBeenCalledWith('/(tabs)');
   });
@@ -88,7 +97,7 @@ describe('sign in, with no backend configured', () => {
 
   it('leaves the password path complete without it', async () => {
     await renderWithProviders(<SignInScreen />);
-    expect(screen.getByRole('button', { name: 'Sign in' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Sign In' })).toBeTruthy();
     expect(screen.getByLabelText('Email')).toBeTruthy();
   });
 
@@ -114,9 +123,9 @@ describe('sign in, with no backend configured', () => {
 
     await user.type(screen.getByLabelText('Email'), 'alice@example.com');
     await user.type(screen.getByLabelText('Password'), 'correct horse battery');
-    await user.press(screen.getByRole('button', { name: 'Sign in' }));
+    await user.press(screen.getByRole('button', { name: 'Sign In' }));
 
-    const create = await screen.findAllByRole('button', { name: 'Create an account' });
+    const create = await screen.findAllByRole('button', { name: 'Sign Up' });
     expect(create.length).toBeGreaterThan(0);
   });
 
@@ -134,10 +143,10 @@ describe('sign in, with no backend configured', () => {
     await user.type(screen.getByLabelText('Email'), 'alice@example.com');
     await user.type(screen.getByLabelText('Password'), 'correct horse battery');
     await user.type(
-      screen.getByLabelText('Confirm password'),
+      screen.getByLabelText('Confirm Password'),
       'correct horse battery',
     );
-    await user.press(screen.getByRole('button', { name: 'Create account' }));
+    await user.press(screen.getByRole('button', { name: 'Create Account' }));
 
     // Only reached when the server asked for confirmation.
     const heading = screen.queryByText('Check your email');
@@ -156,7 +165,7 @@ describe('sign in, with no backend configured', () => {
     expect(router.push).toHaveBeenCalledWith('/(auth)/forgot-password');
 
     await user.press(
-      screen.getByRole('button', { name: 'Create an account' }),
+      screen.getByRole('button', { name: 'Sign Up' }),
     );
     expect(router.replace).toHaveBeenCalledWith('/(auth)/sign-up');
   });
@@ -166,9 +175,9 @@ describe('sign up, with no backend configured', () => {
   it('shows the real form and says it cannot work yet', async () => {
     await renderWithProviders(<SignUpScreen />);
 
-    expect(screen.getByRole('button', { name: 'Create account' })).toBeTruthy();
-    expect(screen.getByLabelText('Confirm password')).toBeTruthy();
-    expect(screen.getByText('Accounts are not set up in this build')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Create Account' })).toBeTruthy();
+    expect(screen.getByLabelText('Confirm Password')).toBeTruthy();
+    expect(screen.getByText('No account backend in this build.')).toBeTruthy();
   });
 
   it('refuses a password that does not match its confirmation', async () => {
@@ -177,8 +186,8 @@ describe('sign up, with no backend configured', () => {
 
     await user.type(screen.getByLabelText('Email'), 'alice@example.com');
     await user.type(screen.getByLabelText('Password'), 'correct horse battery');
-    await user.type(screen.getByLabelText('Confirm password'), 'something else');
-    await user.press(screen.getByRole('button', { name: 'Create account' }));
+    await user.type(screen.getByLabelText('Confirm Password'), 'something else');
+    await user.press(screen.getByRole('button', { name: 'Create Account' }));
 
     expect(screen.getByText('Those passwords do not match.')).toBeTruthy();
   });
@@ -189,8 +198,8 @@ describe('sign up, with no backend configured', () => {
 
     await user.type(screen.getByLabelText('Email'), 'alice@example.com');
     await user.type(screen.getByLabelText('Password'), 'correct horse battery');
-    await user.type(screen.getByLabelText('Confirm password'), 'correct horse battery');
-    await user.press(screen.getByRole('button', { name: 'Create account' }));
+    await user.type(screen.getByLabelText('Confirm Password'), 'correct horse battery');
+    await user.press(screen.getByRole('button', { name: 'Create Account' }));
 
     expect(screen.queryByText('Check your email')).toBeNull();
     expect(
@@ -252,9 +261,11 @@ describe('choosing a new password after a reset link', () => {
   it('renders, and asks for the new password twice', async () => {
     await renderWithProviders(<ResetPasswordScreen />);
 
-    expect(screen.getByText('Choose a new password')).toBeTruthy();
-    expect(screen.getByLabelText('New password')).toBeTruthy();
-    expect(screen.getByLabelText('Confirm new password')).toBeTruthy();
+    // The heading and the first field share a name, so the heading is
+    // checked by there being two of it rather than one.
+    expect(screen.getAllByText('New Password')).toHaveLength(2);
+    expect(screen.getByLabelText('New Password')).toBeTruthy();
+    expect(screen.getByLabelText('Confirm New Password')).toBeTruthy();
   });
 
   it('asks for no current password, because the link was the proof', async () => {
@@ -266,8 +277,8 @@ describe('choosing a new password after a reset link', () => {
     const user = userEvent.setup();
     await renderWithProviders(<ResetPasswordScreen />);
 
-    await user.type(screen.getByLabelText('New password'), 'correct horse battery');
-    await user.type(screen.getByLabelText('Confirm new password'), 'something else');
+    await user.type(screen.getByLabelText('New Password'), 'correct horse battery');
+    await user.type(screen.getByLabelText('Confirm New Password'), 'something else');
     await user.press(screen.getByRole('button', { name: 'Save new password' }));
 
     expect(screen.getByText('Those passwords do not match.')).toBeTruthy();

@@ -4,40 +4,71 @@ import { Icon, type IconName } from '@/components/Icon';
 import { PressableScale, Text } from '@/components/ui';
 import { useTheme } from '@/theme';
 
-interface Action {
-  key: string;
-  label: string;
-  icon: IconName;
-  onPress: () => void;
-  /** The one that gets the filled treatment. Exactly one, by convention. */
-  primary?: boolean;
-}
-
 export interface QuickActionsProps {
   onScan: () => void;
   onSearch: () => void;
   onManual: () => void;
 }
 
+interface Action {
+  key: string;
+  label: string;
+  icon: IconName;
+  hint: string;
+  /** The one the app is for, drawn in the accent. */
+  lead?: boolean;
+  onPress: () => void;
+}
+
 /**
- * The three ways to log a meal, in one fixed place.
+ * The three ways to log a meal.
  *
  * Before this, home offered exactly one way to add a meal and it moved: an
  * "Add" link beside the Meals heading when the day had entries, and a button
  * inside the empty state when it did not. Photographing a meal - the thing
- * the app is for - could not be started from home at all; it needed a trip
- * to another tab.
+ * the app is for - could not be started from home at all.
  *
- * Scan is filled and wider because it is the primary act, and because one
- * filled control among three removes the question of which to press.
+ * Three equal tiles, with the camera marked out by colour rather than by
+ * size. The tab bar already carries a large camera button in its middle, so
+ * a second full-width one here would be the same action twice on one
+ * screenful; what this row is for is making the two quieter routes - looking
+ * a food up, and writing one down - as easy to find as the loud one.
  */
 export function QuickActions({ onScan, onSearch, onManual }: QuickActionsProps) {
   const theme = useTheme();
 
   const actions: Action[] = [
-    { key: 'scan', label: 'Scan', icon: 'camera', onPress: onScan, primary: true },
-    { key: 'search', label: 'Search', icon: 'search', onPress: onSearch },
-    { key: 'manual', label: 'By hand', icon: 'pencil', onPress: onManual },
+    {
+      key: 'scan',
+      label: 'Scan food',
+      icon: 'camera',
+      hint: 'Opens the camera to read the nutrition from a photo',
+      lead: true,
+      onPress: onScan,
+    },
+    {
+      key: 'search',
+      label: 'Search',
+      icon: 'search',
+      hint: 'Looks a food up in the nutrition database',
+      onPress: onSearch,
+    },
+    {
+      /*
+        Where the designs show a microphone.
+
+        This build has no speech recognition in it - adding one means a
+        native module and a transcription service - so the tile does the
+        thing the microphone was for, which is saying what you ate without
+        photographing it, by typing instead. A mic that opens a keyboard
+        would be a lie about the control.
+      */
+      key: 'manual',
+      label: 'Describe',
+      icon: 'pencil',
+      hint: 'Write down what you ate',
+      onPress: onManual,
+    },
   ];
 
   return (
@@ -48,39 +79,37 @@ export function QuickActions({ onScan, onSearch, onManual }: QuickActionsProps) 
           onPress={action.onPress}
           haptic
           accessibilityRole="button"
-          accessibilityLabel={
-            action.key === 'scan'
-              ? 'Photograph a meal'
-              : action.key === 'search'
-                ? 'Search for a food'
-                : 'Add a meal by hand'
-          }
+          accessibilityLabel={action.label}
+          accessibilityHint={action.hint}
           style={{
-            // Scan takes twice the share, so the row reads as one primary
-            // action with two alternatives rather than three equal tiles.
-            flex: action.primary === true ? 2 : 1,
-            height: 78,
-            borderRadius: theme.radius.surface,
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: theme.spacing.sm,
-            backgroundColor:
-              action.primary === true ? theme.colors.primary : theme.colors.surface,
-            borderWidth: action.primary === true ? 0 : theme.hairline,
-            borderColor: theme.colors.separator,
+            flex: 1,
+            borderRadius: 20,
+            backgroundColor: theme.colors.surface,
+            padding: theme.spacing.md,
+            gap: theme.spacing.lg,
           }}
         >
-          <Icon
-            name={action.icon}
-            size={action.primary === true ? 22 : 21}
-            color={action.primary === true ? theme.colors.background : 'textMuted'}
-            strokeWidth={1.8}
-          />
-          <Text
-            variant="caption"
-            color={action.primary === true ? theme.colors.background : 'text'}
-            style={{ fontWeight: action.primary === true ? '700' : '600' }}
+          <View
+            style={{
+              width: 38,
+              height: 38,
+              borderRadius: 12,
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: action.lead
+                ? theme.colors.primarySoft
+                : theme.colors.surfaceAlt,
+            }}
           >
+            <Icon
+              name={action.icon}
+              size={19}
+              color={action.lead ? 'primary' : 'text'}
+              strokeWidth={1.8}
+            />
+          </View>
+
+          <Text variant="caption" style={{ fontWeight: '600' }}>
             {action.label}
           </Text>
         </PressableScale>

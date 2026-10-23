@@ -43,17 +43,22 @@ function findNode(predicate: (node: JsonNode) => boolean): JsonNode | null {
 }
 
 /**
- * The filled pill: the view carrying the brand background.
+ * The scheme these assertions are made in.
  *
- * Matched against the light palette, because the providers follow the phone
- * and the phone is light under test.
+ * The app opens dark on a fresh install, and the providers under test open
+ * in the same default - so the palette a button actually renders in is this
+ * one. Named here rather than written out at each call site, because the
+ * whole file has to agree about which scheme it is checking.
  */
+const SCHEME = palettes.dark;
+
+/** The filled pill: the view carrying the brand background. */
 const filled = () =>
   findNode((node) => {
     const style = flatStyle(node.props?.style);
     return (
-      style.backgroundColor === palettes.light.primary ||
-      style.backgroundColor === palettes.light.primaryPressed
+      style.backgroundColor === SCHEME.primary ||
+      style.backgroundColor === SCHEME.primaryPressed
     );
   });
 
@@ -65,15 +70,19 @@ function flatStyle(style: unknown): Record<string, unknown> {
   return (style as Record<string, unknown>) ?? {};
 }
 
-/** WCAG contrast of white against a `#rrggbb` fill. */
-function contrastWithWhite(hex: string): number {
+/** Relative luminance of a `#rrggbb` colour. */
+function luminanceOf(hex: string): number {
   const channel = (index: number): number => {
     const value = parseInt(hex.slice(index, index + 2), 16) / 255;
     return value <= 0.03928 ? value / 12.92 : Math.pow((value + 0.055) / 1.055, 2.4);
   };
-  const luminance =
-    0.2126 * channel(1) + 0.7152 * channel(3) + 0.0722 * channel(5);
-  return 1.05 / (luminance + 0.05);
+  return 0.2126 * channel(1) + 0.7152 * channel(3) + 0.0722 * channel(5);
+}
+
+/** WCAG contrast between two `#rrggbb` colours. */
+function contrast(a: string, b: string): number {
+  const [light, dark] = [luminanceOf(a), luminanceOf(b)].sort((x, y) => y - x);
+  return (light! + 0.05) / (dark! + 0.05);
 }
 
 /** Everything that renders as a filled pill. `ghost` is the one level apart. */
@@ -94,25 +103,21 @@ describe('every button wears the reference treatment', () => {
       <Button label="Get All Access" variant={variant} onPress={jest.fn()} />,
     );
     const style = flatStyle(screen.getByText('Get All Access').props.style);
-    // The providers follow the phone, which under test is light.
-    expect(style.color).toBe(palettes.light.textOnPrimary);
+    expect(style.color).toBe(SCHEME.textOnPrimary);
   });
 
   /*
-    The fill is the brand colour now, not ink. An earlier version required
-    it to be grey, on the reasoning that a coloured button competes with
-    photographs of food; forest at this depth does not, because it is darker
-    than the food in any photograph rather than brighter.
-
-    What actually has to hold is that the label survives on it, so that is
-    what is measured.
+    The fill is the brand colour, not ink, and in the dark scheme that
+    colour is a bright lime - so this cannot ask that the fill be dark. What
+    actually has to hold is that the label survives on it, whichever way
+    round the two are, so that is what is measured.
   */
-  it('is dark enough for the label to be readable on it', async () => {
+  it('keeps the label readable on the fill', async () => {
     await renderWithProviders(<Button label="Save meal" onPress={jest.fn()} />);
     const background = flatStyle(filled()?.props?.style).backgroundColor as string;
 
-    // WCAG AA for body text, against the white the label is painted in.
-    expect(contrastWithWhite(background)).toBeGreaterThanOrEqual(4.5);
+    // WCAG AA for body text.
+    expect(contrast(background, SCHEME.textOnPrimary)).toBeGreaterThanOrEqual(4.5);
   });
 
   it('leaves a ghost action as text, so two pills never stack', async () => {
@@ -129,8 +134,7 @@ describe('every button wears the reference treatment', () => {
       <Button label="Skip for now" variant="ghost" onPress={jest.fn()} />,
     );
     const style = flatStyle(screen.getByText('Skip for now').props.style);
-    // The providers open in the app's default scheme, which is dark.
-    expect(style.color).toBe(palettes.light.primary);
+    expect(style.color).toBe(SCHEME.primary);
   });
 
   it('keeps a ghost action tappable, with no fill to show for it', async () => {
@@ -209,7 +213,7 @@ describe('icons inside a button', () => {
     );
     const path = findNode((node) => node.type === 'RNSVGPath');
     const stroke = path?.props?.stroke as { payload?: number } | undefined;
-    expect(stroke?.payload).toBe(processColor(palettes.light.textOnPrimary));
+    expect(stroke?.payload).toBe(processColor(SCHEME.textOnPrimary));
   });
 
   it('paints a trailing icon the same way', async () => {
@@ -223,7 +227,7 @@ describe('icons inside a button', () => {
     );
     const path = findNode((node) => node.type === 'RNSVGPath');
     const stroke = path?.props?.stroke as { payload?: number } | undefined;
-    expect(stroke?.payload).toBe(processColor(palettes.light.textOnPrimary));
+    expect(stroke?.payload).toBe(processColor(SCHEME.textOnPrimary));
   });
 
   it('shows a spinner instead of the icon while loading', async () => {

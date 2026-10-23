@@ -68,6 +68,6 @@ describe('the sign-in screen has no way around it', () => {
 
   it('still says plainly why it cannot work yet', async () => {
     await renderWithProviders(<SignInScreen />);
-    expect(screen.getByText('Accounts are not set up in this build')).toBeTruthy();
+    expect(screen.getByText('No account backend in this build.')).toBeTruthy();
   });
 });

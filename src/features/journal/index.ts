@@ -30,6 +30,12 @@ export {
   rowToItem,
   rowToSavedMeal,
 } from './mappers';
+export {
+  bumpJournalRevision,
+  resetJournalRevision,
+  trackJournalWrites,
+  useJournalRevision,
+} from './revision';
 export { createSupabaseJournalRepository } from './supabaseRepository';
 export type {
   CreateEntryInput,

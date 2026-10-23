@@ -2,7 +2,7 @@ import { Image } from 'expo-image';
 import { memo } from 'react';
 import { View, type StyleProp, type ViewStyle } from 'react-native';
 
-import { BrandMark } from '@/components/BrandMark';
+import { Icon } from '@/components/Icon';
 import { Text } from '@/components/ui';
 import { dishPhotoUri } from '@/features/photos';
 import { ramps, useTheme } from '@/theme';
@@ -133,21 +133,26 @@ function RecipeImageComponent({
 
 /** Flat tints, picked deterministically. No gradients. */
 const LIGHT_TINTS = [
-  ramps.neutral[100],
-  ramps.forest[50],
+  ramps.mint[100],
+  ramps.grass[50],
   ramps.ember[50],
-  ramps.neutral[50],
-  ramps.forest[100],
+  ramps.mint[200],
+  ramps.grass[200],
 ];
 const DARK_TINTS = ['#1E2420', '#1B2A22', '#2A2118', '#222228', '#16241D'];
 
 /**
  * The stand-in for a missing image.
  *
- * A flat tint from the palette with the brand mark set large and low-contrast
- * behind it. Earlier this was an `hsl()` gradient, which is exactly the
+ * A flat tint from the palette with a cooking-pot glyph set large and quiet
+ * on it. Earlier this was an `hsl()` gradient, which is exactly the
  * generated-app look it was meant to avoid - and a gradient also reads as
  * "decorative placeholder" rather than "this recipe has no photo".
+ *
+ * The glyph is the pot rather than the brand mark. The mark is the app's
+ * red, and a pale red lens floating in a mint rectangle read as a logo
+ * someone forgot to remove; the pot says the same thing the empty space is
+ * already saying, which is that this is a dish with no picture of it yet.
  *
  * The tint is chosen from the title, so a recipe always looks the same and
  * two recipes in a list look different.
@@ -172,8 +177,15 @@ function RecipeStandIn({ title, height }: { title: string; height: number }) {
         justifyContent: 'center',
       }}
     >
-      <View style={{ opacity: 0.22 }}>
-        <BrandMark size={Math.max(28, Math.min(height * 0.5, 96))} />
+      {/* Quiet enough to be a texture rather than a subject, dark enough
+          that the rectangle does not read as a failed image load. */}
+      <View style={{ opacity: 0.4 }}>
+        <Icon
+          name="recipes"
+          size={Math.max(26, Math.min(height * 0.3, 64))}
+          color={theme.colors.textSubtle}
+          strokeWidth={1.2}
+        />
       </View>
     </View>
   );

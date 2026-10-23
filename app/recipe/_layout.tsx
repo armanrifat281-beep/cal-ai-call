@@ -18,7 +18,14 @@ export default function RecipeLayout() {
     >
       <Stack.Screen name="create" options={{ title: 'Create a recipe' }} />
       <Stack.Screen name="saved" options={{ title: 'My recipes' }} />
-      <Stack.Screen name="[id]" options={{ title: 'Recipe' }} />
+      {/*
+        No header on the recipe itself. Its subject is a photograph bled to
+        the edges with back, favourite and overflow floating on it, so a bar
+        above that would be a strip of furniture between the user and the
+        dish - and, since the recipe screens are drawn in the light scheme,
+        a bar in the dark one directly above a pale page.
+      */}
+      <Stack.Screen name="[id]" options={{ headerShown: false }} />
       {/*
         Cooking mode hides the header: the screen is read at arm's length
         while cooking, and every pixel of height helps.

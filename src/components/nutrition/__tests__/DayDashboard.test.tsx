@@ -71,8 +71,12 @@ describe('the day dashboard', () => {
       />,
     );
 
+    // Inside the ring: one place to look for one fact.
     expect(screen.getByText('1250')).toBeTruthy();
-    expect(screen.getByText('kcal left today')).toBeTruthy();
+    expect(screen.getByText('kcal left')).toBeTruthy();
+    // And what was eaten, beside it, as a plain figure.
+    expect(screen.getByText('Eaten')).toBeTruthy();
+    expect(screen.getByText('750')).toBeTruthy();
   });
 
   /*
@@ -89,7 +93,7 @@ describe('the day dashboard', () => {
     );
 
     expect(screen.getByText('250')).toBeTruthy();
-    expect(screen.getByText('kcal over your goal')).toBeTruthy();
+    expect(screen.getByText('kcal over')).toBeTruthy();
   });
 
   it('shows the plain total when no goal is set, rather than a ring against nothing', async () => {
@@ -101,10 +105,27 @@ describe('the day dashboard', () => {
       />,
     );
 
-    expect(screen.getByText('600')).toBeTruthy();
-    expect(screen.getByText(/set a goal/)).toBeTruthy();
-    // No percentage, because there is nothing to be a percentage of.
-    expect(screen.queryByText('%')).toBeNull();
+    expect(screen.getByText('kcal eaten today')).toBeTruthy();
+    expect(screen.queryByText('kcal left')).toBeNull();
+  });
+
+  /*
+    Home showed the total and nothing else when no target was set, which
+    read as a screen that did not work. The dial now carries the one
+    control that fixes it.
+  */
+  it('offers the way to set a target when there is none', async () => {
+    const onSetTarget = jest.fn();
+    await renderWithProviders(
+      <DayDashboard
+        summary={summarizeEntries([entryOf(600)])}
+        targets={{ caloriesKcal: null, proteinG: null, carbsG: null, fatG: null }}
+        dayLabel="Today"
+        onSetTarget={onSetTarget}
+      />,
+    );
+
+    expect(screen.getByText('Set a daily target')).toBeTruthy();
   });
 
   it('shows each macro against its target', async () => {
@@ -116,11 +137,12 @@ describe('the day dashboard', () => {
       />,
     );
 
-    expect(screen.getByText('40g')).toBeTruthy();
-    expect(screen.getByText('of 120g')).toBeTruthy();
     expect(screen.getByText('Protein')).toBeTruthy();
     expect(screen.getByText('Carbs')).toBeTruthy();
     expect(screen.getByText('Fat')).toBeTruthy();
+    // Eaten and target together on the tile, not two figures in two places.
+    expect(screen.getByText('40')).toBeTruthy();
+    expect(screen.getByText('/ 120g')).toBeTruthy();
   });
 
   it('reads an empty day as nothing eaten, not as a missing day', async () => {
@@ -133,6 +155,38 @@ describe('the day dashboard', () => {
     );
 
     expect(screen.getByText('2000')).toBeTruthy();
-    expect(screen.getByText('kcal left today')).toBeTruthy();
+    expect(screen.getByText('kcal left')).toBeTruthy();
+  });
+
+  /*
+    This app tracks no exercise and talks to no watch, so a burn figure it
+    cannot derive is a number it would be making up. Without the user's
+    height, weight and age it says so and offers the way to fix it.
+  */
+  it('does not invent a figure for energy burned', async () => {
+    await renderWithProviders(
+      <DayDashboard
+        summary={summarizeEntries([entryOf(750)])}
+        targets={TARGETS}
+        dayLabel="Today"
+        burnedKcal={null}
+      />,
+    );
+
+    expect(screen.getByText('Burned')).toBeTruthy();
+    expect(screen.getByText('Add your details')).toBeTruthy();
+  });
+
+  it('shows the burn once it can be worked out', async () => {
+    await renderWithProviders(
+      <DayDashboard
+        summary={summarizeEntries([entryOf(750)])}
+        targets={TARGETS}
+        dayLabel="Today"
+        burnedKcal={1410}
+      />,
+    );
+
+    expect(screen.getByText('1,410')).toBeTruthy();
   });
 });

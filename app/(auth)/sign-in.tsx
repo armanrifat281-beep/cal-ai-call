@@ -1,21 +1,33 @@
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
+import { View } from 'react-native';
 
-import { Button, Text, TextField } from '@/components/ui';
-import { AuthBackButton } from '@/features/auth/AuthBackButton';
-import { AuthLayout } from '@/features/auth/AuthLayout';
-import { SocialSignIn } from '@/features/auth/SocialSignIn';
+import { Text } from '@/components/ui';
+import {
+  AUTH_MUTED,
+  AUTH_ORANGE,
+  AuthSheet,
+  AuthSheetFooter,
+} from '@/features/auth/AuthSheet';
+import {
+  AuthButton,
+  AuthField,
+  AuthNotice,
+  AuthPrompt,
+} from '@/features/auth/AuthSheetControls';
+import { AuthSheetSocial } from '@/features/auth/AuthSheetSocial';
 import { hasAnyError, useAuth, validateSignIn } from '@/features/auth';
+import { env } from '@/lib/env';
 import type { AppError } from '@/lib/result';
 
 /**
  * Sign in.
  *
- * One filled button on the screen. An earlier version had four controls of
- * near-equal weight - sign in, Google, forgot, create an account - which is
- * how a page ends up with no answer to "what do I press". Now: the button,
- * then Google under a rule, with "forgot" demoted onto the password field's
- * own label row and "create an account" written as a sentence.
+ * One filled button on the sheet. Everything else is quieter than it:
+ * "Forgot Password?" is a line of text under the button rather than a third
+ * control, the providers sit below a rule, and "Sign Up" is a word inside a
+ * sentence. A screen with four controls of equal weight has no answer to
+ * "what do I press".
  *
  * The form is here whether or not a backend is configured; what changes is
  * the notice above it and what pressing the button returns.
@@ -51,68 +63,38 @@ export default function SignInScreen() {
   };
 
   return (
-    <AuthLayout
-      title={'Know what’s\non your plate.'}
-      // Only when something preceded this screen: reached as the app's
-      // first screen, a back button would have nowhere to go.
-      heroLeading={router.canGoBack() ? <AuthBackButton /> : undefined}
-      /*
-        No subtitle, and a shorter hero than the other auth screens. The
-        pitch belongs on Welcome; a returning user needs the form. At the
-        full height the card ran past the bottom of a phone and took
-        "Create an account" with it - which is how someone with no account
-        ends up signing in over and over against details that match nothing.
-      */
-      heroHeight={252}
-      error={error}
-      onRetry={error?.retryable ? () => void submit() : undefined}
-      // Retrying the same details cannot fix "no such account", so the way
-      // out is offered at the moment it is needed.
-      errorAction={
-        error?.code === 'unauthorized'
-          ? {
-              label: 'Create an account',
-              onPress: () => router.replace('/(auth)/sign-up'),
-            }
-          : undefined
-      }
-      offlineMessage="Signing in needs a connection."
-      unavailableDetail="There is no backend configured in this build, so signing in cannot work yet. The form is real and so is its checking; only the request at the end has nowhere to go. Everything else in the app works, and your meals are saved on this device."
-      footer={
-        <>
-          <Button
-            label="Sign in"
-            onPress={() => void submit()}
-            loading={busy}
-            size="lg"
-            fullWidth
-            haptic
-          />
-
-          <SocialSignIn
-            onSignedIn={() => router.replace('/')}
-            onError={setError}
-          />
-
-          {/* A sentence, not a fourth button. */}
-          <Text variant="footnote" color="textMuted" align="center">
-            New here?{' '}
-            <Text
-              variant="footnote"
-              color="primary"
-              style={{ fontWeight: '700' }}
-              onPress={() => router.replace('/(auth)/sign-up')}
-              accessibilityRole="button"
-            >
-              Create an account
-            </Text>
-          </Text>
-        </>
-      }
+    <AuthSheet
+      badge
+      // Only when something preceded this screen: reached as the app's first
+      // screen, a close button would have nowhere to go.
+      onClose={router.canGoBack() ? () => router.back() : undefined}
     >
-      <Text variant="title2">Welcome back</Text>
+      {!env.isSupabaseConfigured ? (
+        <AuthNotice
+          tone="note"
+          message="No account backend in this build."
+          detail="The form and its checking are real; only the request at the end has nowhere to go. Everything else works, and your meals are saved on this device."
+        />
+      ) : null}
 
-      <TextField
+      {error ? (
+        <AuthNotice
+          message={error.message}
+          detail={error.detail}
+          // Retrying the same details cannot fix "no such account", so the
+          // way out is offered at the moment it is needed.
+          action={
+            error.code === 'unauthorized'
+              ? {
+                  label: 'Create an account instead',
+                  onPress: () => router.replace('/(auth)/sign-up'),
+                }
+              : undefined
+          }
+        />
+      ) : null}
+
+      <AuthField
         label="Email"
         value={email}
         onChangeText={setEmail}
@@ -124,31 +106,51 @@ export default function SignInScreen() {
         textContentType="emailAddress"
         autoCorrect={false}
       />
-      <TextField
+
+      <AuthField
         label="Password"
+        password
         value={password}
         onChangeText={setPassword}
         error={submitted ? errors.password : null}
-        secureTextEntry
+        placeholder="Your password"
         autoCapitalize="none"
         autoComplete="current-password"
         textContentType="password"
         onSubmitEditing={() => void submit()}
         returnKeyType="go"
-        // On the label's row, so the two fields stay one pair.
-        labelAccessory={
-          <Text
-            variant="footnote"
-            color="textMuted"
-            style={{ fontWeight: '600' }}
-            onPress={() => router.push('/(auth)/forgot-password')}
-            accessibilityRole="button"
-            accessibilityLabel="I forgot my password"
-          >
-            Forgot?
-          </Text>
-        }
       />
-    </AuthLayout>
+
+      <View style={{ gap: 12, marginTop: 6 }}>
+        <AuthButton label="Sign In" onPress={() => void submit()} loading={busy} />
+
+        <Text
+          variant="footnote"
+          color={AUTH_ORANGE}
+          align="center"
+          style={{ fontWeight: '600' }}
+          onPress={() => router.push('/(auth)/forgot-password')}
+          accessibilityRole="button"
+          accessibilityLabel="I forgot my password"
+        >
+          Forgot Password?
+        </Text>
+      </View>
+
+      {/* Draws its own rule, or nothing at all when no provider is set up. */}
+      <AuthSheetSocial onSignedIn={() => router.replace('/')} onError={setError} />
+
+      <AuthPrompt
+        question="Don't have an account?"
+        action="Sign Up"
+        onPress={() => router.replace('/(auth)/sign-up')}
+      />
+
+      <AuthSheetFooter>
+        <Text variant="caption" color={AUTH_MUTED}>
+          © {new Date().getFullYear()} FoodLens AI
+        </Text>
+      </AuthSheetFooter>
+    </AuthSheet>
   );
 }

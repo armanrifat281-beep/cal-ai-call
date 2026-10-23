@@ -2,26 +2,26 @@ import { greetingFor, normalizeDisplayName, validateDisplayName } from '../greet
 
 describe('greetingFor', () => {
   it('greets by part of day', () => {
-    expect(greetingFor(7, null)).toBe('Good morning');
-    expect(greetingFor(13, null)).toBe('Good afternoon');
-    expect(greetingFor(20, null)).toBe('Good evening');
+    expect(greetingFor(7, null)).toBe('Morning');
+    expect(greetingFor(13, null)).toBe('Afternoon');
+    expect(greetingFor(20, null)).toBe('Evening');
   });
 
   it('uses the name once there is one', () => {
-    expect(greetingFor(9, 'Yeasin')).toBe('Good morning, Yeasin');
+    expect(greetingFor(9, 'Yeasin')).toBe('Morning, Yeasin');
   });
 
   it('ignores a name that is only spaces', () => {
-    expect(greetingFor(9, '   ')).toBe('Good morning');
+    expect(greetingFor(9, '   ')).toBe('Morning');
   });
 
   it('handles the boundaries', () => {
-    expect(greetingFor(0, null)).toBe('Good morning');
-    expect(greetingFor(11, null)).toBe('Good morning');
-    expect(greetingFor(12, null)).toBe('Good afternoon');
-    expect(greetingFor(17, null)).toBe('Good afternoon');
-    expect(greetingFor(18, null)).toBe('Good evening');
-    expect(greetingFor(23, null)).toBe('Good evening');
+    expect(greetingFor(0, null)).toBe('Morning');
+    expect(greetingFor(11, null)).toBe('Morning');
+    expect(greetingFor(12, null)).toBe('Afternoon');
+    expect(greetingFor(17, null)).toBe('Afternoon');
+    expect(greetingFor(18, null)).toBe('Evening');
+    expect(greetingFor(23, null)).toBe('Evening');
   });
 });
 

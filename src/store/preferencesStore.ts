@@ -3,6 +3,7 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
 import type {
+  BodyBasics,
   DailyTargets,
   DietaryPattern,
   MeasurementSystem,
@@ -34,6 +35,14 @@ export const DEFAULT_PREFERENCES: LocalPreferences = {
   favoriteCuisines: [],
   goal: 'none',
   dailyTargets: { caloriesKcal: null, proteinG: null, carbsG: null, fatG: null },
+  waterTargetMl: null,
+  bodyBasics: {
+    sex: 'unspecified',
+    ageYears: null,
+    heightCm: null,
+    weightKg: null,
+    activity: 'light',
+  },
   preferredServings: 4,
   favoriteCuisineId: null,
   foodMemoryEnabled: true,
@@ -54,6 +63,8 @@ interface PreferencesState {
   setMeasurementSystem: (system: MeasurementSystem) => void;
   setGoal: (goal: NutritionGoalKind) => void;
   setDailyTargets: (targets: Partial<DailyTargets>) => void;
+  /** Height, weight and activity, for working out a calorie target. */
+  setBodyBasics: (basics: Partial<BodyBasics>) => void;
   setAllergens: (allergens: string[]) => void;
   /** What the user has at home, for "cook with what I have". */
   setPantryItems: (items: string[]) => void;
@@ -106,6 +117,15 @@ export const usePreferencesStore = create<PreferencesState>()(
           preferences: {
             ...state.preferences,
             dailyTargets: { ...state.preferences.dailyTargets, ...targets },
+          },
+          syncedAt: null,
+        })),
+
+      setBodyBasics: (basics) =>
+        set((state) => ({
+          preferences: {
+            ...state.preferences,
+            bodyBasics: { ...state.preferences.bodyBasics, ...basics },
           },
           syncedAt: null,
         })),
@@ -192,6 +212,10 @@ export const usePreferencesStore = create<PreferencesState>()(
             dailyTargets: {
               ...current.preferences.dailyTargets,
               ...(stored.preferences?.dailyTargets ?? {}),
+            },
+            bodyBasics: {
+              ...current.preferences.bodyBasics,
+              ...(stored.preferences?.bodyBasics ?? {}),
             },
           },
         };

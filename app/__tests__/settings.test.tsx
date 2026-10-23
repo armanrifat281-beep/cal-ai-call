@@ -189,18 +189,25 @@ describe('the home greeting', () => {
 
   it('greets by part of day before a name is set', async () => {
     await renderWithProviders(<HomeScreen />);
-    expect(screen.getByText(/^Good (morning|afternoon|evening)$/)).toBeTruthy();
+    expect(screen.getByText(/^(Morning|Afternoon|Evening)$/)).toBeTruthy();
   });
 
   it('uses the name once there is one', async () => {
     usePreferencesStore.getState().setPreferences({ displayName: 'Yeasin' });
     await renderWithProviders(<HomeScreen />);
-    expect(screen.getByText(/^Good (morning|afternoon|evening), Yeasin$/)).toBeTruthy();
+    expect(screen.getByText(/^(Morning|Afternoon|Evening), Yeasin$/)).toBeTruthy();
   });
 
+  /*
+    The date is an eyebrow above the greeting rather than a line under it:
+    the greeting is what the screen opens with, and the date is what
+    qualifies it.
+  */
   it('still says which day it is', async () => {
     await renderWithProviders(<HomeScreen />);
-    expect(screen.getByText(/^Today · /)).toBeTruthy();
+    expect(
+      screen.getByText(/^(MONDAY|TUESDAY|WEDNESDAY|THURSDAY|FRIDAY|SATURDAY|SUNDAY)/),
+    ).toBeTruthy();
   });
 });
 

@@ -1,6 +1,6 @@
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useRef, useState } from 'react';
-import { Pressable, View } from 'react-native';
+import { ActivityIndicator, Pressable, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Icon } from '@/components/Icon';
@@ -20,6 +20,15 @@ export interface CameraCaptureProps {
   onScanBarcode: () => void;
   /** True while the captured frame is being validated and resized. */
   busy?: boolean;
+  /**
+   * A line of status set between the close and torch buttons, e.g.
+   * "Preparing your photo".
+   *
+   * In the viewfinder rather than on a screen after it, because what it
+   * reports happens while the user is still holding the phone up at the
+   * plate. A spinner alone there reads as the camera having frozen.
+   */
+  status?: string | null;
 }
 
 /**
@@ -49,6 +58,7 @@ export function CameraCapture({
   onAddByHand,
   onScanBarcode,
   busy = false,
+  status = null,
 }: CameraCaptureProps) {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
@@ -130,6 +140,28 @@ export function CameraCapture({
         }}
       >
         <GlassButton label="Close the camera" icon="close" onPress={onClose} />
+
+        {status ? (
+          <View
+            accessibilityRole="progressbar"
+            accessibilityLabel={status}
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 8,
+              paddingVertical: 8,
+              paddingHorizontal: 14,
+              borderRadius: 999,
+              backgroundColor: 'rgba(0,0,0,0.6)',
+            }}
+          >
+            <ActivityIndicator size="small" color="#FFFFFF" />
+            <Text variant="caption" color="#FFFFFF" style={{ fontWeight: '600' }}>
+              {status}
+            </Text>
+          </View>
+        ) : null}
+
         <GlassButton
           label={torch ? 'Turn the light off' : 'Turn the light on'}
           icon="flame"

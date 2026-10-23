@@ -2,41 +2,61 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { View } from 'react-native';
 
-import { Icon } from '@/components/Icon';
+import { Text } from '@/components/ui';
 import {
-  Button,
-  Disclosure,
-  ErrorState,
-  Screen,
-  Text,
-  TextField,
-} from '@/components/ui';
-import { AuthBackButton } from '@/features/auth/AuthBackButton';
-import { AuthLayout } from '@/features/auth/AuthLayout';
-import { SocialSignIn } from '@/features/auth/SocialSignIn';
+  AUTH_INK,
+  AUTH_MUTED,
+  AUTH_ORANGE,
+  AuthSheet,
+  AuthSheetFooter,
+} from '@/features/auth/AuthSheet';
+import {
+  AuthButton,
+  AuthCheckbox,
+  AuthField,
+  AuthNotice,
+  AuthPrompt,
+} from '@/features/auth/AuthSheetControls';
 import {
   hasAnyError,
   resendConfirmationEmail,
   useAuth,
   validateSignUp,
 } from '@/features/auth';
+import { env } from '@/lib/env';
 import type { AppError } from '@/lib/result';
-import { useTheme } from '@/theme';
+import { usePreferencesStore } from '@/store/preferencesStore';
 
+/**
+ * Create an account.
+ *
+ * The name is asked for here rather than during onboarding, because it is
+ * the one question whose answer the app uses immediately - the greeting at
+ * the top of Home - and because a form that already has three fields can
+ * carry a fourth far more cheaply than a later screen can exist at all.
+ *
+ * Agreeing to the terms is a checkbox rather than fine print under the
+ * button. Consent that is given by pressing something labelled with a
+ * different verb is not consent.
+ */
 export default function SignUpScreen() {
-  const theme = useTheme();
   const router = useRouter();
   const { signUp } = useAuth();
+  const setPreferences = usePreferencesStore((state) => state.setPreferences);
 
+  const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmation, setConfirmation] = useState('');
+  const [agreed, setAgreed] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<AppError | null>(null);
   const [awaitingConfirmation, setAwaitingConfirmation] = useState(false);
 
   const errors = validateSignUp(email, password, confirmation);
+  const nameError =
+    fullName.trim().length === 0 ? 'Tell us what to call you.' : null;
 
   const [resending, setResending] = useState(false);
   const [resent, setResent] = useState(false);
@@ -59,7 +79,7 @@ export default function SignUpScreen() {
 
   const submit = async () => {
     setSubmitted(true);
-    if (hasAnyError(errors)) return;
+    if (hasAnyError(errors) || nameError || !agreed) return;
 
     setBusy(true);
     setError(null);
@@ -71,6 +91,10 @@ export default function SignUpScreen() {
       return;
     }
 
+    // Kept whatever happens next: the account may still need confirming,
+    // and the greeting should be right the first time the app opens.
+    setPreferences({ displayName: fullName.trim() });
+
     if (result.value.needsEmailConfirmation) {
       setAwaitingConfirmation(true);
       return;
@@ -78,90 +102,96 @@ export default function SignUpScreen() {
     router.replace('/');
   };
 
-  // Shown only after the server confirmed the sign-up. Nothing here is
-  // asserted before the request actually succeeded.
+  /*
+    Confirmation replaces the form rather than sitting above it. Leaving
+    four filled fields and a Create Account button on screen after the
+    account exists invites the user to press it again, which fails.
+  */
   if (awaitingConfirmation) {
     return (
-      <Screen edges={{ bottom: true }} contentStyle={{ gap: theme.spacing.lg }}>
-        <Icon name="check" size={34} color="primary" strokeWidth={2} />
-        <View style={{ gap: theme.spacing.sm }}>
-          <Text variant="title1">Check your email</Text>
-          <Text variant="body" color="textMuted">
-            We sent a confirmation link to {email.trim()}. Open it to finish
-            creating your account.
+      <AuthSheet
+        title="Check your email"
+        onBack={() => setAwaitingConfirmation(false)}
+        onClose={() => router.replace('/(auth)/sign-in')}
+      >
+        <Text variant="body" color={AUTH_INK}>
+          We sent a confirmation link to{' '}
+          <Text variant="body" color={AUTH_INK} style={{ fontWeight: '700' }}>
+            {email}
           </Text>
-        </View>
-        <Disclosure
-          summary="Nothing arrived?"
-          detail="Check your spam folder first - the link can take a minute. If it still has not come, send it again below. The link expires after a while, and a fresh one always works."
-        />
+          . Open it on this phone and the app will take you the rest of the way.
+        </Text>
+
+        <Text variant="footnote" color={AUTH_MUTED}>
+          Nothing arrived? It can take a minute, and it is often in spam.
+        </Text>
 
         {resendError ? (
-          <ErrorState message={resendError.message} detail={resendError.detail} />
+          <AuthNotice message={resendError.message} detail={resendError.detail} />
         ) : null}
 
-        {/*
-          Without this, an email that never arrives is the end of the road:
-          the sign-in screen only offers a password reset, which does not
-          confirm an address, so the account stays unreachable and the email
-          is already taken.
-        */}
-        <Button
-          label={resent ? 'Sent again' : 'Send the email again'}
-          onPress={() => void resend()}
+        <AuthButton
+          label={resent ? 'Email sent' : 'Send it again'}
+          variant="outline"
           loading={resending}
           disabled={resent}
-          size="lg"
-          fullWidth
-          haptic
+          onPress={() => void resend()}
         />
-        <Button
-          label="Go to sign in"
-          variant="ghost"
+
+        <AuthPrompt
+          question="Already confirmed?"
+          action="Sign In"
           onPress={() => router.replace('/(auth)/sign-in')}
-          style={{ alignSelf: 'center' }}
         />
-      </Screen>
+      </AuthSheet>
     );
   }
 
   return (
-    <AuthLayout
-      title={'Create your\naccount'}
-      heroLeading={router.canGoBack() ? <AuthBackButton /> : undefined}
-      /*
-        The same photograph as the welcome screen, deliberately. Creating an
-        account is the second half of that invitation, and a plain form here
-        made the two screens look like two different products.
-      */
-      heroPhoto={require('../../assets/welcome-meal.jpg')}
-      heroPhotoLabel="A plated salmon dish photographed on a dark table"
-      subtitle="Backs up your meals, recipes and shopping lists, and syncs them across devices."
-      error={error}
-      onRetry={error?.retryable ? () => void submit() : undefined}
-      offlineMessage="Creating an account needs a connection."
-      unavailableDetail="There is no backend configured in this build, so an account cannot be created yet. The form is real and so is its checking; only the request at the end has nowhere to go. Everything in the app works without one."
-      footer={
-        <>
-          <Button
-            label="Create account"
-            onPress={() => void submit()}
-            loading={busy}
-            size="lg"
-            fullWidth
-            haptic
-          />
-          <Button
-            label="I already have an account"
-            variant="ghost"
-            size="sm"
-            onPress={() => router.replace('/(auth)/sign-in')}
-            style={{ alignSelf: 'center' }}
-          />
-        </>
-      }
+    <AuthSheet
+      title="Create Account"
+      onBack={router.canGoBack() ? () => router.back() : undefined}
+      onClose={() => router.replace('/(auth)/welcome')}
+      sheetTop={0.14}
     >
-      <TextField
+      {!env.isSupabaseConfigured ? (
+        <AuthNotice
+          tone="note"
+          message="No account backend in this build."
+          detail="The form and its checking are real; only the request at the end has nowhere to go. Everything else works, and your meals are saved on this device."
+        />
+      ) : null}
+
+      {error ? (
+        <AuthNotice
+          message={error.message}
+          detail={error.detail}
+          // An address that already has an account comes back as a
+          // validation failure with that sentence in it; retyping the same
+          // details cannot fix it, so the way out is offered here.
+          action={
+            error.message.includes('already exists')
+              ? {
+                  label: 'Sign in instead',
+                  onPress: () => router.replace('/(auth)/sign-in'),
+                }
+              : undefined
+          }
+        />
+      ) : null}
+
+      <AuthField
+        label="Full Name"
+        value={fullName}
+        onChangeText={setFullName}
+        error={submitted ? nameError : null}
+        placeholder="Your name"
+        autoCapitalize="words"
+        autoComplete="name"
+        textContentType="name"
+      />
+
+      <AuthField
         label="Email"
         value={email}
         onChangeText={setEmail}
@@ -173,39 +203,87 @@ export default function SignUpScreen() {
         textContentType="emailAddress"
         autoCorrect={false}
       />
-      <TextField
+
+      <AuthField
         label="Password"
+        password
         value={password}
         onChangeText={setPassword}
         error={submitted ? errors.password : null}
-        secureTextEntry
+        placeholder="At least 8 characters"
         autoCapitalize="none"
         autoComplete="new-password"
         textContentType="newPassword"
       />
-      <TextField
-        label="Confirm password"
+
+      <AuthField
+        label="Confirm Password"
+        password
         value={confirmation}
         onChangeText={setConfirmation}
-        error={submitted ? (errors.confirmation ?? null) : null}
-        secureTextEntry
+        error={submitted ? errors.confirmation : null}
+        placeholder="Type it again"
         autoCapitalize="none"
         autoComplete="new-password"
         textContentType="newPassword"
         onSubmitEditing={() => void submit()}
         returnKeyType="go"
       />
-      {/*
-        The reassurance that local meals survive signing up used to sit here
-        as a footnote. It cost two lines on a form that already ran past the
-        bottom of a phone, and it answers a question almost nobody asks
-        before they have signed up - the same point is made in Profile, where
-        someone actually looks for it.
-      */}
-      <SocialSignIn
-        onSignedIn={() => router.replace('/')}
-        onError={setError}
+
+      <View style={{ gap: 6 }}>
+        <AuthCheckbox
+          checked={agreed}
+          onToggle={() => setAgreed((current) => !current)}
+          accessibilityLabel="I agree to the Terms of Service and Privacy Policy"
+        >
+          <Text variant="footnote" color={AUTH_MUTED}>
+            I agree to the{' '}
+            <Text
+              variant="footnote"
+              color={AUTH_ORANGE}
+              style={{ fontWeight: '600' }}
+              onPress={() => router.push('/settings/terms')}
+              accessibilityRole="link"
+            >
+              Terms of Service
+            </Text>{' '}
+            and{' '}
+            <Text
+              variant="footnote"
+              color={AUTH_ORANGE}
+              style={{ fontWeight: '600' }}
+              onPress={() => router.push('/settings/privacy')}
+              accessibilityRole="link"
+            >
+              Privacy Policy
+            </Text>
+          </Text>
+        </AuthCheckbox>
+
+        {submitted && !agreed ? (
+          <Text variant="footnote" color="#C13A3A">
+            Please agree to the terms before creating an account.
+          </Text>
+        ) : null}
+      </View>
+
+      <AuthButton
+        label="Create Account"
+        onPress={() => void submit()}
+        loading={busy}
       />
-    </AuthLayout>
+
+      <AuthPrompt
+        question="Already have an account?"
+        action="Sign In"
+        onPress={() => router.replace('/(auth)/sign-in')}
+      />
+
+      <AuthSheetFooter>
+        <Text variant="caption" color={AUTH_MUTED}>
+          © {new Date().getFullYear()} FoodLens AI
+        </Text>
+      </AuthSheetFooter>
+    </AuthSheet>
   );
 }

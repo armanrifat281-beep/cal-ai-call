@@ -227,6 +227,25 @@ export type NutritionGoalKind =
   | 'manage_weight'
   | 'steady_energy';
 
+/**
+ * What the body-energy arithmetic needs.
+ *
+ * Optional throughout: the app is fully usable without any of it, and asking
+ * for a body weight before someone has logged a single meal is how an app
+ * loses people on the first screen.
+ */
+export type BiologicalSex = 'female' | 'male' | 'unspecified';
+
+export type ActivityLevel = 'sedentary' | 'light' | 'moderate' | 'very';
+
+export interface BodyBasics {
+  sex: BiologicalSex;
+  ageYears: number | null;
+  heightCm: number | null;
+  weightKg: number | null;
+  activity: ActivityLevel;
+}
+
 export interface DailyTargets {
   caloriesKcal: number | null;
   proteinG: number | null;
@@ -271,6 +290,22 @@ export interface UserPreferences {
   favoriteCuisines: string[];
   goal: NutritionGoalKind;
   dailyTargets: DailyTargets;
+  /**
+   * Height, weight and so on, kept only to work out a calorie target.
+   *
+   * Stored on the device and never sent to the AI. It exists because asking
+   * people to type a calorie number they do not know left the target empty
+   * and Home with nothing to show.
+   */
+  bodyBasics: BodyBasics;
+  /**
+   * Water to aim for in a day, in millilitres, or null for no target.
+   *
+   * Null is a real answer and the default: the app does not tell anyone how
+   * much they should drink any more than it tells them what to weigh. The
+   * glasses are then a scale to read against rather than a goal.
+   */
+  waterTargetMl: number | null;
   /**
    * Serving count the recipe creator defaults to, remembered from last time.
    * Part of Food Memory, and editable in Profile.

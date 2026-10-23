@@ -359,9 +359,10 @@ export default function ScanScreen() {
         onCaptured={(uri) => void handleCaptured(uri)}
         onPickFromLibrary={() => void pickFromLibrary()}
         onClose={() => router.push('/(tabs)')}
-        onAddByHand={() => router.push('/entry/new')}
+        onAddByHand={() => router.push('/entry/describe')}
         onScanBarcode={() => router.push('/label/scan')}
         busy={busy}
+        status={busy ? 'Preparing your photo' : null}
       />
 
       <View

@@ -1,31 +1,35 @@
 import { Tabs } from 'expo-router';
-import { Platform } from 'react-native';
+import { View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Icon, type IconName } from '@/components/Icon';
-import { useTheme } from '@/theme';
+import { PressableScale } from '@/components/ui';
+import { tabBarMetrics, useTheme } from '@/theme';
 
 /**
- * The five main tabs.
+ * The five main tabs, with the camera in the middle.
  *
- * Insights is not a tab: it is reached from a card on Home and a row in
- * Profile. Five tabs is already the practical limit on a phone, and Scan and
- * Recipes are both things people reach for many times a day, where Insights
- * is something they read occasionally.
+ * Home and Meals are the two screens people open; Progress and Profile are
+ * the two they visit. Between them, raised out of the bar, is the thing the
+ * app is actually for - photographing a plate - as a filled circle rather
+ * than a fifth identical glyph. It is the only control in the app that is
+ * reachable from every screen, which is right: the moment someone wants to
+ * log a meal is never a moment they planned.
+ *
+ * Discover, Recipes, Insights and the journal all live in this group so they
+ * keep the bar while open, but none of them is a tab: `href: null` hides the
+ * button. Five is already the practical limit on a phone.
  */
 const TAB_ICONS: Record<string, IconName> = {
   index: 'home',
-  scan: 'scan',
-  recipes: 'recipes',
-  discover: 'search',
-  journal: 'journal',
-  // A person, not a gear. Labelled and drawn as settings, the destination
-  // holding the account, the name and the email read as a utility screen,
-  // and the Profile the app is supposed to have looked missing.
+  meals: 'meals',
+  progress: 'insights',
   profile: 'profile',
 };
 
 export default function TabsLayout() {
   const theme = useTheme();
+  const insets = useSafeAreaInsets();
 
   /*
     No session guard here, deliberately.
@@ -39,8 +43,6 @@ export default function TabsLayout() {
 
     Leaving is now driven by the action that causes it: signing out and
     deleting an account both navigate on success, in `(tabs)/profile.tsx`.
-    A session that dies on its own surfaces as a 401 with "your session
-    expired, sign in again", which the services already produce.
   */
 
   return (
@@ -48,15 +50,17 @@ export default function TabsLayout() {
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarActiveTintColor: theme.colors.primary,
-        tabBarInactiveTintColor: theme.colors.textMuted,
+        tabBarInactiveTintColor: theme.colors.textSubtle,
         tabBarStyle: {
           backgroundColor: theme.colors.surface,
-          borderTopColor: theme.colors.border,
-          borderTopWidth: 1,
-          // Android draws its own elevation shadow, which clashes with the
-          // hairline border we use on both platforms.
+          // No hairline above the bar. On a black page the bar is already a
+          // step lighter than the content behind it, and a border on top of
+          // that reads as a seam.
+          borderTopWidth: 0,
           elevation: 0,
-          height: Platform.OS === 'ios' ? 86 : 64,
+          // Room for the gesture bar under the labels, rather than behind
+          // them. A fixed height would take that strip out of the bar.
+          ...tabBarMetrics(insets.bottom),
           paddingTop: theme.spacing.sm,
         },
         tabBarLabelStyle: {
@@ -68,8 +72,8 @@ export default function TabsLayout() {
         tabBarIcon: ({ focused }) => (
           <Icon
             name={TAB_ICONS[route.name] ?? 'home'}
-            color={focused ? theme.colors.primary : theme.colors.textMuted}
-            size={24}
+            color={focused ? theme.colors.primary : theme.colors.textSubtle}
+            size={23}
             filled={focused}
             strokeWidth={focused ? 2 : 1.7}
           />
@@ -77,27 +81,91 @@ export default function TabsLayout() {
       })}
     >
       <Tabs.Screen name="index" options={{ title: 'Home' }} />
-      <Tabs.Screen name="scan" options={{ title: 'Scan' }} />
-      <Tabs.Screen name="recipes" options={{ title: 'Recipes' }} />
-      <Tabs.Screen name="discover" options={{ title: 'Discover' }} />
+      <Tabs.Screen name="meals" options={{ title: 'Meals' }} />
+
       {/*
-        Named for what it holds - the account, preferences, privacy and the
-        way out - rather than for the word "settings", which described the
-        bottom half of the screen and hid the top half.
+        The camera. A button, not a tab: it has no label, it does not take
+        the active tint, and it sits above the bar rather than in it.
       */}
+      <Tabs.Screen
+        name="scan"
+        options={{
+          title: 'Scan',
+          tabBarLabel: () => null,
+          tabBarButton: (props) => <CameraButton {...props} />,
+        }}
+      />
+
+      <Tabs.Screen name="progress" options={{ title: 'Progress' }} />
       <Tabs.Screen name="profile" options={{ title: 'Profile' }} />
+
       {/*
-        Insights and Journal live here so they keep the tab bar while open,
-        but neither is itself a tab: href null hides the button.
+        Reachable, but not from the bar.
 
         Journal is off the bar at the user's request, NOT deleted. It is the
-        only screen that can reach a day other than today - Home is fixed to
-        `todayKey()` - so removing the file would take past days, and editing
-        or deleting any meal logged before today, with it. Home and Discover
-        both link to it.
+        only screen that can reach a day more than one step from today, so
+        removing the file would take past weeks - and editing or deleting any
+        meal logged in them - with it.
       */}
+      <Tabs.Screen name="discover" options={{ title: 'Discover', href: null }} />
+      <Tabs.Screen name="recipes" options={{ title: 'Recipes', href: null }} />
       <Tabs.Screen name="insights" options={{ title: 'Insights', href: null }} />
-      <Tabs.Screen name="journal" options={{ title: 'Journal', href: null }} />
+      <Tabs.Screen name="journal" options={{ title: 'History', href: null }} />
     </Tabs>
+  );
+}
+
+/**
+ * The raised camera button in the middle of the bar.
+ *
+ * It takes the navigator's own press handler rather than routing itself, so
+ * it behaves exactly like a tab - including going back to the scanner's
+ * first screen when it is already open.
+ */
+function CameraButton({
+  onPress,
+  accessibilityState,
+}: {
+  onPress?: (event: never) => void;
+  accessibilityState?: { selected?: boolean };
+}) {
+  const theme = useTheme();
+  const selected = accessibilityState?.selected ?? false;
+
+  return (
+    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'flex-start' }}>
+      <PressableScale
+        onPress={() => onPress?.(undefined as never)}
+        haptic
+        accessibilityRole="button"
+        accessibilityLabel="Scan a meal"
+        accessibilityHint="Opens the camera to read the nutrition from a photo"
+        accessibilityState={{ selected }}
+        scaleTo={0.9}
+        style={{
+          width: 56,
+          height: 56,
+          borderRadius: 28,
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: theme.colors.primary,
+          // Lifted out of the bar. The bar's own top edge runs underneath,
+          // which is what makes the circle read as sitting on top of it.
+          marginTop: -20,
+          // A ring in the page colour, so the circle is cleanly separated
+          // from the bar rather than merging with it at the overlap.
+          borderWidth: 4,
+          borderColor: theme.colors.background,
+          ...theme.elevation(2),
+        }}
+      >
+        <Icon
+          name="camera"
+          size={25}
+          color={theme.colors.textOnPrimary}
+          strokeWidth={1.9}
+        />
+      </PressableScale>
+    </View>
   );
 }

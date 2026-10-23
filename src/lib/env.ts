@@ -196,12 +196,25 @@ export const isGoogleSignInConfigured: boolean =
   googleWebClientId !== undefined &&
   (googleIosClientId !== undefined || googleAndroidClientId !== undefined);
 
+/**
+ * Whether Sign in with Apple can be attempted.
+ *
+ * False in every build today, and deliberately a flag rather than a
+ * hard-coded `false` at the one call site: Apple's provider needs a paid
+ * developer membership, an entitlement on the native target and the
+ * provider switched on in the Supabase dashboard, none of which the app can
+ * arrange for itself. When that work is done this becomes a real check and
+ * the button appears on its own.
+ */
+export const isAppleSignInConfigured: boolean = false;
+
 export const env = {
   supabaseUrl,
   googleIosClientId,
   googleAndroidClientId,
   googleWebClientId,
   isGoogleSignInConfigured,
+  isAppleSignInConfigured,
   /** The publishable or anon key, only when it is safe to use. */
   supabaseKey: isPublicSupabaseKey(configuredKey) ? configuredKey : undefined,
   supabaseKeyKind: keyKind,

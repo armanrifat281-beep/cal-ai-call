@@ -26,6 +26,7 @@ export type IconName =
   | 'droplet'
   | 'gallery'
   | 'plus'
+  | 'minus'
   | 'chevronRight'
   | 'chevronLeft'
   | 'chevronUp'
@@ -42,6 +43,7 @@ export type IconName =
   | 'database'
   | 'leaf'
   | 'recipes'
+  | 'meals'
   | 'basket'
   | 'timer'
   | 'flame'
@@ -252,6 +254,15 @@ function renderGlyph(
         </>
       );
 
+    /*
+      The counterpart to `plus`, and the reason this exists: the serving
+      stepper had no minus to draw, so it borrowed `close` - and a control
+      for "one gram less" wore the glyph for "cancel". The same bar as the
+      plus, so the pair reads as one control.
+    */
+    case 'minus':
+      return <Path d="M5 12h14" {...common} />;
+
     case 'chevronRight':
       return <Path d="M9.5 5.5 16 12l-6.5 6.5" {...common} />;
 
@@ -399,6 +410,22 @@ function renderGlyph(
           <Path d="M3 9.5h18" {...common} />
           <Path d="M3.2 11.6H1.9M20.8 11.6h1.3" {...common} />
           <Path d="M9.4 6.4c0-1 .9-1.6.9-2.6M14.2 6.4c0-1 .9-1.6.9-2.6" {...common} />
+        </>
+      );
+
+    case 'meals':
+      // A fork and a knife: the Meals tab, which is the day's eating rather
+      // than the cooking of it. Drawn apart rather than crossed, which at
+      // 24px turns into an X.
+      return (
+        <>
+          <Path d="M7.6 3.2v6a2 2 0 0 1-2 2h-.2a2 2 0 0 1-2-2v-6" {...common} />
+          <Path d="M5.5 11.2V20.8" {...common} />
+          <Path
+            d="M17.6 3.2c-1.8 1.1-2.6 3-2.6 5.3 0 1.6.8 2.6 2.6 3"
+            {...common}
+          />
+          <Path d="M17.6 11.5V20.8" {...common} />
         </>
       );
 

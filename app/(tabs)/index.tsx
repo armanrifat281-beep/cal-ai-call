@@ -7,27 +7,26 @@ import {
   ConfidenceBar,
   DayDashboard,
   DayOverviewSkeleton,
-  MealRow,
+  MacroSplitCard,
   OtherNutrients,
   QuickActions,
   WeekStrip,
 } from '@/components/nutrition';
 import {
   Appear,
-  Disclosure,
-  EmptyState,
+  Avatar,
+  Collapsible,
   ErrorState,
   Row,
   Screen,
-  Section,
-  Skeleton,
   Surface,
+  Text,
 } from '@/components/ui';
-import { useDayAndWeek, useRecentEntries } from '@/features/journal';
+import { useDayAndWeek } from '@/features/journal';
 import { WaterCard } from '@/features/water';
 import { WeightCard } from '@/features/weight';
-import { summarizeConfidence } from '@/features/nutrition';
-import { formatDayLabel, todayKey } from '@/lib/date';
+import { maintenanceKcal, summarizeConfidence } from '@/features/nutrition';
+import { todayKey } from '@/lib/date';
 import { env } from '@/lib/env';
 import { greetingFor } from '@/lib/greeting';
 import { usePreferencesStore } from '@/store/preferencesStore';
@@ -36,17 +35,15 @@ import { useTheme } from '@/theme';
 /**
  * Home.
  *
- * The week, then the three ways to log a meal, then the day's figure, then
- * the day itself. That order is deliberate: the two things a returning user
- * wants are "am I keeping this up" and "let me add what I just ate", and
- * both used to be below the fold or absent. Scanning in particular could not
- * be started from this screen at all - it needed a trip to another tab -
- * while adding a meal by hand moved between two places depending on whether
- * the day was empty.
+ * The day's figure, then the three ways to add to it, then the two cards
+ * that qualify it. That order is deliberate: the question someone opens a
+ * calorie app to ask is "am I alright today", and the thing they do next is
+ * "let me log what I just ate" - everything else on this screen is reading
+ * material and sits below both.
  *
- * On a first run the dial is held back. A ring reading 0 of 2,000 above an
- * empty list is the whole screen saying "you have done nothing", which is a
- * poor first impression and tells the user nothing they did not know.
+ * Today's meals are NOT here. They have their own tab, where the day can be
+ * changed and a meal can be edited; home used to carry a copy of the list
+ * which could only ever show today and could not be scrolled past.
  */
 export default function HomeScreen() {
   const theme = useTheme();
@@ -54,52 +51,75 @@ export default function HomeScreen() {
   const dateKey = todayKey();
 
   const targets = usePreferencesStore((state) => state.preferences.dailyTargets);
+  const bodyBasics = usePreferencesStore((state) => state.preferences.bodyBasics);
+  const displayName = usePreferencesStore((state) => state.preferences.displayName);
+
   // One read for the day and the week it sits in: the week's range already
   // contains the day, and two reads could disagree about it after a save.
   const { entries, summary, week, loading, error, reload } = useDayAndWeek(dateKey);
-  const recent = useRecentEntries(4);
   const confidence = useMemo(() => summarizeConfidence(entries), [entries]);
 
-  const refreshAll = useCallback(() => {
-    reload();
-    recent.reload();
-  }, [reload, recent]);
+  /**
+   * What the body has spent so far today.
+   *
+   * Resting energy times how much the user says they move, prorated by how
+   * much of the day has gone. This app tracks no exercise and is not
+   * connected to a watch, so this is an estimate of ordinary living and
+   * nothing more - which is exactly why it is derived from the user's own
+   * height, weight, age and activity rather than from a constant, and why
+   * it is null until those are known.
+   */
+  const burnedKcal = useMemo(() => {
+    const perDay = maintenanceKcal(bodyBasics);
+    if (perDay === null) return null;
 
-  // Yesterday and earlier, so "log again" is a genuine shortcut rather than a
-  // second copy of the list already on screen.
-  const earlier = recent.entries.filter(
-    (entry) => !entries.some((today) => today.id === entry.id),
-  );
+    const now = new Date();
+    const elapsed =
+      (now.getHours() * 60 + now.getMinutes()) / (24 * 60);
+    return perDay * elapsed;
+  }, [bodyBasics]);
 
-  // Nothing logged, ever - not merely nothing yet today.
-  const firstRun =
-    !loading && entries.length === 0 && recent.entries.length === 0;
+  const refresh = useCallback(() => reload(), [reload]);
 
-  const dayLabel = formatDayLabel(dateKey);
-  const displayName = usePreferencesStore((state) => state.preferences.displayName);
-  const greeting = greetingFor(new Date().getHours(), displayName);
+  const now = new Date();
+  const greeting = greetingFor(now.getHours(), displayName);
+  const dateLine = now
+    .toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' })
+    .toUpperCase();
 
   return (
     <Screen
-      title={greeting}
-      subtitle={`${dayLabel} · ${new Date().toLocaleDateString(undefined, {
-        weekday: 'long',
-        day: 'numeric',
-        month: 'long',
-      })}`}
       edges={{ top: true }}
       refreshing={loading}
-      onRefresh={refreshAll}
+      onRefresh={refresh}
+      contentStyle={{ gap: theme.spacing.base }}
     >
       {/*
-        The day first, then everything that qualifies it.
-
-        Home used to open with the week strip and a row of buttons, with the
-        day's own figure third - so the first screenful answered "what have
-        you been doing lately" before "am I alright today", which is the
-        question someone opens a calorie app to ask. The strip and the
-        actions still exist; they sit under the answer instead of above it.
+        The header is written out here rather than handed to `Screen`'s
+        title: the date belongs ABOVE the greeting, as an eyebrow, and the
+        avatar has to sit on the greeting's own line.
       */}
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: theme.spacing.md,
+          marginBottom: theme.spacing.xs,
+        }}
+      >
+        <View style={{ flex: 1, gap: 4 }}>
+          <Text variant="caption" color="textSubtle" style={{ letterSpacing: 1.1 }}>
+            {dateLine}
+          </Text>
+          <Text variant="display" numberOfLines={1}>
+            {greeting}
+          </Text>
+        </View>
+
+        <Avatar name={displayName} onPress={() => router.push('/(tabs)/profile')} />
+      </View>
+
       {error ? (
         <ErrorState
           message={error.message}
@@ -116,12 +136,18 @@ export default function HomeScreen() {
           grounds that a ring reading 0 of 2,000 is the screen saying "you
           have done nothing". That reasoning was wrong in practice: the dial
           is the app's one signature element, and without it home is a
-          greeting, a row of buttons and a large empty space - which reads
-          as unfinished rather than tactful. An empty ring against a target
-          is also simply the truth about the day so far.
+          greeting and a large empty space. An empty ring against a target is
+          also simply the truth about the day so far.
         */
         <Appear index={0}>
-          <DayDashboard summary={summary} targets={targets} dayLabel={dayLabel} />
+          <DayDashboard
+            summary={summary}
+            targets={targets}
+            dayLabel="Today"
+            burnedKcal={burnedKcal}
+            onSetTarget={() => router.push('/settings/targets')}
+            onSetBurn={() => router.push('/settings/targets')}
+          />
         </Appear>
       )}
 
@@ -129,141 +155,87 @@ export default function HomeScreen() {
         <QuickActions
           onScan={() => router.push('/(tabs)/scan')}
           onSearch={() => router.push('/foods/search')}
-          onManual={() => router.push('/entry/new')}
+          onManual={() => router.push('/entry/describe')}
         />
       </Appear>
 
-      {/* The shape of the habit, under the day it belongs to. */}
+      {/* Two halves of one row: the shape of the day beside the one thing
+          on this screen that is not food. */}
       <Appear index={2}>
+        <View style={{ flexDirection: 'row', gap: theme.spacing.sm }}>
+          <MacroSplitCard
+            totals={summary.totals.nutrients}
+            onViewDetails={() => router.push('/(tabs)/insights')}
+          />
+          <WaterCard />
+        </View>
+      </Appear>
+
+      {/* The shape of the habit, under the day it belongs to. */}
+      <Appear index={3}>
         <WeekStrip
           days={week}
           selectedKey={dateKey}
-          onSelect={() => router.push('/(tabs)/journal')}
+          onSelect={() => router.push('/(tabs)/meals')}
           targetKcal={targets.caloriesKcal}
         />
       </Appear>
 
-      {/* The app's whole argument, in one strip: which of today's calories
-          are measured and which are guesses. Directly under the dial, so it
-          qualifies the number it belongs to. */}
-      <Appear index={3}>
-        <ConfidenceBar confidence={confidence} />
-      </Appear>
-
       <Appear index={4}>
-        <WaterCard />
-      </Appear>
-
-      {/* The one card worth looking at from the first day: it needs no
-          logged meals, no backend and no API key. */}
-      <Appear index={5}>
         <WeightCard />
       </Appear>
 
-      {/* Fibre, sugar, saturated fat and sodium - stored on every item all
-          along, and shown nowhere until now. */}
-      <Appear index={6}>
-        <OtherNutrients
-          totals={summary.totals.nutrients}
-          incompleteKeys={summary.totals.incompleteKeys}
-        />
-      </Appear>
-
-      <Appear index={7}>
-        <Section
-          title="Today's meals"
-          subtitle="Tap a day above, or History, for anything earlier"
-          /*
-            The way to a past day, now that the journal is off the tab bar.
-            Home is fixed to today, so without this link the only route to
-            yesterday is tapping the week strip - which works but looks like
-            a chart rather than a door.
-          */
-          action={{
-            label: 'History',
-            onPress: () => router.push('/(tabs)/journal'),
-          }}
+      {/*
+        The qualifying detail, folded away. How much of today is measured
+        rather than estimated, and the nutrients under the headline four,
+        are both worth having and neither is urgent.
+      */}
+      <Appear index={5}>
+        <Collapsible
+          title="More about today"
+          summary={
+            // Null when nothing is logged: a share of nothing is not 0%.
+            confidence.measuredShare === null
+              ? 'Fibre, sugar, saturated fat and sodium'
+              : `${Math.round(confidence.measuredShare * 100)}% of today measured · fibre, sugar, saturated fat and sodium`
+          }
         >
-          {loading && entries.length === 0 ? (
-            <View style={{ gap: theme.spacing.base }}>
-              <Skeleton height={44} />
-              <Skeleton height={44} />
-            </View>
-          ) : entries.length === 0 ? (
-            <EmptyState
-              title={firstRun ? 'Log your first meal' : 'Nothing logged yet'}
-              body={
-                firstRun
-                  ? 'Photograph it, look it up, or type it in. Every estimate shows where its numbers came from, and you can correct any of them.'
-                  : 'Photograph your next meal, or add one by hand. Everything you save stays editable.'
-              }
-              illustration={
-                <Icon name="leaf" size={38} color="primary" strokeWidth={1.5} />
-              }
+          <View style={{ gap: theme.blockGap }}>
+            <ConfidenceBar confidence={confidence} />
+            <OtherNutrients
+              totals={summary.totals.nutrients}
+              incompleteKeys={summary.totals.incompleteKeys}
             />
-          ) : (
-            <View>
-              {entries.map((entry, index) => (
-                <MealRow
-                  key={entry.id}
-                  entry={entry}
-                  divided={index > 0}
-                  onPress={() => router.push(`/entry/${entry.id}`)}
-                />
-              ))}
-            </View>
-          )}
-        </Section>
+          </View>
+        </Collapsible>
       </Appear>
 
-      {earlier.length > 0 ? (
-        <Appear index={8}>
-          <Section
-            title="Log again"
-            subtitle="Meals you saved earlier. Open one to add it to today."
-          >
-            <Surface variant="grouped">
-              {earlier.map((entry, index) => (
-                <Row
-                  key={entry.id}
-                  title={entry.title}
-                  subtitle={formatDayLabel(
-                    new Date(entry.consumedAt).toISOString().slice(0, 10),
-                  )}
-                  divided={index > 0}
-                  trailing={
-                    <Icon name="chevronRight" size={16} color="textSubtle" />
-                  }
-                  onPress={() => router.push(`/entry/${entry.id}`)}
-                />
-              ))}
-            </Surface>
-          </Section>
-        </Appear>
-      ) : null}
-
-      {/* Nothing saved means nothing to count, and the insights screen can
-          only answer "not enough logged yet". Offering a route whose single
-          possible reply is a refusal is worse than not offering it. */}
-      {firstRun ? null : (
-        <Appear index={9}>
-          <Surface variant="grouped">
-            <Row
-              title="Insights"
-              subtitle="Patterns counted from your saved meals"
-              leading={<Icon name="insights" size={19} color="primary" />}
-              trailing={<Icon name="chevronRight" size={16} color="textSubtle" />}
-              onPress={() => router.push('/(tabs)/insights')}
-            />
-          </Surface>
-        </Appear>
-      )}
+      <Appear index={6}>
+        <Surface variant="grouped">
+          <Row
+            title="Discover recipes"
+            subtitle="What to cook from what you already have"
+            leading={<Icon name="recipes" size={19} color="primary" />}
+            trailing={<Icon name="chevronRight" size={16} color="textSubtle" />}
+            onPress={() => router.push('/(tabs)/discover')}
+          />
+          <Row
+            title="Insights"
+            subtitle="Patterns counted from your saved meals"
+            leading={<Icon name="insights" size={19} color="primary" />}
+            trailing={<Icon name="chevronRight" size={16} color="textSubtle" />}
+            divided
+            onPress={() => router.push('/(tabs)/insights')}
+          />
+        </Surface>
+      </Appear>
 
       {!env.isSupabaseConfigured ? (
-        <Disclosure
-          summary="Saved on this device only"
-          detail="No account backend is configured in this build, so your meals are stored locally and are not backed up. These are your real saved entries, not sample data."
-        />
+        <Text variant="caption" color="textSubtle">
+          No account backend is configured in this build, so your meals are
+          stored on this device and are not backed up. These are your real
+          saved entries, not sample data.
+        </Text>
       ) : null}
     </Screen>
   );

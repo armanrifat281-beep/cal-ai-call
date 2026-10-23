@@ -14,6 +14,7 @@ import PrivacyScreen from '../(onboarding)/privacy';
 import HomeScreen from '../(tabs)/index';
 import InsightsScreen from '../(tabs)/insights';
 import JournalScreen from '../(tabs)/journal';
+import MealsScreen from '../(tabs)/meals';
 import ProfileScreen from '../(tabs)/profile';
 import ScanScreen from '../(tabs)/scan';
 
@@ -116,40 +117,68 @@ describe('onboarding screens', () => {
     ]);
   });
 
-  it('goals only asks for a target when the goal makes one meaningful', async () => {
+  /*
+    These three used to assert the opposite: that the screen asked the user
+    to type a calorie number and refused to work one out. That was the
+    stated product position, and in practice it meant the field was left
+    empty, no target was ever stored, and Home opened on a dial measuring
+    against nothing - which reads as a broken app rather than a careful one.
+  */
+  async function fillTheMeasurements(user: ReturnType<typeof userEvent.setup>) {
+    await user.type(screen.getByLabelText('Age'), '30');
+    await user.type(screen.getByLabelText('Height (cm)'), '165');
+    await user.type(screen.getByLabelText('Weight (kg)'), '62');
+  }
+
+  it('works out the target itself, rather than asking for a number nobody knows', async () => {
     const user = userEvent.setup();
     await renderWithProviders(<GoalsScreen />);
 
-    expect(screen.queryByLabelText('Calories')).toBeNull();
+    expect(screen.getByText(/your target appears here/)).toBeTruthy();
 
-    await user.press(screen.getByRole('radio', { name: 'Manage my weight' }));
+    await fillTheMeasurements(user);
 
-    expect(screen.getByLabelText('Calories')).toBeTruthy();
-    expect(screen.getByText('We do not calculate targets for you')).toBeTruthy();
+    expect(screen.getByText('kcal a day')).toBeTruthy();
+    // Sex is left at "rather not say", which sits between the two
+    // constants: 1423.25 resting, x 1.375 for "light", the default activity.
+    expect(screen.getByText('1957')).toBeTruthy();
   });
 
-  it('goals rejects an implausible calorie target instead of saving it', async () => {
+  it('shows its working, because a number with no source is just a claim', async () => {
     const user = userEvent.setup();
     await renderWithProviders(<GoalsScreen />);
+    await fillTheMeasurements(user);
 
-    await user.press(screen.getByRole('radio', { name: 'Manage my weight' }));
-    await user.type(screen.getByLabelText('Calories'), '50');
-
-    expect(screen.getByText('Enter a value between 800 and 6000, or leave it empty.')).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Continue' })).toBeDisabled();
+    expect(screen.getByText('Where this number comes from')).toBeTruthy();
   });
 
-  it('goals saves a valid target', async () => {
+  it('saves the target it worked out', async () => {
     const user = userEvent.setup();
     await renderWithProviders(<GoalsScreen />);
 
     await user.press(screen.getByRole('radio', { name: 'Manage my weight' }));
-    await user.type(screen.getByLabelText('Calories'), '2100');
+    await fillTheMeasurements(user);
     await user.press(screen.getByRole('button', { name: 'Continue' }));
 
     const { preferences } = usePreferencesStore.getState();
     expect(preferences.goal).toBe('manage_weight');
-    expect(preferences.dailyTargets.caloriesKcal).toBe(2100);
+    // Maintenance (1957) less the 500 that managing weight takes off.
+    expect(preferences.dailyTargets.caloriesKcal).toBe(1457);
+    expect(preferences.dailyTargets.proteinG).toBeGreaterThan(0);
+    // Kept, so the figure can be recomputed when the weight changes.
+    expect(preferences.bodyBasics.weightKg).toBe(62);
+  });
+
+  // Skipping has to stay free. An app that will not start without a body
+  // weight loses people on the screen before they have seen anything.
+  it('stores no target at all when the measurements are left empty', async () => {
+    const user = userEvent.setup();
+    await renderWithProviders(<GoalsScreen />);
+
+    await user.press(screen.getByRole('radio', { name: 'Manage my weight' }));
+    await user.press(screen.getByRole('button', { name: 'Continue' }));
+
+    expect(usePreferencesStore.getState().preferences.dailyTargets.caloriesKcal).toBeNull();
   });
 
   it('privacy completes onboarding and states the app is not medical advice', async () => {
@@ -178,26 +207,38 @@ describe('onboarding screens', () => {
 });
 
 describe('tab screens with an empty journal', () => {
+  /*
+    The day's meals left Home for a tab of their own, where the day can be
+    changed and a portion corrected. Home carries the totals; this carries
+    the day itself, so this is where an empty day has to read as an
+    invitation rather than as a report.
+  */
   it('invites a first meal rather than reporting an empty one', async () => {
+    await renderWithProviders(<MealsScreen />);
+
+    expect((await screen.findAllByText('Nothing logged yet')).length).toBe(4);
+    // One prompt per meal, so a missing dinner is visible rather than
+    // silently left out of the list.
+    expect(screen.getByText('Breakfast')).toBeTruthy();
+    expect(screen.getByText('Dinner')).toBeTruthy();
+  });
+
+  it('is honest about where data lives in an unconfigured build', async () => {
     await renderWithProviders(<HomeScreen />);
 
-    // Nothing has ever been logged, so the copy says what to do rather than
-    // what has not happened.
-    expect(await screen.findByText('Log your first meal')).toBeTruthy();
-    // And it is honest about where data lives in an unconfigured build.
-    expect(screen.getByText('Saved on this device only')).toBeTruthy();
+    expect(
+      await screen.findByText(/stored on this device and are not backed up/),
+    ).toBeTruthy();
   });
 
   it('offers all three ways to log a meal, in one fixed place', async () => {
     await renderWithProviders(<HomeScreen />);
 
-    // The empty state carries no button of its own: these sit above it on
-    // every visit, logged or not, which is what makes them findable.
-    for (const label of [
-      'Photograph a meal',
-      'Search for a food',
-      'Add a meal by hand',
-    ]) {
+    // These sit on Home on every visit, logged or not, which is what makes
+    // them findable. The third is "Describe" rather than a microphone:
+    // there is no speech recognition in this build, and a mic that opened a
+    // keyboard would be a lie about the control.
+    for (const label of ['Scan food', 'Search', 'Describe']) {
       expect(screen.getByRole('button', { name: label })).toBeTruthy();
     }
   });
@@ -234,13 +275,17 @@ describe('tab screens with a logged meal', () => {
     if (!created.ok) throw new Error('fixture failed');
   });
 
-  it('home shows the meal and its calories', async () => {
-    await renderWithProviders(<HomeScreen />);
+  it('the meals tab shows the meal and its calories', async () => {
+    await renderWithProviders(<MealsScreen />);
     expect(await screen.findByText('Morning porridge')).toBeTruthy();
-    // The number and its unit are separate text nodes: the unit is set a
-    // step down from the figure rather than at the same size.
     expect(screen.getAllByText('180').length).toBeGreaterThan(0);
-    expect(screen.getAllByText('kcal').length).toBeGreaterThan(0);
+  });
+
+  it('home counts it into the day', async () => {
+    await renderWithProviders(<HomeScreen />);
+    // Against the default of no target, the dial shows what was eaten.
+    expect(await screen.findByText('Eaten')).toBeTruthy();
+    expect(screen.getAllByText('180').length).toBeGreaterThan(0);
   });
 
   it('journal groups the meal under its meal type', async () => {
@@ -249,9 +294,9 @@ describe('tab screens with a logged meal', () => {
     expect(screen.getByText('Breakfast')).toBeTruthy();
   });
 
-  it('home opens the meal when tapped', async () => {
+  it('opens the meal record when a meal is tapped', async () => {
     const user = userEvent.setup();
-    await renderWithProviders(<HomeScreen />);
+    await renderWithProviders(<MealsScreen />);
 
     const row = await screen.findByText('Morning porridge');
     await user.press(row);

@@ -1,6 +1,7 @@
 export { AddPrompt, type AddPromptProps } from './AddPrompt';
 export { AnimatedNumber, type AnimatedNumberProps } from './AnimatedNumber';
 export { Appear, staggerDelay, type AppearProps } from './Appear';
+export { Avatar, initialsFor, type AvatarProps } from './Avatar';
 export { Badge, type BadgeProps, type BadgeTone } from './Badge';
 export { BrandGradient, type BrandGradientProps } from './BrandGradient';
 export { Button, type ButtonProps, type ButtonSize, type ButtonVariant } from './Button';

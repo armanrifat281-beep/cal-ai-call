@@ -1,15 +1,16 @@
-import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
+import { useCallback, useMemo, useState } from 'react';
 import { Alert, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Icon } from '@/components/Icon';
 import { RecipeImage } from '@/components/recipes/RecipeImage';
+import { RecipeNutritionCard } from '@/components/recipes/RecipeNutritionCard';
 import {
   Button,
   Disclosure,
   ErrorState,
-  IconButton,
-  Metric,
   PressableScale,
   Screen,
   Section,
@@ -18,7 +19,7 @@ import {
   Surface,
   Text,
 } from '@/components/ui';
-import { SOURCE_EXPLANATIONS, formatGrams } from '@/features/nutrition';
+import { SOURCE_EXPLANATIONS } from '@/features/nutrition';
 import {
   MAX_SERVINGS,
   MIN_SERVINGS,
@@ -36,7 +37,7 @@ import {
 import { cuisineLabel } from '@/features/recipes/options';
 import type { AppError } from '@/lib/result';
 import { usePreferencesStore } from '@/store/preferencesStore';
-import { useTheme } from '@/theme';
+import { SchemeOverride, useTheme } from '@/theme';
 
 /**
  * One recipe.
@@ -49,10 +50,28 @@ import { useTheme } from '@/theme';
  * whatever is left is what the shopping list is built from. Nothing is
  * pre-ticked.
  */
+/**
+ * The recipe, drawn on paper.
+ *
+ * The pale half of the app, with Discover, and for the same reason: this is
+ * a dish somebody has not cooked yet, photographed, and a photograph of food
+ * needs light around it. `SchemeOverride` gives it the light palette while
+ * keeping every component, type size, spacing step and icon it shares with
+ * the dark screens, so the two halves are one design system in two keys.
+ */
 export default function RecipeDetailScreen() {
+  return (
+    <SchemeOverride scheme="light">
+      <StatusBar style="dark" />
+      <RecipeDetail />
+    </SchemeOverride>
+  );
+}
+
+function RecipeDetail() {
   const theme = useTheme();
+  const insets = useSafeAreaInsets();
   const router = useRouter();
-  const navigation = useNavigation();
   const { id } = useLocalSearchParams<{ id: string }>();
 
   const { recipe, loading, error, notFound, reload } = useRecipe(id);
@@ -153,36 +172,6 @@ export default function RecipeDetailScreen() {
       },
     ]);
   }, [recipe, router, recipes]);
-
-  // Favourite and overflow live in the navigation bar, which is where a
-  // native app puts them. Earlier this screen ended with three stacked
-  // full-width ghost buttons.
-  useEffect(() => {
-    if (!recipe) return;
-    navigation.setOptions({
-      title: recipe.title,
-      headerRight: () => (
-        <View style={{ flexDirection: 'row', gap: 2, marginRight: -6 }}>
-          <IconButton
-            accessibilityLabel={
-              recipe.isFavorite ? 'Remove from favourites' : 'Save to favourites'
-            }
-            onPress={() => void toggleFavorite()}
-          >
-            <Icon
-              name="star"
-              size={21}
-              color={recipe.isFavorite ? 'accent' : 'textMuted'}
-              filled={recipe.isFavorite}
-            />
-          </IconButton>
-          <IconButton accessibilityLabel="More actions" onPress={showMore}>
-            <Icon name="more" size={21} color="textMuted" />
-          </IconButton>
-        </View>
-      ),
-    });
-  }, [recipe, navigation, toggleFavorite, showMore]);
 
   const addMissingToList = async () => {
     if (!recipe || missing.length === 0) return;
@@ -293,18 +282,73 @@ export default function RecipeDetailScreen() {
         </>
       }
     >
-      {/* Full-bleed hero: the gutter is cancelled so the image meets the edges. */}
-      <RecipeImage
-        image={recipe.image}
-        recipeId={recipe.id}
-        title={recipe.title}
-        height={210}
+      {/*
+        Full-bleed hero with its own controls on it.
+
+        Back, favourite and the overflow used to live in a navigation bar
+        above this, which on a screen whose subject is a photograph meant a
+        strip of furniture between the user and the dish. There is no bar
+        now: the three controls float on the image in dark discs, which keeps
+        them legible over a bright photograph and over the plain stand-in
+        drawn when a recipe has no picture.
+      */}
+      <View
         style={{
           marginHorizontal: -theme.gutter,
           marginTop: -theme.spacing.lg,
-          borderRadius: 0,
         }}
-      />
+      >
+        <RecipeImage
+          image={recipe.image}
+          recipeId={recipe.id}
+          title={recipe.title}
+          height={248}
+          style={{ borderRadius: 0 }}
+        />
+
+        <View
+          style={{
+            position: 'absolute',
+            top: insets.top + theme.spacing.sm,
+            left: theme.gutter,
+            right: theme.gutter,
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
+        >
+          <HeroButton
+            accessibilityLabel="Go back"
+            onPress={() => router.back()}
+            icon={<Icon name="chevronLeft" size={19} color="#FFFFFF" strokeWidth={2} />}
+          />
+
+          <View style={{ flexDirection: 'row', gap: theme.spacing.sm }}>
+            <HeroButton
+              accessibilityLabel={
+                recipe.isFavorite ? 'Remove from favourites' : 'Save to favourites'
+              }
+              onPress={() => void toggleFavorite()}
+              icon={
+                <Icon
+                  name="star"
+                  size={19}
+                  // The accent, not the page colour: a filled star has to
+                  // read as chosen against whatever the photograph is doing
+                  // behind it.
+                  color={recipe.isFavorite ? theme.colors.accent : '#FFFFFF'}
+                  filled={recipe.isFavorite}
+                />
+              }
+            />
+            <HeroButton
+              accessibilityLabel="More actions"
+              onPress={showMore}
+              icon={<Icon name="more" size={19} color="#FFFFFF" />}
+            />
+          </View>
+        </View>
+      </View>
 
       <View style={{ gap: theme.spacing.sm }}>
         <Text variant="title1">{recipe.title}</Text>
@@ -369,20 +413,30 @@ export default function RecipeDetailScreen() {
         />
       </View>
 
-      {/* Nutrition. Four figures in a row, no box. */}
+      {/*
+        Nutrition. Rings rather than a row of four numbers: the shape of the
+        dish is the part somebody reads at a glance, and a label is the part
+        they want afterwards.
+      */}
       {nutrition ? (
         <Section title="Per serving" dense>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-            <Metric
-              value={String(Math.round(nutrition.caloriesKcal))}
-              unit="kcal"
-              label="Energy"
-              size="l"
-            />
-            <Metric value={formatGrams(nutrition.proteinG)} label="Protein" size="m" />
-            <Metric value={formatGrams(nutrition.carbsG)} label="Carbs" size="m" />
-            <Metric value={formatGrams(nutrition.fatG)} label="Fat" size="m" />
-          </View>
+          <RecipeNutritionCard
+            nutrients={{
+              caloriesKcal: nutrition.caloriesKcal,
+              proteinG: nutrition.proteinG,
+              carbsG: nutrition.carbsG,
+              fatG: nutrition.fatG,
+              fiberG: null,
+              sugarG: null,
+              saturatedFatG: null,
+              sodiumMg: null,
+            }}
+            caption={
+              targetServings === recipe.servings
+                ? 'per serving, as written'
+                : `per serving, at ${targetServings} servings`
+            }
+          />
 
           <Disclosure
             summary={
@@ -428,7 +482,7 @@ export default function RecipeDetailScreen() {
             style={{ marginBottom: theme.spacing.sm, gap: theme.spacing.xs }}
           >
             <Text variant="label" color="textMuted">
-              AGAINST YOUR KITCHEN
+              Against your kitchen
             </Text>
             <Text variant="footnote">{pantrySentence}</Text>
             <Text variant="caption" color="textSubtle">
@@ -742,4 +796,42 @@ function groupIngredients(
     groups.push({ name, items: ingredients.filter((item) => item.group === name) });
   }
   return groups;
+}
+
+/**
+ * One of the controls floating on the hero photograph.
+ *
+ * A translucent dark disc rather than a plain glyph: a white icon vanishes
+ * over a pale dish and a dark one vanishes over a dark one, and this screen
+ * cannot know which it has. The disc is what makes the control legible over
+ * either.
+ */
+function HeroButton({
+  accessibilityLabel,
+  onPress,
+  icon,
+}: {
+  accessibilityLabel: string;
+  onPress: () => void;
+  icon: React.ReactNode;
+}) {
+  return (
+    <PressableScale
+      onPress={onPress}
+      haptic
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
+      scaleTo={0.9}
+      style={{
+        width: 38,
+        height: 38,
+        borderRadius: 19,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: 'rgba(16, 32, 26, 0.55)',
+      }}
+    >
+      {icon}
+    </PressableScale>
+  );
 }

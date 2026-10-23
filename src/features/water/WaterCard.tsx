@@ -1,7 +1,7 @@
 import { View } from 'react-native';
 
-import { Icon } from '@/components/Icon';
-import { Metric, PressableScale, Surface, Text } from '@/components/ui';
+import { PressableScale, Text } from '@/components/ui';
+import { usePreferencesStore } from '@/store/preferencesStore';
 import { useTheme } from '@/theme';
 
 import { useDayWater } from './hooks';
@@ -9,95 +9,101 @@ import { useDayWater } from './hooks';
 /** One tap. The size of an ordinary glass. */
 export const GLASS_ML = 250;
 
-/** How many glasses the row draws. Eight is the usual rule of thumb. */
-const GLASSES = 8;
+/** How many marks the gauge draws when no target is set. */
+const DEFAULT_GLASSES = 8;
+/** Beyond this the marks are too thin to tell apart on a phone. */
+const MAX_GLASSES = 12;
 
 /**
  * Water for the day.
  *
- * Eight tappable glasses rather than a number and a plus button: the row
- * answers "how am I doing" at a glance, which a figure alone does not, and
- * tapping the next empty glass is a single gesture with an obvious target.
+ * A gauge rather than a row of buttons. It used to be eight tappable
+ * glasses, which answered "how am I doing" well but needed the full width
+ * of the screen to stay tappable; beside the macro split it now has half of
+ * that, and twelve 44pt targets do not fit in half a phone. So the marks
+ * became a reading and the adding became one button, which is also the
+ * gesture people actually repeat.
  *
- * The count is summed from individual drinks, so tapping the last filled
- * glass takes one back. A running total would have no way to undo a mis-tap,
- * and on a button people hit repeatedly that matters more than it sounds.
+ * The count is summed from individual drinks, so the button can be undone by
+ * a long press. A running total would have no way back from a mis-tap, and
+ * on a control people hit several times a day that matters.
  *
- * Deliberately no daily target and no praise. The app does not tell anyone
- * how much they should drink - the same position it takes on calories - so
- * eight glasses is a scale to read against, not a goal it set for you.
+ * The target is the user's own, set in Profile, and null by default: the app
+ * does not tell anyone how much to drink any more than it tells them what to
+ * weigh. Without one the marks are a scale to read against rather than a
+ * goal it set for you.
  */
 export function WaterCard() {
   const theme = useTheme();
   const water = useDayWater();
+  const targetMl = usePreferencesStore((state) => state.preferences.waterTargetMl);
 
-  const filled = Math.min(Math.round(water.totalMl / GLASS_ML), GLASSES);
+  const marks =
+    targetMl === null
+      ? DEFAULT_GLASSES
+      : Math.min(MAX_GLASSES, Math.max(1, Math.round(targetMl / GLASS_ML)));
+  const filled = Math.min(Math.round(water.totalMl / GLASS_ML), marks);
   const litres = (water.totalMl / 1000).toFixed(water.totalMl >= 1000 ? 1 : 2);
 
   return (
-    <Surface variant="grouped" padding="base" style={{ gap: theme.spacing.base }}>
+    <View
+      style={{
+        flex: 1,
+        borderRadius: 20,
+        backgroundColor: theme.colors.surface,
+        padding: theme.spacing.base,
+        gap: theme.spacing.md,
+      }}
+    >
+      <Text variant="callout" color="textMuted">
+        Water
+      </Text>
+
+      <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 4 }}>
+        <Text variant="metricL" style={{ fontSize: 24 }}>
+          {litres}
+        </Text>
+        <Text variant="caption" color="textSubtle">
+          {targetMl === null ? 'L' : `/ ${(targetMl / 1000).toFixed(1)} L`}
+        </Text>
+      </View>
+
       <View
+        style={{ flexDirection: 'row', gap: 3, height: 26 }}
+        accessibilityRole="progressbar"
+        accessibilityLabel={`${filled} of ${marks} glasses`}
+      >
+        {Array.from({ length: marks }, (_, index) => (
+          <View
+            key={index}
+            style={{
+              flex: 1,
+              borderRadius: 3,
+              backgroundColor:
+                index < filled ? theme.colors.info : theme.colors.surfaceAlt,
+            }}
+          />
+        ))}
+      </View>
+
+      <PressableScale
+        onPress={() => void water.add(GLASS_ML)}
+        onLongPress={() => void water.undoLast()}
+        haptic
+        accessibilityRole="button"
+        accessibilityLabel={`Add ${GLASS_ML} millilitres of water`}
+        accessibilityHint="Press and hold to take back the last glass"
         style={{
-          flexDirection: 'row',
-          alignItems: 'baseline',
-          justifyContent: 'space-between',
+          alignItems: 'center',
+          paddingVertical: 10,
+          borderRadius: theme.radius.control,
+          backgroundColor: theme.colors.primarySoft,
         }}
       >
-        <Text variant="label" color="textMuted">
-          WATER
+        <Text variant="caption" color="primary" style={{ fontWeight: '700' }}>
+          + {GLASS_ML} ml
         </Text>
-        <Metric value={litres} unit="L" size="s" />
-      </View>
-
-      <View style={{ flexDirection: 'row', gap: theme.spacing.xs }}>
-        {Array.from({ length: GLASSES }, (_, index) => {
-          const isFilled = index < filled;
-          // Tapping a filled glass undoes only when it is the last one:
-          // removing from the middle of a row nobody ordered would be a
-          // surprise.
-          const isLastFilled = isFilled && index === filled - 1;
-
-          return (
-            <PressableScale
-              key={index}
-              onPress={() =>
-                void (isLastFilled ? water.undoLast() : water.add(GLASS_ML))
-              }
-              haptic
-              scaleTo={0.9}
-              accessibilityRole="button"
-              accessibilityLabel={
-                isLastFilled
-                  ? 'Take back the last glass'
-                  : `Add a glass, ${index + 1} of ${GLASSES}`
-              }
-              style={{
-                flex: 1,
-                height: 44,
-                borderRadius: theme.radius.xs,
-                alignItems: 'center',
-                justifyContent: 'center',
-                backgroundColor: isFilled
-                  ? theme.colors.chart
-                  : theme.colors.surfaceAlt,
-              }}
-            >
-              <Icon
-                name="droplet"
-                size={15}
-                color={isFilled ? theme.colors.background : 'textSubtle'}
-                strokeWidth={1.6}
-              />
-            </PressableScale>
-          );
-        })}
-      </View>
-
-      <Text variant="caption" color="textSubtle">
-        {filled === 0
-          ? 'Tap a glass as you drink it.'
-          : `${filled} glass${filled === 1 ? '' : 'es'} · tap the last one to take it back.`}
-      </Text>
-    </Surface>
+      </PressableScale>
+    </View>
   );
 }

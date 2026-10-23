@@ -8,10 +8,14 @@
  *
  * Deliberately quiet. No exclamation marks, no "Welcome back!", nothing that
  * reads as a notification.
+ *
+ * "Morning" rather than "Good morning": it is set at display size at the top
+ * of the screen, where the extra word pushes a name of any length onto a
+ * second line, and the word doing the work is the time of day anyway.
  */
 export function greetingFor(hour: number, name: string | null): string {
   const trimmed = name?.trim() ?? '';
-  const part = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
+  const part = hour < 12 ? 'Morning' : hour < 18 ? 'Afternoon' : 'Evening';
   return trimmed.length > 0 ? `${part}, ${trimmed}` : part;
 }
 

@@ -4,7 +4,7 @@ import { Text, View } from 'react-native';
 
 import { renderWithProviders } from '@/test/renderWithProviders';
 
-import { useTheme, useThemeContext } from '..';
+import { SchemeOverride, useTheme, useThemeContext } from '..';
 
 /**
  * Proves the Appearance control actually repaints the app.
@@ -41,14 +41,18 @@ beforeEach(async () => {
 
 describe('switching appearance', () => {
   /*
-    Follows the phone. Forcing dark gave someone whose phone is set to light
-    a dark app they never asked for and could only read as a bug, and it
-    meant the cream-and-forest identity was the one thing a new user never
-    saw.
+    Opens dark. The product is drawn against a black page - the calorie
+    ring, the meal list and the day's score were all designed on one, and
+    the lime identity colour only means anything there - so following the
+    phone meant roughly half of all new users saw a washed-out version of a
+    design that was never drawn.
+
+    It is a default, not a lock: the two tests below are what keep Light and
+    System one tap away.
   */
-  it('follows the phone on a fresh install', async () => {
+  it('opens dark on a fresh install', async () => {
     await renderWithProviders(<Probe />);
-    expect(screen.getByText(/^system:/)).toBeTruthy();
+    expect(screen.getByText(/^dark:/)).toBeTruthy();
   });
 
   it('still offers following the phone after a choice was made', async () => {
@@ -63,9 +67,6 @@ describe('switching appearance', () => {
   it('repaints the page when Light is chosen', async () => {
     const user = userEvent.setup();
     await renderWithProviders(<Probe />);
-    // From dark, because the default now follows the phone, which under
-    // test is already light - choosing Light from there repaints nothing.
-    await user.press(screen.getByTestId('to-dark'));
 
     const before = screen.getByTestId('page').props.style.backgroundColor;
     await user.press(screen.getByTestId('to-light'));
@@ -117,5 +118,60 @@ describe('switching appearance', () => {
     );
     const spread = Math.max(r!, g!, b!) - Math.min(r!, g!, b!);
     expect(spread).toBeLessThanOrEqual(6);
+  });
+});
+
+/**
+ * Two screens are drawn pale whatever the user picked.
+ *
+ * `SchemeOverride` is how, and these pin the two properties the rest of the
+ * app depends on: that it actually changes the palette inside it, and that
+ * it changes nothing outside it - including the stored preference, which the
+ * Appearance control still has to read and write correctly.
+ */
+describe('overriding the scheme for part of the tree', () => {
+  function Nested() {
+    const theme = useTheme();
+    const { preference } = useThemeContext();
+    return (
+      <Text testID="nested">{`${preference}:${theme.scheme}:${theme.colors.background}`}</Text>
+    );
+  }
+
+  it('paints the subtree light while the app is dark', async () => {
+    await renderWithProviders(
+      <View>
+        <Probe />
+        <SchemeOverride scheme="light">
+          <Nested />
+        </SchemeOverride>
+      </View>,
+    );
+
+    // The app at large, untouched.
+    expect(screen.getByText(/^dark:dark:/)).toBeTruthy();
+    // And the part that is drawn on paper.
+    expect(screen.getByTestId('nested').props.children).toMatch(/^dark:light:/);
+  });
+
+  /*
+    The user's own choice passes straight through. If this read the
+    preference instead of passing it on, Appearance in Settings would stop
+    reporting what the user picked whenever it was rendered inside one of
+    these screens.
+  */
+  it('leaves the stored preference alone', async () => {
+    const user = userEvent.setup();
+    await renderWithProviders(
+      <View>
+        <Probe />
+        <SchemeOverride scheme="light">
+          <Nested />
+        </SchemeOverride>
+      </View>,
+    );
+
+    await user.press(screen.getByTestId('to-system'));
+    expect(screen.getByTestId('nested').props.children).toMatch(/^system:light:/);
   });
 });

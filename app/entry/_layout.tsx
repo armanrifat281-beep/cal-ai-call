@@ -18,7 +18,15 @@ export default function EntryLayout() {
       }}
     >
       <Stack.Screen name="new" options={{ title: 'Add a meal' }} />
-      <Stack.Screen name="[id]" options={{ title: 'Meal' }} />
+      {/* Draws its own header row, like the record does. */}
+      <Stack.Screen name="describe" options={{ headerShown: false }} />
+      <Stack.Screen name="edit" options={{ title: 'Edit meal' }} />
+      {/*
+        The record draws its own header row - a close button, the title and
+        the time - so a navigator bar above it would print "Meal" directly
+        over "Meal record".
+      */}
+      <Stack.Screen name="[id]" options={{ headerShown: false }} />
     </Stack>
   );
 }

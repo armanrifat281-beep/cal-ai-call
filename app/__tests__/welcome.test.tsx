@@ -22,18 +22,16 @@ describe('the welcome screen', () => {
   it('says what the app does before asking for anything', async () => {
     await renderWithProviders(<WelcomeScreen />);
 
-    expect(screen.getByText(/Scan a meal to see its nutrition/)).toBeTruthy();
-    // The claim the app can actually keep, stated before anything is asked.
-    expect(screen.getByText('MEASURED, OR ESTIMATED')).toBeTruthy();
+    expect(screen.getByText(/let AI do the thinking/)).toBeTruthy();
   });
 
   it('offers both doors, so a returning user is not stuck', async () => {
     await renderWithProviders(<WelcomeScreen />);
 
-    expect(screen.getByRole('button', { name: 'Get started' })).toBeTruthy();
-    expect(
-      screen.getByRole('button', { name: 'Log in to an existing account' }),
-    ).toBeTruthy();
+    // Signing in first: the returning user is the one in a hurry, and the
+    // new one has nothing to lose by reading one more line.
+    expect(screen.getByRole('button', { name: 'Sign In' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Create Account' })).toBeTruthy();
   });
 
   it('names the product before asking for anything', async () => {
@@ -42,10 +40,10 @@ describe('the welcome screen', () => {
     expect(screen.getByText('FoodLens AI')).toBeTruthy();
   });
 
-  it('opens sign-up from "Get started"', async () => {
+  it('opens sign-up from "Create Account"', async () => {
     await renderWithProviders(<WelcomeScreen />);
 
-    fireEvent.press(screen.getByRole('button', { name: 'Get started' }));
+    fireEvent.press(screen.getByRole('button', { name: 'Create Account' }));
 
     expect(router.push).toHaveBeenCalledWith('/(auth)/sign-up');
   });
@@ -53,9 +51,7 @@ describe('the welcome screen', () => {
   it('opens sign-in for someone who has been here before', async () => {
     await renderWithProviders(<WelcomeScreen />);
 
-    fireEvent.press(
-      screen.getByRole('button', { name: 'Log in to an existing account' }),
-    );
+    fireEvent.press(screen.getByRole('button', { name: 'Sign In' }));
 
     expect(router.push).toHaveBeenCalledWith('/(auth)/sign-in');
   });
