@@ -1,8 +1,12 @@
 import { renderWithProviders } from '@/test/renderWithProviders';
 
+import DiscoverScreen from '@/../app/(tabs)/discover';
+import HomeScreen from '@/../app/(tabs)/index';
 import InsightsScreen from '@/../app/(tabs)/insights';
 import JournalScreen from '@/../app/(tabs)/journal';
 import ProfileScreen from '@/../app/(tabs)/profile';
+import MealsScreen from '@/../app/(tabs)/meals';
+import ProgressScreen from '@/../app/(tabs)/progress';
 import RecipesScreen from '@/../app/(tabs)/recipes';
 import FoodSearchScreen from '@/../app/foods/search';
 import PortionScreen from '@/../app/foods/portion';
@@ -22,6 +26,12 @@ import TermsScreen from '@/../app/settings/terms';
  * suite does not cover for these screens.
  */
 const SCREENS: [string, React.ComponentType][] = [
+  // The five tabs a user actually lands on were missing from this list,
+  // which is how a layout fault on Home reached a phone twice.
+  ['Home', HomeScreen],
+  ['Meals', MealsScreen],
+  ['Progress', ProgressScreen],
+  ['Discover', DiscoverScreen],
   ['Journal', JournalScreen],
   ['Insights', InsightsScreen],
   ['Recipes', RecipesScreen],
