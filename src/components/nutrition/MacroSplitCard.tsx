@@ -62,7 +62,14 @@ export function MacroSplitCard({ totals, onViewDetails }: MacroSplitCardProps) {
         Macro split
       </Text>
 
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: theme.spacing.md }}>
+      {/*
+        The donut sits above the legend, not beside it. This card is one half
+        of a two-card row, so it is about 175pt wide on a phone: the donut and
+        a gap take 94 of that, and "31%" takes most of what is left. Beside
+        the chart, "Protein" was given almost no width - and text with no room
+        does not clip, it wraps, one letter per line, into a tall column.
+      */}
+      <View style={{ alignItems: 'center', gap: theme.spacing.md }}>
         <Svg
           width={SIZE}
           height={SIZE}
@@ -108,7 +115,7 @@ export function MacroSplitCard({ totals, onViewDetails }: MacroSplitCardProps) {
             : null}
         </Svg>
 
-        <View style={{ flex: 1, gap: 7 }}>
+        <View style={{ alignSelf: 'stretch', gap: 7 }}>
           {slices.map((slice) => (
             <View
               key={slice.key}
@@ -122,10 +129,15 @@ export function MacroSplitCard({ totals, onViewDetails }: MacroSplitCardProps) {
                   backgroundColor: theme.colors[slice.key],
                 }}
               />
-              <Text variant="caption" color="textMuted" style={{ flex: 1 }}>
+              <Text
+                variant="caption"
+                color="textMuted"
+                numberOfLines={1}
+                style={{ flex: 1 }}
+              >
                 {slice.label}
               </Text>
-              <Text variant="metricS">
+              <Text variant="metricS" style={{ flexShrink: 0 }}>
                 {known ? `${Math.round(slice.share * 100)}%` : '—'}
               </Text>
             </View>
