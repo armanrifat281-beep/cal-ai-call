@@ -59,7 +59,15 @@
         "expo-image-picker",
         {
           "photosPermission": "FoodLens AI needs access to your photos so you can pick an existing meal photo to analyze.",
-          "cameraPermission": "FoodLens AI uses your camera so you can take a photo of a meal and get an estimated nutrition breakdown."
+          "cameraPermission": "FoodLens AI uses your camera so you can take a photo of a meal and get an estimated nutrition breakdown.",
+          "microphonePermission": false
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "FoodLens AI uses your camera to scan a barcode or photograph a meal.",
+          "recordAudioAndroid": false
         }
       ],
       "@react-native-community/datetimepicker"
