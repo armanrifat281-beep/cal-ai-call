@@ -18,6 +18,7 @@ import {
 import { matchPantry, useRecipes } from '@/features/recipes';
 import { CUISINE_OPTIONS } from '@/features/recipes/options';
 import { greetingFor } from '@/lib/greeting';
+import { useAvatarStore } from '@/features/profile';
 import { usePreferencesStore } from '@/store/preferencesStore';
 import { SchemeOverride, useTheme } from '@/theme';
 import type { Recipe } from '@/types/recipe';
@@ -98,6 +99,7 @@ function Discover() {
   const { recipes, loading, error, reload } = useRecipes({ limit: 60 });
   const pantryItems = usePreferencesStore((state) => state.preferences.pantryItems);
   const displayName = usePreferencesStore((state) => state.preferences.displayName);
+  const avatarUri = useAvatarStore((state) => state.uri);
 
   const [query, setQuery] = useState('');
 
@@ -154,6 +156,7 @@ function Discover() {
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: theme.spacing.md }}>
           <Avatar
             name={displayName}
+            imageUri={avatarUri}
             size={44}
             onPress={() => router.push('/(tabs)/profile')}
           />

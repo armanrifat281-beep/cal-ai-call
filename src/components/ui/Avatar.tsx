@@ -1,4 +1,4 @@
-import { View } from 'react-native';
+import { Image, View } from 'react-native';
 
 import { useTheme } from '@/theme';
 
@@ -8,6 +8,8 @@ import { Text } from './Text';
 export interface AvatarProps {
   /** The display name to take initials from. Null falls back to a glyph. */
   name: string | null;
+  /** The user's picture. Null shows their initials instead. */
+  imageUri?: string | null;
   size?: number;
   onPress?: () => void;
 }
@@ -15,16 +17,16 @@ export interface AvatarProps {
 /**
  * The user, top right.
  *
- * Initials rather than a photograph. The app stores no profile picture and
- * asking for one would be a second account screen for the sake of a
- * decoration; what the circle is really for is being the door to Profile -
- * the one place sign-out, targets and privacy live - and a name is enough
- * for that.
+ * A picture when the user has set one, their initials when they have not.
+ * Initials are the default rather than an empty silhouette, so the circle
+ * says something about them from the first launch. Either way the circle's
+ * real job is being the door to Profile - the one place sign-out, targets
+ * and privacy live.
  *
  * Drawn in the accent so it reads as "you" rather than as another grey
  * control, and it is the only round thing on the header row.
  */
-export function Avatar({ name, size = 42, onPress }: AvatarProps) {
+export function Avatar({ name, imageUri, size = 42, onPress }: AvatarProps) {
   const theme = useTheme();
   const initials = initialsFor(name);
 
@@ -36,18 +38,29 @@ export function Avatar({ name, size = 42, onPress }: AvatarProps) {
         borderRadius: size / 2,
         alignItems: 'center',
         justifyContent: 'center',
+        overflow: 'hidden',
         backgroundColor: theme.colors.primarySoft,
         borderWidth: theme.hairline,
         borderColor: theme.colors.primary,
       }}
     >
-      <Text
-        variant="headline"
-        color="primary"
-        style={{ fontSize: Math.round(size * 0.38), fontWeight: '700' }}
-      >
-        {initials}
-      </Text>
+      {imageUri ? (
+        <Image
+          testID="avatar-image"
+          source={{ uri: imageUri }}
+          style={{ width: size, height: size }}
+          resizeMode="cover"
+          accessibilityIgnoresInvertColors
+        />
+      ) : (
+        <Text
+          variant="headline"
+          color="primary"
+          style={{ fontSize: Math.round(size * 0.38), fontWeight: '700' }}
+        >
+          {initials}
+        </Text>
+      )}
     </View>
   );
 

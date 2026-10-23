@@ -29,6 +29,7 @@ import { maintenanceKcal, summarizeConfidence } from '@/features/nutrition';
 import { todayKey } from '@/lib/date';
 import { env } from '@/lib/env';
 import { greetingFor } from '@/lib/greeting';
+import { useAvatarStore } from '@/features/profile';
 import { usePreferencesStore } from '@/store/preferencesStore';
 import { useTheme } from '@/theme';
 
@@ -53,6 +54,7 @@ export default function HomeScreen() {
   const targets = usePreferencesStore((state) => state.preferences.dailyTargets);
   const bodyBasics = usePreferencesStore((state) => state.preferences.bodyBasics);
   const displayName = usePreferencesStore((state) => state.preferences.displayName);
+  const avatarUri = useAvatarStore((state) => state.uri);
 
   // One read for the day and the week it sits in: the week's range already
   // contains the day, and two reads could disagree about it after a save.
@@ -117,7 +119,11 @@ export default function HomeScreen() {
           </Text>
         </View>
 
-        <Avatar name={displayName} onPress={() => router.push('/(tabs)/profile')} />
+        <Avatar
+          name={displayName}
+          imageUri={avatarUri}
+          onPress={() => router.push('/(tabs)/profile')}
+        />
       </View>
 
       {error ? (

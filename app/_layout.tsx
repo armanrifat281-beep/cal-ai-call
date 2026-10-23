@@ -7,6 +7,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { AuthProvider, useAuth } from '@/features/auth';
+import { refreshAvatar, restoreAvatar } from '@/features/profile';
 import { usePreferencesStore } from '@/store/preferencesStore';
 import { ThemeProvider, useTheme, useThemeContext } from '@/theme';
 
@@ -102,9 +103,25 @@ function AppShell() {
   // Auth too, now that the first screen depends on it: without this the
   // gate would send an already signed-in user to sign in and then correct
   // itself a frame later.
-  const authSettled = useAuth().status !== 'loading';
+  const { status } = useAuth();
+  const authSettled = status !== 'loading';
 
   const ready = themeReady && preferencesHydrated && authSettled;
+
+  /*
+    Show whatever picture this device already holds, then - once signed in -
+    fetch the stored one if there is nothing local. That second case is a
+    reinstall or a new phone; `restoreAvatar` leaves an existing local file
+    alone, so a picture chosen here is never replaced by an older copy.
+  */
+  useEffect(() => {
+    refreshAvatar();
+  }, []);
+
+  useEffect(() => {
+    if (status !== 'signed_in') return;
+    void restoreAvatar();
+  }, [status]);
 
   useEffect(() => {
     if (!ready) return;

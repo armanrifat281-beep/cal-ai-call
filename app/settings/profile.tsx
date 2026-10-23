@@ -1,11 +1,13 @@
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { View } from 'react-native';
+import { ActionSheetIOS, Alert, Platform, View } from 'react-native';
 
 import { Icon } from '@/components/Icon';
 import {
+  Avatar,
   Button,
   Disclosure,
+  PressableScale,
   Row,
   Screen,
   Section,
@@ -14,6 +16,7 @@ import {
   TextField,
 } from '@/components/ui';
 import { useAuth } from '@/features/auth';
+import { pickAvatar, removeAvatar, useAvatarStore } from '@/features/profile';
 import { normalizeDisplayName, validateDisplayName } from '@/lib/greeting';
 import { usePreferencesStore } from '@/store/preferencesStore';
 import { useTheme } from '@/theme';
@@ -38,8 +41,62 @@ export default function EditProfileScreen() {
   const stored = usePreferencesStore((state) => state.preferences.displayName);
   const setPreferences = usePreferencesStore((state) => state.setPreferences);
 
+  const avatarUri = useAvatarStore((state) => state.uri);
+  const [avatarBusy, setAvatarBusy] = useState(false);
+
   const [name, setName] = useState(stored ?? '');
   const [saved, setSaved] = useState(false);
+
+  const choosePicture = (source: 'camera' | 'library') => {
+    void (async () => {
+      setAvatarBusy(true);
+      const result = await pickAvatar(source);
+      setAvatarBusy(false);
+      if (!result.ok) Alert.alert('Picture not changed', result.error.message);
+    })();
+  };
+
+  const clearPicture = () => {
+    void (async () => {
+      setAvatarBusy(true);
+      const result = await removeAvatar();
+      setAvatarBusy(false);
+      // The picture is gone from this phone either way; only the stored copy
+      // can be left behind, and that is what the message says.
+      if (!result.ok) Alert.alert('Removed on this phone', result.error.message);
+    })();
+  };
+
+  /** Camera, library, and remove when there is something to remove. */
+  const editPicture = () => {
+    const options = ['Take a photo', 'Choose from library'];
+    if (avatarUri) options.push('Remove picture');
+
+    if (Platform.OS === 'ios') {
+      ActionSheetIOS.showActionSheetWithOptions(
+        {
+          options: [...options, 'Cancel'],
+          cancelButtonIndex: options.length,
+          destructiveButtonIndex: avatarUri ? 2 : undefined,
+        },
+        (index) => {
+          if (index === 0) choosePicture('camera');
+          else if (index === 1) choosePicture('library');
+          else if (index === 2 && avatarUri) clearPicture();
+        },
+      );
+      return;
+    }
+
+    Alert.alert('Profile picture', undefined, [
+      { text: 'Take a photo', onPress: () => choosePicture('camera') },
+      { text: 'Choose from library', onPress: () => choosePicture('library') },
+      ...(avatarUri
+        ? [{ text: 'Remove picture', style: 'destructive' as const, onPress: clearPicture }]
+        : []),
+      { text: 'Cancel', style: 'cancel' as const },
+    ]);
+  };
 
   const error = validateDisplayName(name);
   const isDirty = normalizeDisplayName(name) !== stored;
@@ -68,6 +125,27 @@ export default function EditProfileScreen() {
         />
       }
     >
+      <View style={{ alignItems: 'center', gap: theme.spacing.sm }}>
+        <PressableScale
+          onPress={editPicture}
+          haptic
+          accessibilityRole="button"
+          accessibilityLabel={
+            avatarUri ? 'Change your profile picture' : 'Add a profile picture'
+          }
+          scaleTo={0.95}
+        >
+          <Avatar name={stored} imageUri={avatarUri} size={96} />
+        </PressableScale>
+        <Button
+          label={avatarBusy ? 'Working…' : avatarUri ? 'Change picture' : 'Add a picture'}
+          variant="ghost"
+          size="sm"
+          onPress={editPicture}
+          disabled={avatarBusy}
+        />
+      </View>
+
       <View style={{ gap: theme.spacing.base }}>
         <TextField
           label="What should we call you?"

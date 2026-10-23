@@ -22,6 +22,7 @@ import {
 } from '@/features/nutrition';
 import { WeightCard } from '@/features/weight';
 import { addDaysToKey, formatTimeOfDay, groupByDateKey, todayKey } from '@/lib/date';
+import { useAvatarStore } from '@/features/profile';
 import { usePreferencesStore } from '@/store/preferencesStore';
 import { useTheme, type ColorKey } from '@/theme';
 import type { FoodEntry } from '@/types/domain';
@@ -49,6 +50,7 @@ export default function ProgressScreen() {
 
   const targets = usePreferencesStore((state) => state.preferences.dailyTargets);
   const displayName = usePreferencesStore((state) => state.preferences.displayName);
+  const avatarUri = useAvatarStore((state) => state.uri);
 
   const { entries, summary, loading, error, reload } = useDayJournal(dateKey);
   const history = useRangeJournal(addDaysToKey(dateKey, -STREAK_WINDOW_DAYS), dateKey);
@@ -109,7 +111,11 @@ export default function ProgressScreen() {
         }}
       >
         <StreakBadge days={streak} />
-        <Avatar name={displayName} onPress={() => router.push('/(tabs)/profile')} />
+        <Avatar
+          name={displayName}
+          imageUri={avatarUri}
+          onPress={() => router.push('/(tabs)/profile')}
+        />
       </View>
 
       {error ? (
