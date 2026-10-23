@@ -85,15 +85,20 @@ export function QuickActions({ onScan, onSearch, onManual }: QuickActionsProps) 
             flex: 1,
             borderRadius: 20,
             backgroundColor: theme.colors.surface,
-            padding: theme.spacing.md,
-            gap: theme.spacing.lg,
+            paddingVertical: theme.spacing.base,
+            paddingHorizontal: theme.spacing.sm,
+            // Centred, not left-aligned. Three equal tiles with labels of
+            // different lengths read as ragged against the left edge, and
+            // the glyph is the thing being pointed at.
+            alignItems: 'center',
+            gap: theme.spacing.sm,
           }}
         >
           <View
             style={{
-              width: 38,
-              height: 38,
-              borderRadius: 12,
+              width: 44,
+              height: 44,
+              borderRadius: 14,
               alignItems: 'center',
               justifyContent: 'center',
               backgroundColor: action.lead
@@ -101,15 +106,24 @@ export function QuickActions({ onScan, onSearch, onManual }: QuickActionsProps) 
                 : theme.colors.surfaceAlt,
             }}
           >
+            {/*
+              22 in 44: the glyph fills half the tile's width rather than a
+              third of it. At 19 in 38 it read as a small mark floating in a
+              box, which is what made the row look unfinished.
+            */}
             <Icon
               name={action.icon}
-              size={19}
+              size={22}
               color={action.lead ? 'primary' : 'text'}
               strokeWidth={1.8}
             />
           </View>
 
-          <Text variant="caption" style={{ fontWeight: '600' }}>
+          <Text
+            variant="caption"
+            numberOfLines={1}
+            style={{ fontWeight: '600', textAlign: 'center' }}
+          >
             {action.label}
           </Text>
         </PressableScale>
