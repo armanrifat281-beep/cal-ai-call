@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Alert, Switch, View } from 'react-native';
 
 import { Icon } from '@/components/Icon';
@@ -16,8 +16,9 @@ import {
   Text,
 } from '@/components/ui';
 import { useAuth } from '@/features/auth';
+import { clearLocalJournal, useWeekStripDays } from '@/features/journal';
+import { hasEnoughForInsights } from '@/features/memory/insights';
 import { forgetAvatarLocally } from '@/features/profile';
-import { clearLocalJournal } from '@/features/journal';
 import { deleteAllMealPhotos, deleteAllPhotos } from '@/features/photos';
 import { clearLocalRecipes, toCuisineId } from '@/features/recipes';
 import { clearLocalWater } from '@/features/water';
@@ -51,6 +52,21 @@ export default function ProfileScreen() {
   const router = useRouter();
   const { preference, setPreference } = useThemeContext();
   const { status, user, signOut, deleteAccount } = useAuth();
+
+  /*
+    Profile reads no journal of its own, so this is one range read for the
+    seven days Insights defaults to - the same window, so the row and the
+    screen cannot disagree about whether there is anything to show.
+  */
+  const { days: week } = useWeekStripDays();
+  const insightsReady = useMemo(
+    () =>
+      hasEnoughForInsights(
+        week.reduce((sum, day) => sum + day.entryCount, 0),
+        week.filter((day) => day.entryCount > 0).length,
+      ),
+    [week],
+  );
 
   const preferences = usePreferencesStore((state) => state.preferences);
   const setPreferences = usePreferencesStore((state) => state.setPreferences);
@@ -298,18 +314,20 @@ export default function ProfileScreen() {
         ) : null}
       </Section>
 
-      {/* Insights */}
-      <Section title="Insights" dense>
-        <Surface variant="grouped">
-          <Row
-            title="Food patterns"
-            subtitle="Counted from your saved meals, with the working shown"
-            leading={<Icon name="insights" size={19} color="primary" />}
-            trailing={<Icon name="chevronRight" size={16} color="textSubtle" />}
-            onPress={() => router.push('/(tabs)/insights')}
-          />
-        </Surface>
-      </Section>
+      {/* Insights, once there is enough logged for it to say anything. */}
+      {insightsReady ? (
+        <Section title="Insights" dense>
+          <Surface variant="grouped">
+            <Row
+              title="Food patterns"
+              subtitle="Counted from your saved meals, with the working shown"
+              leading={<Icon name="insights" size={19} color="primary" />}
+              trailing={<Icon name="chevronRight" size={16} color="textSubtle" />}
+              onPress={() => router.push('/(tabs)/insights')}
+            />
+          </Surface>
+        </Section>
+      ) : null}
 
       {/* Units: an inline control, no box. */}
       <Section title="Portion units" dense>

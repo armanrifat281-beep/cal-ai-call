@@ -189,7 +189,12 @@ export default function HomeScreen() {
         <View style={{ flexDirection: 'row', gap: theme.spacing.sm }}>
           <MacroSplitCard
             totals={summary.totals.nutrients}
-            onViewDetails={() => router.push('/(tabs)/insights')}
+            // Omitting the handler hides the button, so this leads nowhere
+            // empty either. It was the fourth way into Insights and the
+            // least obvious: "View details" does not read as "Insights".
+            onViewDetails={
+              insightsReady ? () => router.push('/(tabs)/insights') : undefined
+            }
           />
           <WaterCard />
         </View>
