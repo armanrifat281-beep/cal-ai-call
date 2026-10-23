@@ -3,7 +3,7 @@
     "name": "FoodLens AI",
     "slug": "foodlens-ai",
     "version": "0.1.0",
-    "sdkVersion": "57.0.0",
+    "sdkVersion": "58.0.0",
     "scheme": "foodlens",
     "orientation": "portrait",
     "icon": "./assets/icon.png",

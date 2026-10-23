@@ -60,7 +60,17 @@ export function getSupabaseClient(): SupabaseClient | null {
 function startAutoRefreshLifecycle(supabase: SupabaseClient): void {
   if (appStateSubscription) return;
 
-  const handleChange = (state: AppStateStatus) => {
+  /*
+    Takes the nullable form on purpose.
+
+    `AppState.currentState` is not yet known on Android before the first
+    event, and React Native 0.88 types it honestly as nullable, while the
+    listener is handed a real `AppStateStatus`. Accepting both means the
+    "apply it now" call below needs no cast, and nothing has to pretend an
+    unknown state is a known one - anything that is not `active` stops the
+    refresh timer, which is the safe side to be wrong on.
+  */
+  const handleChange = (state: AppStateStatus | string | null | undefined) => {
     if (state === 'active') {
       supabase.auth.startAutoRefresh().catch((cause: unknown) => {
         logger.warn('supabase: could not start token auto-refresh', {

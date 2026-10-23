@@ -1,9 +1,12 @@
 /** @type {import('jest').Config} */
 module.exports = {
   preset: 'jest-expo',
-  // react-native-worklets ships a resolver that skips its `.native` modules,
-  // which otherwise try to reach the native runtime and throw under Node.
-  resolver: '<rootDir>/node_modules/react-native-worklets/jest/resolver.js',
+  // Reanimated ships a resolver that skips the `.native` modules of both
+  // itself and react-native-worklets, which otherwise reach for the native
+  // runtime and throw under Node. From Reanimated 4.7 this is the one to
+  // use: the worklets resolver alone no longer covers Reanimated's own
+  // initialisers.
+  resolver: '<rootDir>/node_modules/react-native-reanimated/jest/resolver.js',
   // supabase/functions holds the Edge Function's pure modules, which are
   // plain TypeScript and worth testing even though the function itself runs
   // on Deno.

@@ -55,7 +55,13 @@ export function useGoogleSignIn(onSignedIn?: () => void): GoogleSignIn {
         setError({
           code: 'provider_error',
           message: 'Signing in with Google did not work. Try again.',
-          detail: response.error?.message,
+          /*
+            `AuthError` stopped carrying a plain `message` in SDK 58's
+            expo-auth-session; `description` is what the provider actually
+            returns, with the error code as the fallback. Developer detail
+            only - the sentence above is what the user reads.
+          */
+          detail: response.error?.description,
           retryable: true,
         });
       }
