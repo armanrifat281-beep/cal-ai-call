@@ -8,66 +8,18 @@
 
 import { MEAL_TYPES } from './schema.ts';
 
-/** Image formats Claude accepts and we are willing to forward. */
-export const ALLOWED_MIME_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
+/*
+  The image checks moved to `_shared/image.ts` when the label reader started
+  accepting photographs too. Re-exported here so this module's own callers
+  and tests are untouched by that move.
+*/
+export {
+  ALLOWED_MIME_TYPES,
+  detectImageType,
+  extensionFor,
+  toBase64,
+} from '../_shared/image.ts';
 
-/**
- * Identifies an image format from its magic bytes.
- *
- * The client's declared content type is a claim, not evidence: a request can
- * say anything. Reading the leading bytes is what actually establishes the
- * format, and returning null for anything unrecognised means an executable or
- * an SVG cannot be forwarded to the provider as an "image".
- */
-export function detectImageType(bytes: Uint8Array): string | null {
-  if (bytes.length < 12) return null;
-
-  // JPEG: FF D8 FF
-  if (bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) {
-    return 'image/jpeg';
-  }
-
-  // PNG: 89 'P' 'N' 'G' CR LF SUB LF
-  const png = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
-  if (png.every((byte, index) => bytes[index] === byte)) {
-    return 'image/png';
-  }
-
-  // WebP: "RIFF" <4 size bytes> "WEBP"
-  const riff = [0x52, 0x49, 0x46, 0x46];
-  const webp = [0x57, 0x45, 0x42, 0x50];
-  if (
-    riff.every((byte, index) => bytes[index] === byte) &&
-    webp.every((byte, index) => bytes[index + 8] === byte)
-  ) {
-    return 'image/webp';
-  }
-
-  return null;
-}
-
-export function extensionFor(mimeType: string): string {
-  if (mimeType === 'image/png') return 'png';
-  if (mimeType === 'image/webp') return 'webp';
-  return 'jpg';
-}
-
-/**
- * Base64-encodes bytes in chunks.
- *
- * `String.fromCharCode(...bytes)` on a multi-megabyte array exceeds the
- * argument limit and throws, so the input is walked in 32 KB slices.
- */
-export function toBase64(bytes: Uint8Array): string {
-  const CHUNK = 0x8000;
-  let binary = '';
-  for (let offset = 0; offset < bytes.length; offset += CHUNK) {
-    binary += String.fromCharCode(...bytes.subarray(offset, offset + CHUNK));
-  }
-  return btoa(binary);
-}
-
-/** Reads the caller's local hour, or null when it is absent or nonsensical. */
 export function parseHour(value: unknown): number | null {
   if (typeof value !== 'string') return null;
   if (!/^\d{1,2}$/.test(value.trim())) return null;

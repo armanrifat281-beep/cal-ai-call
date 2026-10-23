@@ -235,14 +235,14 @@ $$;
 
 select tests.assert(
   (select allowance from public.check_ai_allowance(
-    'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', 'photo_scan')) = 5,
-  'the free tier allows 5 photo scans a day'
+    'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', 'photo_scan')) = 50,
+  'the free tier allows 50 photo scans a day'
 );
 
 select tests.assert(
   (select allowance from public.check_ai_allowance(
-    'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', 'recipe_generation')) = 10,
-  'the free tier allows 10 recipe generations a day'
+    'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', 'recipe_generation')) = 25,
+  'the free tier allows 25 recipe generations a day'
 );
 
 -- Spending the scan allowance must not touch the recipe allowance.
@@ -251,7 +251,7 @@ declare
   kate uuid := 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb';
 begin
   insert into public.scan_events (user_id, outcome, kind)
-  select kate, 'succeeded', 'photo_scan' from generate_series(1, 5);
+  select kate, 'succeeded', 'photo_scan' from generate_series(1, 50);
 
   perform tests.assert(
     not (select allowed from public.check_ai_allowance(kate, 'photo_scan')),
@@ -273,7 +273,7 @@ declare
   kate uuid := 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb';
 begin
   insert into public.scan_events (user_id, outcome, kind)
-  select kate, 'succeeded', 'recipe_generation' from generate_series(1, 10);
+  select kate, 'succeeded', 'recipe_generation' from generate_series(1, 25);
 
   perform tests.assert(
     not (select allowed from public.check_ai_allowance(kate, 'recipe_generation')),
@@ -291,7 +291,7 @@ begin
   values (kate, 'premium', 'active', 'app_store', 'premium.monthly', now());
 
   perform tests.assert(
-    (select allowance from public.check_ai_allowance(kate, 'recipe_generation')) = 150
+    (select allowance from public.check_ai_allowance(kate, 'recipe_generation')) = 200
       and (select allowed from public.check_ai_allowance(kate, 'recipe_generation')),
     'a verified premium entitlement raises the recipe allowance'
   );

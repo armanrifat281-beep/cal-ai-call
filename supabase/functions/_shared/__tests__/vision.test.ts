@@ -15,6 +15,7 @@ const KEY = 'test-key-not-a-real-credential';
 interface FakeEnv {
   GEMINI_API_KEY?: string;
   ANTHROPIC_API_KEY?: string;
+  GEMINI_MODEL?: string;
 }
 
 function useEnv(env: FakeEnv): void {
@@ -163,6 +164,40 @@ describe('selectVisionProvider', () => {
       await expect(gemini().analyse(REQUEST)).rejects.toThrow(/nonsense/);
       // Nothing to retry against: the request was accepted.
       expect(fetchMock).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  /*
+    The model is a secret rather than a constant because the free daily
+    allowance differs enormously between them - the plain Flash models ran
+    out after twenty calls a day - and because Google retires names without
+    warning. Changing it must not need a code change.
+  */
+  describe('which model answers', () => {
+    it('uses the one the deployment configured', async () => {
+      useEnv({ GEMINI_API_KEY: KEY, GEMINI_MODEL: 'gemini-2.5-flash-lite' });
+      fetchMock.mockImplementation(async () => reply(200, answer('STOP')));
+
+      const provider = gemini();
+      await provider.analyse(REQUEST);
+
+      expect(provider.label).toBe('gemini-2.5-flash-lite');
+      expect(String(fetchMock.mock.calls[0]?.[0])).toContain('gemini-2.5-flash-lite');
+    });
+
+    it('falls back to a known model when nothing is configured', () => {
+      useEnv({ GEMINI_API_KEY: KEY });
+
+      expect(gemini().label).toContain('gemini');
+    });
+
+    it('ignores a blank setting rather than calling an empty model name', async () => {
+      useEnv({ GEMINI_API_KEY: KEY, GEMINI_MODEL: '   ' });
+      fetchMock.mockImplementation(async () => reply(200, answer('STOP')));
+
+      await gemini().analyse(REQUEST);
+
+      expect(String(fetchMock.mock.calls[0]?.[0])).not.toContain('models/:');
     });
   });
 });

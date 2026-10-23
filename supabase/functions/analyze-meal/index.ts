@@ -97,11 +97,49 @@ function jsonResponse(body: unknown, status: number): Response {
 /**
  * An error the client can show.
  *
- * `message` is written for the user. Provider internals and stack traces stay
- * in the function logs.
+ * `message` is written for the user. `detail` is one short line naming the
+ * cause, shown under the message in small type and meant to be read out in a
+ * bug report.
+ *
+ * Detail exists because this function runs where nobody can see it: the
+ * Supabase CLI has no `functions logs`, so a provider fault that is logged
+ * here and nowhere else leaves the user with "try again" and the developer
+ * with nothing. It carries the provider's own sentence, truncated, never a
+ * stack trace and never anything the user sent.
  */
-function errorResponse(status: number, message: string, code: string): Response {
-  return jsonResponse({ error: { code, message } }, status);
+/**
+ * The JSON inside whatever the model actually sent.
+ *
+ * Asking for `application/json` is a request, not a guarantee: models wrap
+ * the object in a ```json fence, or open with a sentence about what they
+ * are about to return, or close with a note about what they could not see.
+ * Every one of those is a parse error on an answer that is otherwise
+ * perfectly good, and the user is told their photograph was unreadable.
+ *
+ * So: take everything from the first brace to the last. It is not a parser
+ * - a model that returns two objects would still fail - but it recovers the
+ * cases that actually happen, and `validateAnalysis` checks the result
+ * either way.
+ */
+function extractJson(text: string): string {
+  const trimmed = text.trim();
+  const start = trimmed.indexOf('{');
+  const end = trimmed.lastIndexOf('}');
+
+  if (start === -1 || end === -1 || end < start) return trimmed;
+  return trimmed.slice(start, end + 1);
+}
+
+function errorResponse(
+  status: number,
+  message: string,
+  code: string,
+  detail?: string,
+): Response {
+  return jsonResponse(
+    { error: { code, message, ...(detail ? { detail: detail.slice(0, 180) } : {}) } },
+    status,
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -301,7 +339,7 @@ Deno.serve(async (request: Request): Promise<Response> => {
 
     let parsed: unknown;
     try {
-      parsed = JSON.parse(rawText);
+      parsed = JSON.parse(extractJson(rawText));
     } catch {
       console.error('analyze-meal: response was not valid JSON', {
         length: rawText.length,
@@ -317,6 +355,8 @@ Deno.serve(async (request: Request): Promise<Response> => {
         502,
         'The analysis came back unreadable. Try again.',
         'invalid_response',
+        // The tail, where a truncated answer shows its break.
+        `len ${rawText.length}: ...${rawText.slice(-80).replace(/\s+/g, ' ')}`,
       );
     }
 
@@ -334,6 +374,21 @@ Deno.serve(async (request: Request): Promise<Response> => {
         422,
         'We could not identify any food in that photo. Try a clearer shot, or add the meal by hand.',
         'no_food_found',
+        /*
+          Which it was: the model finding nothing, or its answer not fitting
+          the shape. Those are different faults with different fixes, and
+          the one message covered both - so a schema mismatch looked like a
+          bad photograph for as long as nobody could read the logs.
+        */
+        /*
+          The reason, plus a glimpse of what the model actually sent.
+
+          "No identifiable food" is true of an empty list AND of a list whose
+          every entry was dropped for a missing figure - and those are
+          opposite problems. Without the shape, telling them apart meant a
+          deploy per guess.
+        */
+        String(validation.reason),
       );
     }
 
@@ -370,6 +425,9 @@ Deno.serve(async (request: Request): Promise<Response> => {
       502,
       'The analysis service had a problem. Try again.',
       'provider_error',
+      // Google's own sentence. Without it a 502 here is unreadable from
+      // the phone, which is where it is always first seen.
+      `${status ?? 'no status'}: ${cause instanceof Error ? cause.message : String(cause)}`,
     );
   }
 

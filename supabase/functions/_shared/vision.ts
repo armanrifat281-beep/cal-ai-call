@@ -140,14 +140,28 @@ function anthropicProvider(apiKey: string, timeoutMs: number): VisionProvider {
 // ---------------------------------------------------------------------------
 
 /**
- * Set from the key's own model listing rather than from documentation.
+ * Which Gemini model answers, and how to change it without a deploy.
  *
- * Google retires names quickly and without warning - a live key here
- * answered 404 for `gemini-2.5-flash` with "no longer available to new
- * users" - so this is the one that was actually observed to work, and it is
- * worth re-checking when analysis starts failing with 404.
+ * Google retires names quickly and quietly - a live key here answered 404
+ * for `gemini-2.5-flash` with "no longer available to new users" - and the
+ * free daily allowance differs enormously between them: the plain Flash
+ * models ran out after twenty calls a day, while the Flash-Lite ones are
+ * published with far more.
+ *
+ * So it is a secret, not a constant. Trying another model is
+ *
+ *   npx supabase secrets set GEMINI_MODEL=gemini-2.5-flash-lite
+ *
+ * and a redeploy of the function, with no code change and nothing to review.
+ * `scripts/test-gemini-key.sh` lists what a given key can actually reach.
  */
-const GEMINI_MODEL = 'gemini-3-flash-preview';
+const DEFAULT_GEMINI_MODEL = 'gemini-3-flash-preview';
+
+function geminiModel(): string {
+  const configured = Deno.env.get('GEMINI_MODEL')?.trim();
+  return configured && configured.length > 0 ? configured : DEFAULT_GEMINI_MODEL;
+}
+
 const GEMINI_ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models';
 
 interface GeminiPart {
@@ -205,12 +219,21 @@ async function readGeminiBody(
   }
 }
 
-function geminiError(status: number, parsed: GeminiResponse | null, text: string): Error {
-  const message = parsed?.error?.message ??
+function geminiError(
+  status: number,
+  parsed: GeminiResponse | null,
+  text: string,
+  model: string,
+): Error {
+  // The model name goes in the message because a 404 from Google names the
+  // model it REJECTED, which is not obviously the one this deployment asked
+  // for - and telling those apart took a round of guessing.
+  const base = parsed?.error?.message ??
     // A short excerpt, so an HTML gateway page is recognisable in a log
     // without pasting a whole page into it.
     `Gemini returned ${status}: ${text.slice(0, 200).replace(/\s+/g, ' ').trim()}`;
 
+  const message = `[${model}] ${base}`;
   const error = new Error(message);
   Object.assign(error, {
     status,
@@ -244,6 +267,24 @@ function shapeInstruction(schema: Record<string, unknown>): string {
     'Answer with JSON only - no prose, no code fence.',
     'It must match this JSON Schema exactly:',
     JSON.stringify(schema),
+    '',
+    /*
+      Spelled out because the schema alone was not enough.
+
+      A smaller model returned foods with names, ingredients and confidence
+      and simply left `estimatedNutrients` out - so every item was dropped
+      for having no figures, and the user was told no food was found in a
+      photograph the model had described correctly.
+
+      It reads as over-explaining next to the schema above. It is the
+      difference between the feature working and not.
+    */
+    'CRITICAL: every entry in "foods" MUST include "estimatedNutrients" with',
+    'all four of caloriesKcal, proteinG, carbsG and fatG as plain numbers.',
+    'Never omit that object, never set it to null, and never leave one of the',
+    'four out. If you are unsure of a value, give your best estimate for the',
+    'portion you described - a rough number the user can correct is useful,',
+    'and a missing one means the food is discarded and they see nothing.',
   ].join('\n');
 }
 
@@ -262,8 +303,11 @@ function geminiParts(request: VisionRequest): unknown[] {
 }
 
 function geminiProvider(apiKey: string, timeoutMs: number): VisionProvider {
+  // Read once per provider, so every scan in a request names the same model.
+  const model = geminiModel();
+
   return {
-    label: GEMINI_MODEL,
+    label: model,
 
     async analyse(request: VisionRequest): Promise<VisionResult> {
       const body = JSON.stringify({
@@ -288,7 +332,7 @@ function geminiProvider(apiKey: string, timeoutMs: number): VisionProvider {
         if (remaining <= 0) break;
 
         const response = await fetch(
-          `${GEMINI_ENDPOINT}/${GEMINI_MODEL}:generateContent`,
+          `${GEMINI_ENDPOINT}/${model}:generateContent`,
           {
             method: 'POST',
             headers: { 'x-goog-api-key': apiKey, 'Content-Type': 'application/json' },
@@ -302,7 +346,7 @@ function geminiProvider(apiKey: string, timeoutMs: number): VisionProvider {
         if (!response.ok) {
           // Thrown so the caller's existing provider-error path handles it,
           // carrying the status the way the Anthropic SDK does.
-          const error = geminiError(response.status, parsed, text);
+          const error = geminiError(response.status, parsed, text, model);
           const last = attempt === 1;
           if (last || !GEMINI_RETRYABLE.has(response.status)) throw error;
 
@@ -316,7 +360,7 @@ function geminiProvider(apiKey: string, timeoutMs: number): VisionProvider {
         if (parsed === null) {
           // HTTP 200 carrying something that is not JSON. Nothing to retry
           // against, and the caller needs a message it can log.
-          throw geminiError(response.status, null, text);
+          throw geminiError(response.status, null, text, model);
         }
 
         const candidate = parsed.candidates?.[0];

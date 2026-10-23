@@ -392,18 +392,47 @@ select tests.assert(
 );
 
 select tests.assert(
-  (select allowance from public.check_ai_allowance('55555555-5555-5555-5555-555555555555', 'photo_scan')) = 5,
-  'the free tier allows 5 scans per day'
+  (select allowance from public.check_ai_allowance('55555555-5555-5555-5555-555555555555', 'photo_scan')) = 50,
+  'the free tier allows 50 scans per day'
 );
 
--- Spend the whole free allowance.
+/*
+  Failures are free.
+
+  The allowance counted every row in scan_events, including the ones written
+  for a provider error or an unreadable answer - so a run of faults on our
+  side locked a user out for a day having given them nothing. This is the
+  case that caught it: fifty failures, and the user may still scan.
+*/
+do $$
+declare
+  erin uuid := '55555555-5555-5555-5555-555555555555';
+begin
+  insert into public.scan_events (user_id, outcome, provider_label)
+  select erin, 'provider_error', 'some-model'
+  from generate_series(1, 50);
+end;
+$$;
+
+select tests.assert(
+  (select allowed from public.check_ai_allowance('55555555-5555-5555-5555-555555555555', 'photo_scan')),
+  'a provider failure does not spend the allowance'
+);
+
+select tests.assert(
+  (select used from public.check_ai_allowance('55555555-5555-5555-5555-555555555555', 'photo_scan')) = 0,
+  'failures are not counted as used'
+);
+
+-- Spend the whole free allowance, with requests the user actually got an
+-- answer from.
 do $$
 declare
   erin uuid := '55555555-5555-5555-5555-555555555555';
 begin
   insert into public.scan_events (user_id, outcome, provider_label)
   select erin, 'succeeded', 'claude-opus-5-5'
-  from generate_series(1, 5);
+  from generate_series(1, 50);
 end;
 $$;
 
@@ -413,12 +442,19 @@ select tests.assert(
 );
 
 select tests.assert(
-  (select used from public.check_ai_allowance('55555555-5555-5555-5555-555555555555', 'photo_scan')) = 5,
+  (select used from public.check_ai_allowance('55555555-5555-5555-5555-555555555555', 'photo_scan')) = 50,
   'spent scans are counted'
 );
 
--- A failed attempt still consumes allowance: it cost a provider request, and
--- counting only successes would let a client retry past the limit.
+/*
+  A refusal still costs, a fault does not.
+
+  "Count only successes" would let a client retry its way past the limit by
+  making every call fail, so a refusal - where the model looked at the
+  photograph and declined - is charged. A provider error is not: that is our
+  side of the line, and charging for it locked a user out of a feature that
+  had never worked for them.
+*/
 do $$
 declare
   frank uuid := '66666666-6666-6666-6666-666666666666';
@@ -427,11 +463,11 @@ begin
   on conflict (id) do nothing;
 
   insert into public.scan_events (user_id, outcome)
-  select frank, 'provider_error' from generate_series(1, 5);
+  select frank, 'refused' from generate_series(1, 50);
 
   perform tests.assert(
     not (select allowed from public.check_ai_allowance(frank, 'photo_scan')),
-    'failed attempts count against the allowance too'
+    'a refusal counts against the allowance'
   );
 end;
 $$;
@@ -463,7 +499,7 @@ begin
   values (erin, 'premium', 'active', 'app_store', 'premium.monthly', now());
 
   perform tests.assert(
-    (select allowance from public.check_ai_allowance(erin, 'photo_scan')) = 100
+    (select allowance from public.check_ai_allowance(erin, 'photo_scan')) = 200
       and (select tier from public.check_ai_allowance(erin, 'photo_scan')) = 'premium',
     'a verified premium entitlement raises the scan allowance'
   );
