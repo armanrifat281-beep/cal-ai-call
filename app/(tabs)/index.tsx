@@ -241,12 +241,27 @@ export default function HomeScreen() {
 
       <Appear index={6}>
         <Surface variant="grouped">
+          {/*
+            Discover makes something new - every chip on it opens the recipe
+            creator - so it takes the sparkle. The library of recipes the
+            user already has takes `recipes`, which is the icon that screen
+            uses for itself. Two adjacent rows sharing one glyph is what
+            made them hard to tell apart.
+          */}
           <Row
             title="Discover recipes"
             subtitle="What to cook from what you already have"
-            leading={<Icon name="recipes" size={19} color="primary" />}
+            leading={<Icon name="sparkle" size={19} color="primary" />}
             trailing={<Icon name="chevronRight" size={16} color="textSubtle" />}
             onPress={() => router.push('/(tabs)/discover')}
+          />
+          <Row
+            title="Your recipes"
+            subtitle="Saved, favourites and the ones you have cooked"
+            leading={<Icon name="recipes" size={19} color="primary" />}
+            trailing={<Icon name="chevronRight" size={16} color="textSubtle" />}
+            divided
+            onPress={() => router.push('/(tabs)/recipes')}
           />
           {insightsReady ? (
             <Row
