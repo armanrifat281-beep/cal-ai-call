@@ -12,3 +12,4 @@ export {
   savePhoto,
   type PhotoCollection,
 } from './store';
+export { forgetStoredMealPhotos, type ForgottenPhotos } from './storedPhotos';

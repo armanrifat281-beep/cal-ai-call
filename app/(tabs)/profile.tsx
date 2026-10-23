@@ -19,7 +19,11 @@ import { useAuth } from '@/features/auth';
 import { clearLocalJournal, useWeekStripDays } from '@/features/journal';
 import { hasEnoughForInsights } from '@/features/memory/insights';
 import { forgetAvatarLocally } from '@/features/profile';
-import { deleteAllMealPhotos, deleteAllPhotos } from '@/features/photos';
+import {
+  deleteAllMealPhotos,
+  deleteAllPhotos,
+  forgetStoredMealPhotos,
+} from '@/features/photos';
 import { clearLocalRecipes, toCuisineId } from '@/features/recipes';
 import { clearLocalWater } from '@/features/water';
 import { clearLocalWeight } from '@/features/weight';
@@ -75,6 +79,7 @@ export default function ProfileScreen() {
 
   const [clearing, setClearing] = useState(false);
   const [accountBusy, setAccountBusy] = useState(false);
+  const [photoBusy, setPhotoBusy] = useState(false);
 
   const confirmClearLocalData = () => {
     Alert.alert(
@@ -143,11 +148,35 @@ export default function ProfileScreen() {
    * Turning photo keeping off clears the photos already kept.
    *
    * Otherwise the setting would only be a promise about future meals, while
-   * the pictures the user is asking the app to stop keeping stay on disk.
+   * the pictures the user is asking the app to stop keeping stay behind.
+   *
+   * There are two places they are kept: this device, and - when the setting
+   * was on - the `meal-photos` bucket, with the path recorded on the entry.
+   * Only the device half used to be cleared.
+   *
+   * The stored half goes first, because it is the half that can fail. If it
+   * does, nothing is deleted, the switch stays on, and the user is told -
+   * rather than being shown an off switch over photos that are still there.
    */
   const setRetainPhotos = (retainPhotos: boolean) => {
-    setPreferences({ retainPhotos });
-    if (!retainPhotos) deleteAllMealPhotos();
+    if (retainPhotos) {
+      setPreferences({ retainPhotos: true });
+      return;
+    }
+
+    void (async () => {
+      setPhotoBusy(true);
+      const forgotten = await forgetStoredMealPhotos();
+      setPhotoBusy(false);
+
+      if (!forgotten.ok) {
+        Alert.alert('Photos not deleted', forgotten.error.message);
+        return;
+      }
+
+      deleteAllMealPhotos();
+      setPreferences({ retainPhotos: false });
+    })();
   };
 
   return (
@@ -433,9 +462,14 @@ export default function ProfileScreen() {
           />
           <ToggleRow
             title="Keep my meal photos"
-            subtitle="Off by default. Turning this off also deletes photos already saved"
+            subtitle={
+              photoBusy
+                ? 'Deleting the photos already saved…'
+                : 'Off by default. Turning this off also deletes photos already saved'
+            }
             value={preferences.retainPhotos}
             onChange={setRetainPhotos}
+            disabled={photoBusy}
             divided
           />
         </Surface>
@@ -494,12 +528,15 @@ function ToggleRow({
   subtitle,
   value,
   onChange,
+  disabled = false,
   divided = false,
 }: {
   title: string;
   subtitle: string;
   value: boolean;
   onChange: (next: boolean) => void;
+  /** Held while a change is being carried out, so it cannot be flipped twice. */
+  disabled?: boolean;
   divided?: boolean;
 }) {
   const theme = useTheme();
@@ -513,6 +550,7 @@ function ToggleRow({
         <Switch
           value={value}
           onValueChange={onChange}
+          disabled={disabled}
           accessibilityLabel={title}
           trackColor={{ true: theme.colors.primary, false: theme.colors.surfaceAlt }}
           thumbColor={theme.colors.surface}

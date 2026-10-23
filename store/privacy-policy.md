@@ -57,9 +57,16 @@ photos* in the app. That setting is **off by default**. With it off, the
 image is used for the analysis and not stored.
 
 With it on, the photo is saved to a folder belonging to your account and
-readable only by it. Turning the setting back off deletes the copies held on
-your phone. A photo that has already been uploaded stays in your account
-until you delete the account itself, which removes all of them.
+readable only by it.
+
+Turning the setting back off deletes both copies - the one on your phone and
+the one stored against your account - and clears the reference the meal kept
+to it. If the stored copies cannot be deleted, the setting stays on and the
+app tells you why: it will not show the photos as deleted when they are not.
+
+One copy is beyond our reach. The image was sent to Google to be identified,
+and what Google keeps is governed by their terms, not by this setting. We do
+not claim to delete it, because we cannot.
 
 Photos you take are also kept on your own phone so the app can show them to
 you. Those never leave the device.
