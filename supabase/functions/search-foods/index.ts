@@ -1,4 +1,5 @@
 import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2.117.3';
+import { CORS_HEADERS } from '../_shared/cors.ts';
 
 /**
  * Food database search.
@@ -54,11 +55,6 @@ const NUTRIENT_IDS = {
   sodiumMg: 1093,
 } as const;
 
-const CORS_HEADERS: Record<string, string> = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-};
 
 function jsonResponse(body: unknown, status: number): Response {
   return new Response(JSON.stringify(body), {

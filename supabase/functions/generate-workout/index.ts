@@ -28,6 +28,7 @@ import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2.1
 import { selectVisionProvider } from '../_shared/vision.ts';
 
 import { planSchema, validatePlan, type GenerateInput } from './schema.ts';
+import { CORS_HEADERS } from '../_shared/cors.ts';
 
 const MAX_TOKENS = 4_000;
 const PROVIDER_TIMEOUT_MS = 50_000;
@@ -56,10 +57,6 @@ Hard rules:
    speak to a professional, and keep the plan to gentle general movement.
 8. Plain language. No "shred", no "crush", no "beast mode", no emoji.`;
 
-const CORS_HEADERS: Record<string, string> = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
 
 function jsonResponse(body: unknown, status: number): Response {
   return new Response(JSON.stringify(body), {

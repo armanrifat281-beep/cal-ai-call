@@ -22,6 +22,7 @@ import { ALLOWED_MIME_TYPES, detectImageType, toBase64 } from '../_shared/image.
 import { selectVisionProvider } from '../_shared/vision.ts';
 
 import { LABEL_SCHEMA, toPer100g, validateLabel } from './schema.ts';
+import { CORS_HEADERS } from '../_shared/cors.ts';
 
 const MAX_TOKENS = 3_000;
 const PROVIDER_TIMEOUT_MS = 45_000;
@@ -51,10 +52,6 @@ Rules, in order of importance:
    false and leave everything else empty. That is a useful answer, not a
    failure.`;
 
-const CORS_HEADERS: Record<string, string> = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
 
 function jsonResponse(body: unknown, status: number): Response {
   return new Response(JSON.stringify(body), {

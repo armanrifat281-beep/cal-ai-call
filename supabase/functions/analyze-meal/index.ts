@@ -25,6 +25,7 @@
 import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2.117.3';
 
 import { selectVisionProvider } from '../_shared/vision.ts';
+import { CORS_HEADERS } from '../_shared/cors.ts';
 
 import {
   ALLOWED_MIME_TYPES,
@@ -81,11 +82,6 @@ Rules:
 // Responses
 // ---------------------------------------------------------------------------
 
-const CORS_HEADERS: Record<string, string> = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-};
 
 function jsonResponse(body: unknown, status: number): Response {
   return new Response(JSON.stringify(body), {

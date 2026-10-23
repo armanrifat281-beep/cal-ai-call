@@ -28,6 +28,7 @@
 import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2.117.3';
 
 import { selectVisionProvider } from '../_shared/vision.ts';
+import { CORS_HEADERS } from '../_shared/cors.ts';
 
 import {
   RECIPE_SCHEMA,
@@ -64,11 +65,6 @@ Rules that matter more than sounding impressive:
 - Respect the stated dietary restrictions absolutely: do not include an ingredient the user said to avoid, and do not suggest it as a substitution either. You cannot guarantee a dish is free of an allergen, so do not claim to; the app tells the user that.
 - If the request is too vague to produce one specific dish, still produce the most reasonable interpretation and say in "caveats" what you assumed.`;
 
-const CORS_HEADERS: Record<string, string> = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-};
 
 function jsonResponse(body: unknown, status: number): Response {
   return new Response(JSON.stringify(body), {
