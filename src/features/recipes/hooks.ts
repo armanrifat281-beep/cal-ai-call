@@ -11,6 +11,11 @@ import {
   createLocalShoppingListRepository,
 } from './localRepository';
 import {
+  recipeRevision,
+  trackRecipeWrites,
+  trackShoppingWrites,
+} from './revision';
+import {
   createSupabaseRecipeRepository,
   createSupabaseShoppingListRepository,
 } from './supabaseRepository';
@@ -69,11 +74,38 @@ export function setRecipeRepositories(repositories: {
   }
 }
 
+/**
+ * One wrapper per repository, kept stable.
+ *
+ * The wrappers go in every read hook's dependency list, so building a new
+ * one each render would retrigger every read on every render.
+ */
+const trackedRecipes = new WeakMap<RecipeRepository, RecipeRepository>();
+const trackedShopping = new WeakMap<ShoppingListRepository, ShoppingListRepository>();
+
+function withRecipeTracking(repository: RecipeRepository): RecipeRepository {
+  const existing = trackedRecipes.get(repository);
+  if (existing) return existing;
+  const wrapped = trackRecipeWrites(repository);
+  trackedRecipes.set(repository, wrapped);
+  return wrapped;
+}
+
+function withShoppingTracking(
+  repository: ShoppingListRepository,
+): ShoppingListRepository {
+  const existing = trackedShopping.get(repository);
+  if (existing) return existing;
+  const wrapped = trackShoppingWrites(repository);
+  trackedShopping.set(repository, wrapped);
+  return wrapped;
+}
+
 export function useRecipeRepository(): RecipeRepository {
   const { isSignedIn } = useAuth();
 
   // A test override wins, so a test never reaches for a real client.
-  if (recipeRepository) return recipeRepository;
+  if (recipeRepository) return withRecipeTracking(recipeRepository);
 
   if (isSignedIn) {
     const client = getSupabaseClient();
@@ -82,27 +114,27 @@ export function useRecipeRepository(): RecipeRepository {
       // repository built from it can be too, and a new object every render
       // would retrigger every data effect that depends on it.
       supabaseRecipes ??= createSupabaseRecipeRepository(client);
-      return supabaseRecipes;
+      return withRecipeTracking(supabaseRecipes);
     }
   }
 
-  return getDeviceRecipeRepository();
+  return withRecipeTracking(getDeviceRecipeRepository());
 }
 
 export function useShoppingListRepository(): ShoppingListRepository {
   const { isSignedIn } = useAuth();
 
-  if (shoppingListRepository) return shoppingListRepository;
+  if (shoppingListRepository) return withShoppingTracking(shoppingListRepository);
 
   if (isSignedIn) {
     const client = getSupabaseClient();
     if (client) {
       supabaseShoppingLists ??= createSupabaseShoppingListRepository(client);
-      return supabaseShoppingLists;
+      return withShoppingTracking(supabaseShoppingLists);
     }
   }
 
-  return getDeviceShoppingListRepository();
+  return withShoppingTracking(getDeviceShoppingListRepository());
 }
 
 export interface RecipeListState {
@@ -116,9 +148,10 @@ export function useRecipes(options: ListRecipesOptions = {}): RecipeListState {
   const repository = useRecipeRepository();
   const { includeRejected, favoritesOnly, orderBy, limit } = options;
 
+  const revision = recipeRevision.use();
   const { data, loading, error, reload } = useAsyncResult(
     () => repository.listRecipes({ includeRejected, favoritesOnly, orderBy, limit }),
-    [repository, includeRejected, favoritesOnly, orderBy, limit],
+    [repository, includeRejected, favoritesOnly, orderBy, limit, revision],
   );
 
   return { recipes: data ?? [], loading, error, reload };
@@ -136,12 +169,13 @@ export interface RecipeState {
 export function useRecipe(recipeId: string | undefined): RecipeState {
   const repository = useRecipeRepository();
 
+  const revision = recipeRevision.use();
   const { data, loading, error, reload } = useAsyncResult(
     async () =>
       recipeId
         ? repository.getRecipe(recipeId)
         : ({ ok: true, value: null } as Result<Recipe | null>),
-    [repository, recipeId],
+    [repository, recipeId, revision],
   );
 
   return {
@@ -163,12 +197,13 @@ export function useRecipeSearch(query: string): RecipeSearchState {
   const repository = useRecipeRepository();
   const trimmed = query.trim();
 
+  const revision = recipeRevision.use();
   const { data, loading, error } = useAsyncResult(
     async () =>
       trimmed.length === 0
         ? ({ ok: true, value: [] } as Result<Recipe[]>)
         : repository.searchRecipes(trimmed),
-    [repository, trimmed],
+    [repository, trimmed, revision],
   );
 
   return { results: data ?? [], loading: trimmed.length > 0 && loading, error };
@@ -184,9 +219,10 @@ export interface ShoppingListsState {
 export function useShoppingLists(status?: ShoppingListStatus): ShoppingListsState {
   const repository = useShoppingListRepository();
 
+  const revision = recipeRevision.use();
   const { data, loading, error, reload } = useAsyncResult(
     () => repository.listLists(status),
-    [repository, status],
+    [repository, status, revision],
   );
 
   return { lists: data ?? [], loading, error, reload };
@@ -217,12 +253,13 @@ export function useShoppingList(listId: string | undefined): ShoppingListState {
     list: ShoppingList;
   } | null>(null);
 
+  const revision = recipeRevision.use();
   const { data, loading, error, reload } = useAsyncResult(
     async () =>
       listId
         ? repository.getList(listId)
         : ({ ok: true, value: null } as Result<ShoppingList | null>),
-    [repository, listId],
+    [repository, listId, revision],
   );
 
   const list = (override && override.listId === listId ? override.list : null) ?? data ?? null;

@@ -1,5 +1,7 @@
 import { useCallback, useMemo } from 'react';
 
+import { createRevision } from '@/lib/revision';
+
 import { useAuth } from '@/features/auth';
 import { todayKey, type DateKey } from '@/lib/date';
 import type { AppError } from '@/lib/result';
@@ -37,6 +39,9 @@ export function getDeviceWaterRepository(): WaterRepository {
   return getLocalRepository();
 }
 
+/** Bumped by every write here, so the same card on another tab re-reads. */
+const revisions = createRevision();
+
 export function useWaterRepository(): WaterRepository {
   const { isSignedIn } = useAuth();
 
@@ -69,9 +74,10 @@ export interface DayWater {
 
 export function useDayWater(dateKey: DateKey = todayKey()): DayWater {
   const repository = useWaterRepository();
+  const revision = revisions.use();
   const { data, loading, error, reload } = useAsyncResult(
     () => repository.listForDay(dateKey),
-    [dateKey, repository],
+    [dateKey, repository, revision],
   );
 
   const entries = useMemo(() => data ?? [], [data]);
@@ -83,9 +89,9 @@ export function useDayWater(dateKey: DateKey = todayKey()): DayWater {
   const add = useCallback(
     async (amountMl: number) => {
       await repository.add(amountMl);
-      reload();
+      revisions.bump();
     },
-    [repository, reload],
+    [repository],
   );
 
   const undoLast = useCallback(async () => {
@@ -93,8 +99,8 @@ export function useDayWater(dateKey: DateKey = todayKey()): DayWater {
     const newest = entries[0];
     if (newest === undefined) return;
     await repository.remove(newest.id);
-    reload();
-  }, [entries, repository, reload]);
+    revisions.bump();
+  }, [entries, repository]);
 
   return { entries, totalMl, loading, error, reload, add, undoLast };
 }

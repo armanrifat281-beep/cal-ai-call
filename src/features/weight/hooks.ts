@@ -1,5 +1,7 @@
 import { useCallback, useMemo } from 'react';
 
+import { createRevision } from '@/lib/revision';
+
 import { useAuth } from '@/features/auth';
 import type { AppError } from '@/lib/result';
 import { getSupabaseClient } from '@/lib/supabase';
@@ -34,6 +36,9 @@ export function setWeightRepository(repository: WeightRepository | null): void {
 export function getDeviceWeightRepository(): WeightRepository {
   return getLocalRepository();
 }
+
+/** Bumped by every write here, so the same card on another tab re-reads. */
+const revisions = createRevision();
 
 export function useWeightRepository(): WeightRepository {
   const { isSignedIn } = useAuth();
@@ -77,9 +82,10 @@ const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 export function useWeightHistory(): WeightHistory {
   const repository = useWeightRepository();
+  const revision = revisions.use();
   const { data, loading, error, reload } = useAsyncResult(
     () => repository.list(),
-    [repository],
+    [repository, revision],
   );
 
   const entries = useMemo(() => data ?? [], [data]);
@@ -114,16 +120,16 @@ export function useWeightHistory(): WeightHistory {
   const add = useCallback(
     async (weightKg: number) => {
       await repository.add(weightKg);
-      reload();
+      revisions.bump();
     },
-    [repository, reload],
+    [repository],
   );
 
   const undoLast = useCallback(async () => {
     if (latest === null) return;
     await repository.remove(latest.id);
-    reload();
-  }, [latest, repository, reload]);
+    revisions.bump();
+  }, [latest, repository]);
 
   return {
     entries,
