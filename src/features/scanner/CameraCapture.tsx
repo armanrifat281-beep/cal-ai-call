@@ -199,47 +199,63 @@ export function CameraCapture({
           backgroundColor: 'rgba(0,0,0,0.72)',
           flexDirection: 'row',
           alignItems: 'center',
-          justifyContent: 'space-between',
+          gap: theme.spacing.md,
         }}
       >
-        <PressableScale
-          onPress={onScanBarcode}
-          accessibilityRole="button"
-          accessibilityLabel="Scan a packet's barcode"
+        {/*
+          Three parts, and the outer two carry equal weight, so the shutter
+          sits on the screen's centre line however many buttons flank it.
+          Spread across four children it was the third of four and sat right
+          of centre, which on a camera screen reads as the one control being
+          in the wrong place.
+        */}
+        <View
           style={{
-            width: 50,
-            height: 50,
-            borderRadius: theme.radius.control,
-            borderWidth: 1.5,
-            borderColor: 'rgba(255,255,255,0.3)',
+            flex: 1,
+            flexDirection: 'row',
             alignItems: 'center',
-            justifyContent: 'center',
+            gap: theme.spacing.md,
           }}
         >
-          {/*
-            Packaged food is the case a photograph is worst at: a model
-            guessing at a wrapper is strictly worse than the figures the
-            manufacturer already published against its barcode.
-          */}
-          <Icon name="database" size={21} color="#FFFFFF" strokeWidth={1.7} />
-        </PressableScale>
+          <PressableScale
+            onPress={onScanBarcode}
+            accessibilityRole="button"
+            accessibilityLabel="Scan a packet's barcode"
+            style={{
+              width: 50,
+              height: 50,
+              borderRadius: theme.radius.control,
+              borderWidth: 1.5,
+              borderColor: 'rgba(255,255,255,0.3)',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            {/*
+              Packaged food is the case a photograph is worst at: a model
+              guessing at a wrapper is strictly worse than the figures the
+              manufacturer already published against its barcode.
+            */}
+            <Icon name="database" size={21} color="#FFFFFF" strokeWidth={1.7} />
+          </PressableScale>
 
-        <PressableScale
-          onPress={onPickFromLibrary}
-          accessibilityRole="button"
-          accessibilityLabel="Choose from your photos"
-          style={{
-            width: 50,
-            height: 50,
-            borderRadius: theme.radius.control,
-            borderWidth: 1.5,
-            borderColor: 'rgba(255,255,255,0.3)',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          <Icon name="gallery" size={21} color="#FFFFFF" strokeWidth={1.7} />
-        </PressableScale>
+          <PressableScale
+            onPress={onPickFromLibrary}
+            accessibilityRole="button"
+            accessibilityLabel="Choose from your photos"
+            style={{
+              width: 50,
+              height: 50,
+              borderRadius: theme.radius.control,
+              borderWidth: 1.5,
+              borderColor: 'rgba(255,255,255,0.3)',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Icon name="gallery" size={21} color="#FFFFFF" strokeWidth={1.7} />
+          </PressableScale>
+        </View>
 
         <PressableScale
           onPress={() => void capture()}
@@ -268,8 +284,17 @@ export function CameraCapture({
           />
         </PressableScale>
 
-        <PressableScale
-          onPress={onAddByHand}
+        <View
+          style={{
+            flex: 1,
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'flex-end',
+            gap: theme.spacing.md,
+          }}
+        >
+          <PressableScale
+            onPress={onAddByHand}
           accessibilityRole="button"
           accessibilityLabel="Add a meal by hand"
           style={{
@@ -282,8 +307,9 @@ export function CameraCapture({
             justifyContent: 'center',
           }}
         >
-          <Icon name="pencil" size={20} color="#FFFFFF" strokeWidth={1.7} />
-        </PressableScale>
+            <Icon name="pencil" size={20} color="#FFFFFF" strokeWidth={1.7} />
+          </PressableScale>
+        </View>
       </View>
     </View>
   );
