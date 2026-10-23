@@ -1,5 +1,6 @@
 import { Directory, File, Paths } from 'expo-file-system';
 import * as ImagePicker from 'expo-image-picker';
+import { Platform } from 'react-native';
 import { create } from 'zustand';
 
 import { prepareImageForUpload } from '@/features/scanner/image';
@@ -19,6 +20,19 @@ import { getSupabaseClient } from '@/lib/supabase';
  * The device copy is the one the UI reads. The remote copy is only consulted
  * when there is no local file, which is exactly the reinstall case.
  */
+
+/**
+ * `expo-file-system`'s `Directory` and `File` are native-only. On web the
+ * constructor throws `this.validatePath is not a function`, and because the
+ * app asks for the stored picture as it starts, that took down every screen
+ * behind the error boundary rather than quietly skipping a decoration.
+ *
+ * Web keeps the picture in memory instead: whatever uri the picker or the
+ * signed URL hands over is what the <Image> is given. It does not survive a
+ * reload, which is the right trade for a development and review surface -
+ * the shipped Android app writes a real file as before.
+ */
+const HAS_FILESYSTEM = Platform.OS !== 'web';
 
 const BUCKET = 'avatars';
 const FOLDER = 'profile';
@@ -55,14 +69,26 @@ export const useAvatarStore = create<AvatarState>((set) => ({
 
 /** The local file's uri with a fresh cache-buster, or null if absent. */
 function localUri(): string | null {
-  const file = avatarFile();
-  if (!file.exists) return null;
-  version += 1;
-  return `${file.uri}?v=${version}`;
+  if (!HAS_FILESYSTEM) return null;
+  try {
+    const file = avatarFile();
+    if (!file.exists) return null;
+    version += 1;
+    return `${file.uri}?v=${version}`;
+  } catch (cause) {
+    logger.warn('avatar: could not read the device copy', { cause: String(cause) });
+    return null;
+  }
 }
 
-/** Point the store at whatever is on disk. Safe to call repeatedly. */
+/**
+ * Point the store at whatever is on disk.
+ *
+ * On web there is no disk, and whatever is already in the store - a picture
+ * chosen this session - is better than clearing it.
+ */
 export function refreshAvatar(): void {
+  if (!HAS_FILESYSTEM) return;
   useAvatarStore.getState().setUri(localUri());
 }
 
@@ -125,6 +151,12 @@ export async function pickAvatar(
 
 /** Copy the prepared image into the durable folder and show it. */
 async function saveLocally(sourceUri: string): Promise<Result<void>> {
+  if (!HAS_FILESYSTEM) {
+    // Nothing durable to write to; show what was picked.
+    useAvatarStore.getState().setUri(sourceUri);
+    return ok(undefined);
+  }
+
   try {
     const directory = avatarDirectory();
     if (!directory.exists) directory.create({ intermediates: true });
@@ -155,6 +187,7 @@ async function uploadAvatar(): Promise<Result<void>> {
     const userId = auth.user?.id;
     if (!userId) return ok(undefined);
 
+    if (!HAS_FILESYSTEM) return ok(undefined);
     const file = avatarFile();
     if (!file.exists) return ok(undefined);
 
@@ -187,7 +220,7 @@ async function uploadAvatar(): Promise<Result<void>> {
  * picture chosen on this phone is never overwritten by an older one.
  */
 export async function restoreAvatar(): Promise<void> {
-  if (avatarFile().exists) {
+  if (HAS_FILESYSTEM && avatarFile().exists) {
     refreshAvatar();
     return;
   }
@@ -214,6 +247,12 @@ export async function restoreAvatar(): Promise<void> {
       .createSignedUrl(path, SIGNED_URL_TTL_SECONDS);
     if (!signed?.signedUrl) return;
 
+    if (!HAS_FILESYSTEM) {
+      // No file to download into: hand the <Image> the signed url itself.
+      useAvatarStore.getState().setUri(signed.signedUrl);
+      return;
+    }
+
     const directory = avatarDirectory();
     if (!directory.exists) directory.create({ intermediates: true });
     await File.downloadFileAsync(signed.signedUrl, avatarFile());
@@ -228,9 +267,11 @@ export async function restoreAvatar(): Promise<void> {
 /** Remove it from the device and from storage. */
 export async function removeAvatar(): Promise<Result<void>> {
   try {
-    const file = avatarFile();
-    if (file.exists) file.delete();
-    refreshAvatar();
+    if (HAS_FILESYSTEM) {
+      const file = avatarFile();
+      if (file.exists) file.delete();
+    }
+    useAvatarStore.getState().setUri(localUri());
   } catch (cause) {
     logger.warn('avatar could not be deleted from the device', { cause: String(cause) });
   }
@@ -258,8 +299,10 @@ export async function removeAvatar(): Promise<Result<void>> {
 /** Erase the device's copy without touching storage. For sign-out. */
 export function forgetAvatarLocally(): void {
   try {
-    const file = avatarFile();
-    if (file.exists) file.delete();
+    if (HAS_FILESYSTEM) {
+      const file = avatarFile();
+      if (file.exists) file.delete();
+    }
   } catch (cause) {
     logger.warn('avatar could not be cleared on sign out', { cause: String(cause) });
   }

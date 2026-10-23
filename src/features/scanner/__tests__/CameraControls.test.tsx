@@ -54,7 +54,7 @@ describe('the camera controls', () => {
 
     const children = (controlBar()?.children ?? []).filter(
       (child) => typeof child !== 'string',
-    ) as { props?: { style?: unknown } }[];
+    ) as { props?: { style?: Parameters<typeof StyleSheet.flatten>[0] } }[];
 
     const left = StyleSheet.flatten(children[0]?.props?.style) as { flex?: number };
     const right = StyleSheet.flatten(children[2]?.props?.style) as { flex?: number };
