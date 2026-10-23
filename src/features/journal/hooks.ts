@@ -22,6 +22,7 @@ import { getSupabaseClient } from '@/lib/supabase';
 import { createLocalJournalRepository } from './localRepository';
 import type { JournalRepository } from './repository';
 import { createSupabaseJournalRepository } from './supabaseRepository';
+import { trackJournalWrites, useJournalRevision } from './revision';
 
 /**
  * Journal data access for screens.
@@ -52,9 +53,27 @@ function getLocalRepository(): JournalRepository {
  * Returns the Supabase one when a client exists AND a session is stored.
  * Prefer `useJournalRepository` inside components, which reacts to sign-in.
  */
+/**
+ * Wrapped repositories, one per underlying repository.
+ *
+ * `trackJournalWrites` returns a new object each call, and the repository
+ * sits in every read hook's dependency list - so wrapping on each render
+ * would retrigger every read on every render. A WeakMap keeps one wrapper
+ * per repository and lets it be collected with it.
+ */
+const trackedRepositories = new WeakMap<JournalRepository, JournalRepository>();
+
+function withWriteTracking(repository: JournalRepository): JournalRepository {
+  const existing = trackedRepositories.get(repository);
+  if (existing) return existing;
+  const wrapped = trackJournalWrites(repository);
+  trackedRepositories.set(repository, wrapped);
+  return wrapped;
+}
+
 export function getDeviceJournalRepository(): JournalRepository {
-  if (overrideRepository) return overrideRepository;
-  return getLocalRepository();
+  if (overrideRepository) return withWriteTracking(overrideRepository);
+  return withWriteTracking(getLocalRepository());
 }
 
 /** Replaces the active repository. Used by tests. */
@@ -65,7 +84,7 @@ export function setJournalRepository(repository: JournalRepository | null): void
 export function useJournalRepository(): JournalRepository {
   const { isSignedIn } = useAuth();
 
-  if (overrideRepository) return overrideRepository;
+  if (overrideRepository) return withWriteTracking(overrideRepository);
 
   if (isSignedIn) {
     const client = getSupabaseClient();
@@ -74,11 +93,11 @@ export function useJournalRepository(): JournalRepository {
       // built from it can be too, and a new object every render would retrigger
       // every data effect that depends on it.
       supabaseRepository ??= createSupabaseJournalRepository(client);
-      return supabaseRepository;
+      return withWriteTracking(supabaseRepository);
     }
   }
 
-  return getLocalRepository();
+  return withWriteTracking(getLocalRepository());
 }
 
 export interface DayJournal {
@@ -92,9 +111,12 @@ export interface DayJournal {
 /** Everything one day's dashboard needs. */
 export function useDayJournal(dateKey: DateKey = todayKey()): DayJournal {
   const repository = useJournalRepository();
+  // Re-read after any write, wherever it happened. Without this the tabs
+  // stay mounted holding whatever they read when they were first opened.
+  const revision = useJournalRevision();
   const { data, loading, error, reload } = useAsyncResult(
     () => repository.listEntriesForDay(dateKey),
-    [dateKey, repository],
+    [dateKey, repository, revision],
   );
 
   // `data ?? []` is a new array on every render while data is null, which
@@ -114,9 +136,10 @@ export interface RangeJournal {
 
 export function useRangeJournal(startKey: DateKey, endKey: DateKey): RangeJournal {
   const repository = useJournalRepository();
+  const revision = useJournalRevision();
   const { data, loading, error, reload } = useAsyncResult(
     () => repository.listEntriesForRange(startKey, endKey),
-    [startKey, endKey, repository],
+    [startKey, endKey, repository, revision],
   );
 
   return { entries: data ?? [], loading, error, reload };
@@ -124,9 +147,10 @@ export function useRangeJournal(startKey: DateKey, endKey: DateKey): RangeJourna
 
 export function useRecentEntries(limit = 5): RangeJournal {
   const repository = useJournalRepository();
+  const revision = useJournalRevision();
   const { data, loading, error, reload } = useAsyncResult(
     () => repository.listRecentEntries(limit),
-    [limit, repository],
+    [limit, repository, revision],
   );
 
   return { entries: data ?? [], loading, error, reload };
@@ -141,9 +165,10 @@ export interface SavedMealsState {
 
 export function useSavedMeals(): SavedMealsState {
   const repository = useJournalRepository();
+  const revision = useJournalRevision();
   const { data, loading, error, reload } = useAsyncResult(
     () => repository.listSavedMeals(),
-    [repository],
+    [repository, revision],
   );
 
   return { savedMeals: data ?? [], loading, error, reload };
