@@ -155,5 +155,40 @@ describe('mapAuthError', () => {
       expect(mapped.code).toBe('network');
       expect(mapped.retryable).toBe(true);
     });
+
+    /*
+      The defect this guards.
+
+      A deleted Supabase project and a phone with no signal both surface as
+      a fetch with no status, and both used to say "No connection. Check
+      your internet and try again." - which sent someone whose internet was
+      perfectly fine to their Wi-Fi settings, over and over, for a fault
+      only the project's owner could fix.
+    */
+    it('tells a dead backend address apart from a dropped connection', () => {
+      const mapped = mapAuthError(
+        authError({
+          status: undefined,
+          message:
+            'fetch failed: java.net.UnknownHostException: Unable to resolve host "abc123.supabase.co": No address associated with hostname',
+        }),
+        'signUp',
+      );
+
+      expect(mapped.code).toBe('not_configured');
+      // Retrying the same request cannot help: the name still will not resolve.
+      expect(mapped.retryable).toBe(false);
+      expect(mapped.message).toMatch(/could not be found/i);
+      expect(mapped.message).not.toMatch(/check your internet/i);
+    });
+
+    it('still blames the network when the host resolved fine', () => {
+      const mapped = mapAuthError(
+        authError({ status: undefined, message: 'Network request failed' }),
+        'signIn',
+      );
+
+      expect(mapped.code).toBe('network');
+    });
   });
 });

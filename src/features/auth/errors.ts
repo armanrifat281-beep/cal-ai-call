@@ -1,6 +1,6 @@
 import type { AuthError } from '@supabase/supabase-js';
 
-import { appError, type AppError } from '@/lib/result';
+import { appError, isUnresolvedHost, type AppError } from '@/lib/result';
 
 /**
  * Maps a Supabase auth error to something the user can act on.
@@ -154,8 +154,17 @@ export function mapAuthError(error: AuthError, context: string): AppError {
     });
   }
 
-  // A fetch failure arrives with no status at all.
+  // A fetch failure arrives with no status at all - but there are two very
+  // different reasons for one, and only one of them is the user's to fix.
   if (!error.status) {
+    if (isUnresolvedHost(detail)) {
+      return appError(
+        'not_configured',
+        'The server this app signs in to could not be found. Its address may be wrong, or the project behind it has been paused or deleted.',
+        { detail, retryable: false },
+      );
+    }
+
     return appError('network', 'No connection. Check your internet and try again.', {
       detail,
     });

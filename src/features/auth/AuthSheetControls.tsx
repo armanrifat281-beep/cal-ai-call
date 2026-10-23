@@ -9,8 +9,12 @@ import {
   AUTH_FIELD_BORDER,
   AUTH_INK,
   AUTH_MUTED,
+  AUTH_ON_ORANGE,
   AUTH_ORANGE,
 } from './AuthSheet';
+
+/** Red that survives on the dark sheet. The light-mode red did not. */
+const AUTH_DANGER = '#F27A7A';
 
 /**
  * The controls inside the account sheet.
@@ -54,7 +58,7 @@ export function AuthField({
           borderWidth: 1.5,
           // Three states, told apart without moving anything: resting, being
           // typed into, and wrong.
-          borderColor: error ? '#D64545' : focused ? AUTH_ORANGE : AUTH_FIELD_BORDER,
+          borderColor: error ? AUTH_DANGER : focused ? AUTH_ORANGE : AUTH_FIELD_BORDER,
           paddingHorizontal: 16,
         }}
       >
@@ -76,7 +80,7 @@ export function AuthField({
             rest.onBlur?.(event);
           }}
           secureTextEntry={password && !revealed}
-          placeholderTextColor="#B8AFA6"
+          placeholderTextColor="#7A726C"
           style={{
             flex: 1,
             paddingVertical: 15,
@@ -99,7 +103,7 @@ export function AuthField({
       </View>
 
       {error ? (
-        <Text variant="footnote" color="#C13A3A">
+        <Text variant="footnote" color={AUTH_DANGER}>
           {error}
         </Text>
       ) : null}
@@ -153,7 +157,7 @@ export function AuthButton({
         backgroundColor: filled ? AUTH_ORANGE : AUTH_FIELD_BG,
         borderRadius: 14,
         borderWidth: filled ? 0 : 1.5,
-        borderColor: labelColor ? '#FFD9C6' : AUTH_FIELD_BORDER,
+        borderColor: labelColor ? '#5A2E18' : AUTH_FIELD_BORDER,
         paddingVertical: 16,
         opacity: inert ? 0.55 : pressed ? 0.88 : 1,
       })}
@@ -161,7 +165,7 @@ export function AuthButton({
       {leading}
       <Text
         variant="headline"
-        color={labelColor ?? (filled ? '#FFFFFF' : AUTH_INK)}
+        color={labelColor ?? (filled ? AUTH_ON_ORANGE : AUTH_INK)}
         style={{ fontWeight: '700' }}
       >
         {loading ? 'Please wait…' : label}
@@ -238,14 +242,14 @@ export function AuthCheckbox({
           justifyContent: 'center',
           backgroundColor: checked ? AUTH_ORANGE : 'transparent',
           borderWidth: checked ? 0 : 1.5,
-          borderColor: '#CFC4B9',
+          borderColor: '#4A4340',
         }}
       >
         {checked ? (
           <Svg width={12} height={12} viewBox="0 0 24 24">
             <Path
               d="M5 13 L10 18 L19 7"
-              stroke="#FFFFFF"
+              stroke={AUTH_ON_ORANGE}
               strokeWidth={3}
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -306,17 +310,21 @@ export function AuthNotice({ tone = 'problem', message, detail, action }: AuthNo
     <View
       accessibilityRole={problem ? 'alert' : undefined}
       style={{
-        backgroundColor: problem ? '#FDECEA' : '#FFF2E6',
+        backgroundColor: problem ? '#2C1414' : '#2B1F12',
         borderRadius: 14,
         padding: 14,
         gap: 4,
       }}
     >
-      <Text variant="footnote" color={problem ? '#A3291F' : '#8A4A18'} style={{ fontWeight: '600' }}>
+      <Text
+        variant="footnote"
+        color={problem ? AUTH_DANGER : '#F0C48A'}
+        style={{ fontWeight: '600' }}
+      >
         {message}
       </Text>
       {detail ? (
-        <Text variant="caption" color={problem ? '#A3291F' : '#8A4A18'}>
+        <Text variant="caption" color={problem ? '#E8A5A5' : '#D9B183'}>
           {detail}
         </Text>
       ) : null}

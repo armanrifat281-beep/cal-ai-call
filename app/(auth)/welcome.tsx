@@ -32,11 +32,15 @@ export default function WelcomeScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: AUTH_ORANGE }}>
       <LinearGradient
-        // Held solid through the top half so the mark sits in colour, then
-        // opened out over the bottom third. A ramp that starts at the top
-        // leaves the wordmark on a dirty half-tint.
-        colors={[AUTH_ORANGE, AUTH_ORANGE, '#FFC4A8', AUTH_SHEET]}
-        locations={[0, 0.34, 0.72, 1]}
+        /*
+          Held solid through the top half so the mark sits in colour, then
+          burnt down into the sheet's near-black over the bottom third. A
+          ramp that starts at the top leaves the wordmark on a dirty
+          half-tint, and one that passes through a pale peach on its way to
+          black goes muddy in the middle.
+        */
+        colors={[AUTH_ORANGE, AUTH_ORANGE, '#A83C15', AUTH_SHEET]}
+        locations={[0, 0.34, 0.74, 1]}
         style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
       />
 

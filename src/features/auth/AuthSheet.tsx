@@ -31,12 +31,29 @@ import { Text } from '@/components/ui';
 export const AUTH_ORANGE = '#FF6B35';
 export const AUTH_ORANGE_DEEP = '#EF5A22';
 /** The card peeking out behind the sheet, for depth. */
-const AUTH_ORANGE_PALE = '#FFA077';
-export const AUTH_SHEET = '#FFF8F2';
-export const AUTH_INK = '#1F1A17';
-export const AUTH_MUTED = '#8C8178';
-export const AUTH_FIELD_BORDER = '#EFE3D8';
-export const AUTH_FIELD_BG = '#FFFFFF';
+const AUTH_ORANGE_PALE = '#B8431A';
+
+/*
+  The sheet is dark, and the orange is only the room it sits in.
+
+  It was cream, which made signing in a bright screen between an orange
+  splash and a black app - two jumps in a row, and the brightest moment in
+  the product sitting in front of the part nobody wants to linger on. Dark
+  sheet, orange furniture: the eye travels orange to black once, and the app
+  it lands in is already the colour it was going to be.
+
+  Near-black text on the orange button rather than white. White on this
+  orange measures 2.84:1, which is below AA and genuinely hard to read; the
+  near-black is 6.71:1 - and it is the same relationship the lime button has
+  with its label everywhere else in the app.
+*/
+export const AUTH_SHEET = '#151312';
+export const AUTH_INK = '#FFFFFF';
+export const AUTH_MUTED = '#A8A09B';
+export const AUTH_FIELD_BORDER = '#312C29';
+export const AUTH_FIELD_BG = '#201D1B';
+/** What goes on top of a filled orange control. */
+export const AUTH_ON_ORANGE = '#1A0D05';
 
 export interface AuthSheetProps {
   children: React.ReactNode;

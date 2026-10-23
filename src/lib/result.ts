@@ -68,6 +68,26 @@ export const DEFAULT_ERROR_MESSAGES: Record<AppErrorCode, string> = {
   unknown: 'Something went wrong. Try again.',
 };
 
+/**
+ * Whether a failure was the address not resolving, rather than the network
+ * being down.
+ *
+ * The two look identical from inside `fetch` - no status, no response - and
+ * they need opposite advice. A phone with no signal is the user's to fix; a
+ * hostname with no DNS record means the backend this build points at is not
+ * there any more, which no amount of switching Wi-Fi on and off will mend.
+ *
+ * Matched on the runtime's own wording because that is all either platform
+ * gives us: Android throws `UnknownHostException`, iOS and Node report
+ * `ENOTFOUND` or "nodename nor servname provided".
+ */
+export function isUnresolvedHost(detail: string | undefined | null): boolean {
+  if (!detail) return false;
+  return /UnknownHostException|Unable to resolve host|ENOTFOUND|getaddrinfo|nodename nor servname|NXDOMAIN/i.test(
+    detail,
+  );
+}
+
 /** Turn an unknown thrown value into an AppError without leaking internals. */
 export function toAppError(cause: unknown, fallback: AppErrorCode = 'unknown'): AppError {
   if (cause instanceof Error) {
