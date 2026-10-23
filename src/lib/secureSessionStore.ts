@@ -1,4 +1,5 @@
 import * as SecureStore from 'expo-secure-store';
+import { Platform } from 'react-native';
 
 import { logger } from './logger';
 
@@ -26,8 +27,66 @@ import { logger } from './logger';
  */
 
 /**
+ * The three operations this module needs from whatever is storing entries.
+ */
+interface SessionBackend {
+  getItemAsync(key: string): Promise<string | null>;
+  setItemAsync(key: string, value: string): Promise<void>;
+  deleteItemAsync(key: string): Promise<void>;
+}
+
+/**
+ * Web has no secure storage, so it gets ordinary browser storage.
+ *
+ * `expo-secure-store` is native-only and ships an empty web shim: every call
+ * lands on an undefined function and throws
+ * `ExpoSecureStore.default.getValueWithKeyAsync is not a function`, which
+ * takes down sign-in before the request is even made. That is what made the
+ * web build impossible to log into.
+ *
+ * `localStorage` is NOT secure storage. Anything on the page can read it,
+ * which is precisely what the keychain exists to prevent - so this applies
+ * to web and nowhere else. The web build is a development and review
+ * surface; the shipped Android and iOS apps keep using the keychain and the
+ * Android Keystore, unchanged.
+ *
+ * Every access is wrapped: storage can be absent or throw outright in a
+ * private window or with site data blocked, and a failure there should read
+ * as "not signed in" rather than crash the app.
+ */
+const browserBackend: SessionBackend = {
+  async getItemAsync(key) {
+    try {
+      return globalThis.localStorage?.getItem(key) ?? null;
+    } catch {
+      return null;
+    }
+  },
+  async setItemAsync(key, value) {
+    try {
+      globalThis.localStorage?.setItem(key, value);
+    } catch {
+      // Quota or blocked storage. The session simply will not persist.
+    }
+  },
+  async deleteItemAsync(key) {
+    try {
+      globalThis.localStorage?.removeItem(key);
+    } catch {
+      // Nothing to remove, or storage is unavailable. Either is fine.
+    }
+  },
+};
+
+const backend: SessionBackend = Platform.OS === 'web' ? browserBackend : SecureStore;
+
+/**
  * Bytes per chunk. Comfortably under Android's ~2048-byte threshold, with
  * headroom because the limit counts encrypted bytes, not characters.
+ *
+ * Kept on web too. The chunking is harmless there - a few extra keys - and
+ * one code path that both platforms take is worth more than the handful of
+ * writes it saves.
  */
 export const CHUNK_SIZE = 1536;
 
@@ -48,7 +107,7 @@ function chunkKey(key: string, index: number): string {
  * take down sign-in rather than degrade to "not signed in".
  */
 async function readRaw(key: string): Promise<string | null> {
-  const value = await SecureStore.getItemAsync(key);
+  const value = await backend.getItemAsync(key);
   return typeof value === 'string' ? value : null;
 }
 
@@ -71,7 +130,7 @@ function splitIntoChunks(value: string): string[] {
 async function removeChunks(key: string, upTo: number): Promise<void> {
   const limit = Math.min(Math.max(upTo, 0), MAX_CHUNKS);
   for (let index = 0; index < limit; index += 1) {
-    await SecureStore.deleteItemAsync(chunkKey(key, index)).catch(() => {
+    await backend.deleteItemAsync(chunkKey(key, index)).catch(() => {
       // Already absent. Nothing to do.
     });
   }
@@ -123,7 +182,7 @@ export async function setItem(key: string, value: string): Promise<void> {
     }
 
     if (value.length <= CHUNK_SIZE) {
-      await SecureStore.setItemAsync(key, value);
+      await backend.setItemAsync(key, value);
       return;
     }
 
@@ -137,9 +196,9 @@ export async function setItem(key: string, value: string): Promise<void> {
     // Parts first, manifest last: if the write is interrupted, the manifest
     // never points at parts that were not written.
     for (const [index, chunk] of chunks.entries()) {
-      await SecureStore.setItemAsync(chunkKey(key, index), chunk);
+      await backend.setItemAsync(chunkKey(key, index), chunk);
     }
-    await SecureStore.setItemAsync(key, `${MANIFEST_PREFIX}${chunks.length}`);
+    await backend.setItemAsync(key, `${MANIFEST_PREFIX}${chunks.length}`);
   } catch (cause) {
     logger.warn('secure session store: write failed', { cause: String(cause) });
     // Rethrow: Supabase needs to know the session could not be persisted,
@@ -159,7 +218,7 @@ export async function removeItem(key: string): Promise<void> {
       // write may have left parts with no manifest.
       await removeChunks(key, MAX_CHUNKS);
     }
-    await SecureStore.deleteItemAsync(key);
+    await backend.deleteItemAsync(key);
   } catch (cause) {
     logger.warn('secure session store: delete failed', { cause: String(cause) });
   }
