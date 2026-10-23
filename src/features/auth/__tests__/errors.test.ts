@@ -1,6 +1,6 @@
 import type { AuthError } from '@supabase/supabase-js';
 
-import { mapAuthError } from '../errors';
+import { mapAuthError, wordNetworkError } from '../errors';
 
 /** Shaped like what supabase-js hands back, without needing its class. */
 function authError(
@@ -190,5 +190,44 @@ describe('mapAuthError', () => {
 
       expect(mapped.code).toBe('network');
     });
+  });
+});
+
+/**
+ * Who to blame for a request that went nowhere.
+ *
+ * Android names the host it could not resolve and `mapAuthError` reads it.
+ * A browser says "Failed to fetch" and nothing more - it is not allowed to
+ * say more - so on web the only way to tell "your wifi is off" from "the
+ * server is gone" is to ask the device whether it thinks it is online.
+ */
+describe('wording a network failure', () => {
+  const networkError = {
+    code: 'network' as const,
+    message: 'No connection. Check your internet and try again.',
+    retryable: true,
+  };
+
+  it('keeps blaming the connection when the device really is offline', () => {
+    expect(wordNetworkError(networkError, true)).toBe(networkError);
+  });
+
+  it('stops blaming the connection when the device says it is online', () => {
+    const worded = wordNetworkError(networkError, false);
+
+    expect(worded.message).toMatch(/could not reach the server/i);
+    expect(worded.message).not.toMatch(/check your internet/i);
+    // Pressing it again is what the user has already been doing.
+    expect(worded.retryable).toBe(false);
+  });
+
+  it('leaves every other kind of failure exactly as it was', () => {
+    const wrongPassword = {
+      code: 'unauthorized' as const,
+      message: 'That did not work. Check your details.',
+      retryable: false,
+    };
+
+    expect(wordNetworkError(wrongPassword, false)).toBe(wrongPassword);
   });
 });

@@ -14,8 +14,9 @@ import {
   AuthNotice,
   AuthPrompt,
 } from '@/features/auth/AuthSheetControls';
-import { useAuth, validateEmail } from '@/features/auth';
+import { useAuth, validateEmail, wordNetworkError } from '@/features/auth';
 import { env } from '@/lib/env';
+import { useIsOffline } from '@/lib/useIsOffline';
 import type { AppError } from '@/lib/result';
 
 /**
@@ -34,6 +35,13 @@ export default function ForgotPasswordScreen() {
   const [busy, setBusy] = useState(false);
   const [sent, setSent] = useState(false);
   const [error, setError] = useState<AppError | null>(null);
+
+  /*
+    What the device thinks of its own connection, used only to stop the
+    screen blaming it when it is fine. See `wordNetworkError`.
+  */
+  const isOffline = useIsOffline();
+  const shownError = error ? wordNetworkError(error, isOffline) : null;
 
   const emailError = validateEmail(email);
 
@@ -105,7 +113,9 @@ export default function ForgotPasswordScreen() {
         />
       ) : null}
 
-      {error ? <AuthNotice message={error.message} detail={error.detail} /> : null}
+      {shownError ? (
+        <AuthNotice message={shownError.message} detail={shownError.detail} />
+      ) : null}
 
       <AuthField
         label="Email"

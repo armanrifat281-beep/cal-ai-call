@@ -16,8 +16,14 @@ import {
   AuthPrompt,
 } from '@/features/auth/AuthSheetControls';
 import { AuthSheetSocial } from '@/features/auth/AuthSheetSocial';
-import { hasAnyError, useAuth, validateSignIn } from '@/features/auth';
+import {
+  hasAnyError,
+  useAuth,
+  validateSignIn,
+  wordNetworkError,
+} from '@/features/auth';
 import { env } from '@/lib/env';
+import { useIsOffline } from '@/lib/useIsOffline';
 import type { AppError } from '@/lib/result';
 
 /**
@@ -41,6 +47,13 @@ export default function SignInScreen() {
   const [submitted, setSubmitted] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<AppError | null>(null);
+
+  /*
+    What the device thinks of its own connection, used only to stop the
+    screen blaming it when it is fine. See `wordNetworkError`.
+  */
+  const isOffline = useIsOffline();
+  const shownError = error ? wordNetworkError(error, isOffline) : null;
 
   const errors = validateSignIn(email, password);
 
@@ -77,14 +90,14 @@ export default function SignInScreen() {
         />
       ) : null}
 
-      {error ? (
+      {shownError ? (
         <AuthNotice
-          message={error.message}
-          detail={error.detail}
+          message={shownError.message}
+          detail={shownError.detail}
           // Retrying the same details cannot fix "no such account", so the
           // way out is offered at the moment it is needed.
           action={
-            error.code === 'unauthorized'
+            shownError.code === 'unauthorized'
               ? {
                   label: 'Create an account instead',
                   onPress: () => router.replace('/(auth)/sign-up'),

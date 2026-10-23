@@ -1,5 +1,5 @@
 export { AuthProvider, useAuth, type AuthStatus } from './AuthProvider';
-export { mapAuthError } from './errors';
+export { mapAuthError, wordNetworkError } from './errors';
 export {
   deleteAccount,
   exchangeCodeForSession,

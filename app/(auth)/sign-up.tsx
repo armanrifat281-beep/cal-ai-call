@@ -22,8 +22,10 @@ import {
   resendConfirmationEmail,
   useAuth,
   validateSignUp,
+  wordNetworkError,
 } from '@/features/auth';
 import { env } from '@/lib/env';
+import { useIsOffline } from '@/lib/useIsOffline';
 import type { AppError } from '@/lib/result';
 import { usePreferencesStore } from '@/store/preferencesStore';
 
@@ -52,6 +54,13 @@ export default function SignUpScreen() {
   const [submitted, setSubmitted] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<AppError | null>(null);
+
+  /*
+    What the device thinks of its own connection, used only to stop the
+    screen blaming it when it is fine. See `wordNetworkError`.
+  */
+  const isOffline = useIsOffline();
+  const shownError = error ? wordNetworkError(error, isOffline) : null;
   const [awaitingConfirmation, setAwaitingConfirmation] = useState(false);
 
   const errors = validateSignUp(email, password, confirmation);
@@ -162,15 +171,15 @@ export default function SignUpScreen() {
         />
       ) : null}
 
-      {error ? (
+      {shownError ? (
         <AuthNotice
-          message={error.message}
-          detail={error.detail}
+          message={shownError.message}
+          detail={shownError.detail}
           // An address that already has an account comes back as a
           // validation failure with that sentence in it; retyping the same
           // details cannot fix it, so the way out is offered here.
           action={
-            error.message.includes('already exists')
+            shownError.message.includes('already exists')
               ? {
                   label: 'Sign in instead',
                   onPress: () => router.replace('/(auth)/sign-in'),

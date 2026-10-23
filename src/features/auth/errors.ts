@@ -182,3 +182,35 @@ export function mapAuthError(error: AuthError, context: string): AppError {
 function isDisabledProviderMessage(message: string): boolean {
   return /provider is not enabled|unsupported provider/i.test(message);
 }
+
+/**
+ * The same failure, worded for what is actually wrong with it.
+ *
+ * A request that never reached a server looks identical from inside
+ * `fetch` whether the phone is offline or the server is not there, and only
+ * one platform gives us a clue: Android names the host it could not
+ * resolve, which `mapAuthError` already reads. A browser says "Failed to
+ * fetch" and nothing else, on purpose - resolution detail is something
+ * pages are not allowed to learn about the network.
+ *
+ * So ask the device instead. If it says it has working internet and the
+ * request still went nowhere, "check your internet and try again" is the
+ * one thing we know to be false, and repeating it sends someone to their
+ * router for a fault that is not there.
+ *
+ * Takes the offline flag rather than reading it, so this stays a pure
+ * function the screens can test; `useIsOffline` is a hook and the mapper
+ * above is not a component.
+ */
+export function wordNetworkError(error: AppError, isOffline: boolean): AppError {
+  if (error.code !== 'network' || isOffline) return error;
+
+  return {
+    ...error,
+    message:
+      'Could not reach the server. Your connection looks fine, so the service may be paused or temporarily down.',
+    // Retrying is what the user has already been doing. The thing that has
+    // to change is at the other end.
+    retryable: false,
+  };
+}
