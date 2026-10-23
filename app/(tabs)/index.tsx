@@ -30,6 +30,7 @@ import { todayKey } from '@/lib/date';
 import { env } from '@/lib/env';
 import { greetingFor } from '@/lib/greeting';
 import { useAvatarStore } from '@/features/profile';
+import { hasEnoughForInsights } from '@/features/memory/insights';
 import { usePreferencesStore } from '@/store/preferencesStore';
 import { useTheme } from '@/theme';
 
@@ -60,6 +61,23 @@ export default function HomeScreen() {
   // contains the day, and two reads could disagree about it after a save.
   const { entries, summary, week, loading, error, reload } = useDayAndWeek(dateKey);
   const confidence = useMemo(() => summarizeConfidence(entries), [entries]);
+
+  /*
+    Only offer Insights once it has something to say.
+
+    The row promised "patterns counted from your saved meals" from the very
+    first launch and led to "Not enough logged yet", which reads as a broken
+    feature rather than as one that has not started yet. The week strip is
+    already loaded, so this costs no extra read.
+  */
+  const insightsReady = useMemo(
+    () =>
+      hasEnoughForInsights(
+        week.reduce((sum, day) => sum + day.entryCount, 0),
+        week.filter((day) => day.entryCount > 0).length,
+      ),
+    [week],
+  );
 
   /**
    * What the body has spent so far today.
@@ -225,14 +243,16 @@ export default function HomeScreen() {
             trailing={<Icon name="chevronRight" size={16} color="textSubtle" />}
             onPress={() => router.push('/(tabs)/discover')}
           />
-          <Row
-            title="Insights"
-            subtitle="Patterns counted from your saved meals"
-            leading={<Icon name="insights" size={19} color="primary" />}
-            trailing={<Icon name="chevronRight" size={16} color="textSubtle" />}
-            divided
-            onPress={() => router.push('/(tabs)/insights')}
-          />
+          {insightsReady ? (
+            <Row
+              title="Insights"
+              subtitle="Patterns counted from your saved meals"
+              leading={<Icon name="insights" size={19} color="primary" />}
+              trailing={<Icon name="chevronRight" size={16} color="textSubtle" />}
+              divided
+              onPress={() => router.push('/(tabs)/insights')}
+            />
+          ) : null}
         </Surface>
       </Appear>
 

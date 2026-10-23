@@ -20,6 +20,22 @@ export const MIN_DAYS_FOR_INSIGHTS = 2;
 /** A food must appear on this many separate days to count as a repeat. */
 export const MIN_DAYS_FOR_REPEAT = 2;
 
+/**
+ * Whether there is enough logged for insights to say anything.
+ *
+ * Exported so the screens that link to Insights can ask before offering the
+ * link. Home and Progress both advertised "Patterns counted from your saved
+ * meals" from the first launch, and the link led to "Not enough logged yet" -
+ * which reads as a broken feature rather than as one that has not started.
+ *
+ * Takes the two counts rather than the entries: both callers already hold a
+ * day-by-day summary and neither should have to re-read the journal to
+ * decide whether to draw a row.
+ */
+export function hasEnoughForInsights(entryCount: number, daysLogged: number): boolean {
+  return entryCount >= MIN_ENTRIES_FOR_INSIGHTS && daysLogged >= MIN_DAYS_FOR_INSIGHTS;
+}
+
 export interface InsightWindow {
   periodStart: DateKey;
   periodEnd: DateKey;

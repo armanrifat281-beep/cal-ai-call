@@ -23,6 +23,7 @@ import {
 import { WeightCard } from '@/features/weight';
 import { addDaysToKey, formatTimeOfDay, groupByDateKey, todayKey } from '@/lib/date';
 import { useAvatarStore } from '@/features/profile';
+import { hasEnoughForInsights } from '@/features/memory/insights';
 import { usePreferencesStore } from '@/store/preferencesStore';
 import { useTheme, type ColorKey } from '@/theme';
 import type { FoodEntry } from '@/types/domain';
@@ -59,6 +60,16 @@ export default function ProgressScreen() {
   const streak = useMemo(
     () => countStreak(history.entries, dateKey),
     [history.entries, dateKey],
+  );
+
+  // Same reasoning as Home: do not offer Insights before it can answer.
+  const insightsReady = useMemo(
+    () =>
+      hasEnoughForInsights(
+        history.entries.length,
+        groupByDateKey(history.entries, (entry) => entry.consumedAt).size,
+      ),
+    [history.entries],
   );
 
   const nutrients = summary.totals.nutrients;
@@ -205,31 +216,33 @@ export default function ProgressScreen() {
         <WeightCard />
       </Appear>
 
-      <Appear index={5}>
-        <PressableScale
-          onPress={() => router.push('/(tabs)/insights')}
-          accessibilityRole="button"
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: theme.spacing.md,
-            padding: theme.spacing.base,
-            borderRadius: 20,
-            backgroundColor: theme.colors.surface,
-          }}
-        >
-          <Icon name="insights" size={19} color="primary" />
-          <View style={{ flex: 1 }}>
-            <Text variant="headline" style={{ fontSize: 15 }}>
-              Insights
-            </Text>
-            <Text variant="caption" color="textSubtle">
-              Patterns counted across weeks, not just today
-            </Text>
-          </View>
-          <Icon name="chevronRight" size={16} color="textSubtle" />
-        </PressableScale>
-      </Appear>
+      {insightsReady ? (
+        <Appear index={5}>
+          <PressableScale
+            onPress={() => router.push('/(tabs)/insights')}
+            accessibilityRole="button"
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: theme.spacing.md,
+              padding: theme.spacing.base,
+              borderRadius: 20,
+              backgroundColor: theme.colors.surface,
+            }}
+          >
+            <Icon name="insights" size={19} color="primary" />
+            <View style={{ flex: 1 }}>
+              <Text variant="headline" style={{ fontSize: 15 }}>
+                Insights
+              </Text>
+              <Text variant="caption" color="textSubtle">
+                Patterns counted across weeks, not just today
+              </Text>
+            </View>
+            <Icon name="chevronRight" size={16} color="textSubtle" />
+          </PressableScale>
+        </Appear>
+      ) : null}
     </Screen>
   );
 }
