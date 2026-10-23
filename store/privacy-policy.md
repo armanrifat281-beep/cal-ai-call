@@ -30,7 +30,11 @@ and your choice of units.
 
 **A record of AI use.** For each photo analysis or recipe generation we store
 the outcome, which model answered, how long it took, and the size of what was
-sent. This is what enforces the daily limits. It does not contain the photo.
+sent. This is what enforces the daily limits. It does not contain the photo
+or the meal description.
+
+**Your subscription status.** Whether your account is on the free or premium
+tier, which sets those daily limits.
 
 ## What the app does not collect
 
@@ -50,15 +54,21 @@ it can be identified. Google processes the image to answer that request.
 
 **The photo is not kept on our servers** unless you turn on *Keep my meal
 photos* in the app. That setting is **off by default**. With it off, the
-image is used for the analysis and not stored. With it on, the photo is
-saved to your own private folder, readable only by your account, and turning
-the setting back off deletes the photos already kept.
+image is used for the analysis and not stored.
+
+With it on, the photo is saved to a folder belonging to your account and
+readable only by it. Turning the setting back off deletes the copies held on
+your phone. A photo that has already been uploaded stays in your account
+until you delete the account itself, which removes all of them.
 
 Photos you take are also kept on your own phone so the app can show them to
 you. Those never leave the device.
 
 The camera permission is used for photographing meals and reading barcodes.
-The photo library permission is used only when you pick an existing picture.
+It is the only permission the Android app asks for. Choosing an existing
+picture goes through the system photo picker, which hands the app the one
+image you selected and needs no permission of its own - the app is never
+given access to your photo library.
 
 ## Who else receives anything
 

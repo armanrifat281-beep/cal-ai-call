@@ -64,16 +64,18 @@
   <p><strong>What you log.</strong> The meals and foods you record, their portions and times, and the water and weight you enter.</p>
   <p><strong>Your preferences.</strong> Your goal and daily targets, dietary patterns, any allergens you choose to tell us about, the ingredients in your kitchen list, and your choice of units.</p>
   <p><strong>What you create.</strong> Recipes you generate or save, and your shopping lists.</p>
-  <p><strong>A record of AI use.</strong> For each photo analysis or recipe generation we store the outcome, which model answered, how long it took, and the size of what was sent. This is what enforces the daily limits. It does not contain the photo.</p>
+  <p><strong>A record of AI use.</strong> For each photo analysis or recipe generation we store the outcome, which model answered, how long it took, and the size of what was sent. This is what enforces the daily limits. It does not contain the photo or the meal description.</p>
+  <p><strong>Your subscription status.</strong> Whether your account is on the free or premium tier, which sets those daily limits.</p>
   <h2>What the app does not collect</h2>
   <p>The app contains <strong>no analytics, advertising or tracking software of any kind</strong>. There is no third-party SDK watching how you use it.</p>
   <p>It does not ask for or collect your location, contacts, calendar, or microphone. It does not build an advertising profile, and it does not sell or share your data for advertising. Nothing is sold to anyone.</p>
   <h2>Photographs</h2>
   <p>This is the part worth reading carefully.</p>
   <p>When you photograph a meal, the image is sent to <strong>Google&#x27;s Gemini API</strong> so it can be identified. Google processes the image to answer that request.</p>
-  <p><strong>The photo is not kept on our servers</strong> unless you turn on <em>Keep my meal photos</em> in the app. That setting is <strong>off by default</strong>. With it off, the image is used for the analysis and not stored. With it on, the photo is saved to your own private folder, readable only by your account, and turning the setting back off deletes the photos already kept.</p>
+  <p><strong>The photo is not kept on our servers</strong> unless you turn on <em>Keep my meal photos</em> in the app. That setting is <strong>off by default</strong>. With it off, the image is used for the analysis and not stored.</p>
+  <p>With it on, the photo is saved to a folder belonging to your account and readable only by it. Turning the setting back off deletes the copies held on your phone. A photo that has already been uploaded stays in your account until you delete the account itself, which removes all of them.</p>
   <p>Photos you take are also kept on your own phone so the app can show them to you. Those never leave the device.</p>
-  <p>The camera permission is used for photographing meals and reading barcodes. The photo library permission is used only when you pick an existing picture.</p>
+  <p>The camera permission is used for photographing meals and reading barcodes. It is the only permission the Android app asks for. Choosing an existing picture goes through the system photo picker, which hands the app the one image you selected and needs no permission of its own - the app is never given access to your photo library.</p>
   <h2>Who else receives anything</h2>
   <table><tbody>
   <tr><td>Service</td><td>What it receives</td><td>Why</td></tr>
