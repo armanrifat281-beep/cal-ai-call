@@ -77,7 +77,15 @@
       "typedRoutes": true
     },
     "extra": {
-      "router": {}
-    }
+      "router": {
+        "asyncRoutes": {
+          "web": true
+        }
+      },
+      "eas": {
+        "projectId": "d20d4355-162f-47d1-bbcf-63929014f42f"
+      }
+    },
+    "owner": "armanvibecodingdev"
   }
 }
