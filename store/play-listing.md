@@ -94,6 +94,6 @@ such. Talk to a qualified professional about decisions that matter.
 
 ## Contact details
 
-- **Email:** `[PUT YOUR CONTACT EMAIL HERE]` — Play requires one, shown publicly
+- **Email:** `yeasindesign@gmail.com` — Play requires one, shown publicly
 - **Website:** optional
 - **Privacy policy:** the URL you host `store/privacy-policy.html` at

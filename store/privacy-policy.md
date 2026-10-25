@@ -6,7 +6,7 @@ FoodLens AI is a food and nutrition journal. This policy explains what the
 app collects, where it goes, and how to get rid of it. It describes the app
 as it is actually built.
 
-Contact: **[PUT YOUR CONTACT EMAIL HERE]**
+Contact: **yeasindesign@gmail.com**
 
 ---
 
