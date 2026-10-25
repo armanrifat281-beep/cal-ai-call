@@ -16,8 +16,9 @@ Contact: **armanrifat281@gmail.com**
 follow you to another phone. Passwords are handled by our authentication
 provider and are never visible to us.
 
-**Your profile.** A display name, if you give one, and a profile picture, if
-you choose one.
+**Your profile picture**, if you choose one. Your display name is different:
+it stays on the phone and is never sent to us, which is why the Play Store
+data listing says no name is collected.
 
 **What you log.** The meals and foods you record, their portions and times,
 and the water and weight you enter.
